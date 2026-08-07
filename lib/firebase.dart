@@ -30,7 +30,7 @@ class DefaultFirebaseOptions {
     appId: '1:561391430514:web:5f06c6a84539ecffb10beb',
     messagingSenderId: '561391430514',
     projectId: 'vertex-ai-1618',
-    authDomain: 'vertex-ai-1618.firebaseapp.com',
+    authDomain: 'edge.vertexishere.com',
     databaseURL: 'https://vertex-ai-1618-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'vertex-ai-1618.firebasestorage.app',
     measurementId: 'G-G1LJNV60Q3',
