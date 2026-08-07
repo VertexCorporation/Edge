@@ -47,8 +47,8 @@ class _EdgeAppState extends State<EdgeApp> {
               }
 
               if (vertexSnapshot.data != true) {
-                // Force sign out if not vertex member
-                _authService.signOut();
+                // If not vertex member, show login. 
+                // The actual signOut and error message is handled by AuthService.signIn
                 return const LoginScreen();
               }
 

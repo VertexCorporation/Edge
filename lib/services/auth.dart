@@ -54,9 +54,20 @@ class AuthService {
     }
   }
 
-  /// Check if user has isVertex: true in Firestore
+  /// Check if user has isVertex: true in Firestore or is an admin
   Future<bool> checkIsVertex(String uid) async {
     try {
+      // First check if user has admin claim
+      final user = _auth.currentUser;
+      if (user != null && user.uid == uid) {
+        final idTokenResult = await user.getIdTokenResult();
+        if (idTokenResult.claims?['admin'] == true || 
+            idTokenResult.claims?['isAdmin'] == true || 
+            idTokenResult.claims?['role'] == 'admin') {
+          return true;
+        }
+      }
+
       final doc = await _firestore.collection('users').doc(uid).get();
       if (!doc.exists) return false;
 
