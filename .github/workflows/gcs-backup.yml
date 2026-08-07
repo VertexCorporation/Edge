@@ -54,7 +54,7 @@ jobs:
         run: |
           # The bucket where backups will be stored
           # MUST MATCH the bucket name in your lifecycle JSON
-          BUCKET="gs://vertex-ai-1618-backups" 
+          BUCKET="gs://github-organization" 
           PREFIX="${{ steps.backup_type.outputs.TYPE }}"
           
           # Upload the bundle to the designated folder based on type
