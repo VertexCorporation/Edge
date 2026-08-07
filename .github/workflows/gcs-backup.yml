@@ -1,0 +1,63 @@
+name: GCS Repository Backup
+
+on:
+  schedule:
+    # Run every day at 02:00 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual trigger from GitHub UI
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # IMPORTANT: Fetch all history for all branches and tags
+
+      - name: Determine Backup Frequency Type
+        id: backup_type
+        run: |
+          TYPE="daily"
+          
+          # If today is the 1st of the month, classify as monthly
+          if [ "$(date +%d)" = "01" ]; then
+            TYPE="monthly"
+          # If it's Sunday (0) AND the week number is even, classify as biweekly
+          elif [ "$(date +%w)" = "0" ] && [ $(( $(date +%V) % 2 )) -eq 0 ]; then
+            TYPE="biweekly"
+          fi
+          
+          echo "TYPE=$TYPE" >> $GITHUB_OUTPUT
+          echo "Determined backup type: $TYPE"
+
+      - name: Generate Git Bundle
+        run: |
+          DATE=$(date +'%Y-%m-%d_%H-%M-%S')
+          BUNDLE_NAME="${{ github.event.repository.name }}_${DATE}.bundle"
+          
+          # Create a bundle of all branches and tags
+          git bundle create $BUNDLE_NAME --all
+          
+          echo "BUNDLE_NAME=$BUNDLE_NAME" >> $GITHUB_ENV
+          echo "Created git bundle: $BUNDLE_NAME"
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Upload to GCS
+        run: |
+          # The bucket where backups will be stored
+          # MUST MATCH the bucket name in your lifecycle JSON
+          BUCKET="gs://vertex-ai-1618-backups" 
+          PREFIX="${{ steps.backup_type.outputs.TYPE }}"
+          
+          # Upload the bundle to the designated folder based on type
+          gsutil cp ${{ env.BUNDLE_NAME }} ${BUCKET}/${PREFIX}/${{ env.BUNDLE_NAME }}
+          
+          echo "Successfully uploaded backup to ${BUCKET}/${PREFIX}/${{ env.BUNDLE_NAME }}"
