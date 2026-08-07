@@ -1,4 +1,4 @@
-import 'dart:ui' as dart_ui;
+import 'dart:ui';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -144,7 +144,7 @@ class _LoginScreenState extends State<LoginScreen>
                           animation: _shakeAnimation,
                           builder: (context, child) {
                             final sineValue = 
-                                (dart_ui.PlatformDispatcher.instance.views.first.physicalSize.width > 0) ? 
+                                (PlatformDispatcher.instance.views.first.physicalSize.width > 0) ? 
                                   // Just a simple sine wave for shaking
                                   (1 - (_shakeController.value)) * 
                                   (1 - (_shakeController.value)) // decay
