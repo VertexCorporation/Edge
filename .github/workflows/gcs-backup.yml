@@ -1,4 +1,4 @@
-name: GCS Repository Backup
+name: Centralized Org Backup to GCS
 
 on:
   schedule:
@@ -10,11 +10,6 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # IMPORTANT: Fetch all history for all branches and tags
-
       - name: Determine Backup Frequency Type
         id: backup_type
         run: |
@@ -31,17 +26,6 @@ jobs:
           echo "TYPE=$TYPE" >> $GITHUB_OUTPUT
           echo "Determined backup type: $TYPE"
 
-      - name: Generate Git Bundle
-        run: |
-          DATE=$(date +'%Y-%m-%d_%H-%M-%S')
-          BUNDLE_NAME="${{ github.event.repository.name }}_${DATE}.bundle"
-          
-          # Create a bundle of all branches and tags
-          git bundle create $BUNDLE_NAME --all
-          
-          echo "BUNDLE_NAME=$BUNDLE_NAME" >> $GITHUB_ENV
-          echo "Created git bundle: $BUNDLE_NAME"
-
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -50,14 +34,43 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Upload to GCS
+      - name: Backup All Organization Repositories
+        env:
+          GITHUB_TOKEN: ${{ secrets.ORG_PAT }}
+          BUCKET: "gs://github-organization"
+          PREFIX: "${{ steps.backup_type.outputs.TYPE }}"
         run: |
-          # The bucket where backups will be stored
-          # MUST MATCH the bucket name in your lifecycle JSON
-          BUCKET="gs://github-organization" 
-          PREFIX="${{ steps.backup_type.outputs.TYPE }}"
+          DATE=$(date +'%Y-%m-%d_%H-%M-%S')
           
-          # Upload the bundle to the designated folder based on type
-          gsutil cp ${{ env.BUNDLE_NAME }} ${BUCKET}/${PREFIX}/${{ env.BUNDLE_NAME }}
+          # Fetch all repositories for VertexCorporation
+          echo "Fetching repositories for VertexCorporation..."
+          REPOS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/orgs/VertexCorporation/repos?type=all&per_page=100" | jq -r '.[].full_name')
           
-          echo "Successfully uploaded backup to ${BUCKET}/${PREFIX}/${{ env.BUNDLE_NAME }}"
+          if [ -z "$REPOS" ] || [ "$REPOS" = "null" ]; then
+            echo "Error: Could not fetch repositories. Please check ORG_PAT."
+            exit 1
+          fi
+          
+          for REPO in $REPOS; do
+            REPO_NAME=$(basename $REPO)
+            echo "----------------------------------------"
+            echo "Starting backup for: $REPO_NAME"
+            echo "----------------------------------------"
+            
+            # Clone repository fully
+            git clone --mirror "https://${GITHUB_TOKEN}@github.com/${REPO}.git" "${REPO_NAME}.git"
+            
+            # Navigate inside and create bundle
+            cd "${REPO_NAME}.git"
+            BUNDLE_NAME="${REPO_NAME}_${DATE}.bundle"
+            git bundle create "../${BUNDLE_NAME}" --all
+            cd ..
+            
+            # Upload bundle to GCS
+            gsutil cp "${BUNDLE_NAME}" "${BUCKET}/${PREFIX}/${BUNDLE_NAME}"
+            
+            # Cleanup space
+            rm -rf "${REPO_NAME}.git" "${BUNDLE_NAME}"
+            
+            echo "Successfully backed up $REPO_NAME to GCS."
+          done
