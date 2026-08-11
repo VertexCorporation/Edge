@@ -30,32 +30,25 @@ class AuthService {
     }
   }
 
-  /// Syncs public profile info to the usernames collection if the user has a username
-  /// If they don't, automatically generates one (e.g. user_xyz123)
+  /// Syncs public profile info to the usernames collection
   Future<void> _syncUsernameProfile(User user, {String? name, String? email, String? role, bool isOnline = true}) async {
     try {
       final query = await _firestore.collection('usernames').where('userId', '==', user.uid).limit(1).get();
       
-      final data = <String, dynamic>{
-        'isOnline': isOnline,
-        'lastSeen': FieldValue.serverTimestamp(),
-      };
-      if (name != null) data['name'] = name;
-      if (email != null) data['email'] = email;
-      if (role != null) data['role'] = role;
-
       if (query.docs.isNotEmpty) {
-        // Update existing username document
+        final data = <String, dynamic>{
+          'isOnline': isOnline,
+          'lastSeen': FieldValue.serverTimestamp(),
+        };
+        if (name != null) data['name'] = name;
+        if (email != null) data['email'] = email;
+        if (role != null) data['role'] = role;
+
         final docId = query.docs.first.id;
         await _firestore.collection('usernames').doc(docId).set(data, SetOptions(merge: true));
-      } else {
-        // Generate a new username document for them
-        String generatedUsername = 'user_${user.uid.substring(0, 8).toLowerCase()}';
-        data['userId'] = user.uid;
-        await _firestore.collection('usernames').doc(generatedUsername).set(data, SetOptions(merge: true));
       }
     } catch (e) {
-      // Ignore if it fails (e.g. rules issue)
+      // Ignore if it fails
     }
   }
 
