@@ -20,7 +20,7 @@ class ChatService {
     final hasKeys = await _cryptoService.hasKeys();
     if (!hasKeys) {
       final publicKeyPem = await _cryptoService.generateAndStoreKeys();
-      await _firestore.collection('users').doc(currentUserId).set(
+      await _firestore.collection('vertex_users').doc(currentUserId).set(
         {'publicKey': publicKeyPem},
         SetOptions(merge: true),
       );
@@ -28,7 +28,7 @@ class ChatService {
       // Ensure it's in firestore
       final publicKey = await _cryptoService.getPublicKey();
       if (publicKey != null) {
-        await _firestore.collection('users').doc(currentUserId).set(
+        await _firestore.collection('vertex_users').doc(currentUserId).set(
           {'publicKey': publicKey},
           SetOptions(merge: true),
         );
@@ -39,7 +39,7 @@ class ChatService {
   /// Get list of users to chat with
   Stream<List<Map<String, dynamic>>> getUsers() {
     return _firestore
-        .collection('users')
+        .collection('vertex_users')
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
@@ -112,7 +112,7 @@ class ChatService {
     final chatId = getChatId(currentUserId, receiverId);
     
     // Get receiver's public key
-    final receiverDoc = await _firestore.collection('users').doc(receiverId).get();
+    final receiverDoc = await _firestore.collection('vertex_users').doc(receiverId).get();
     final receiverPublicKey = receiverDoc.data()?['publicKey'];
     
     if (receiverPublicKey == null) {

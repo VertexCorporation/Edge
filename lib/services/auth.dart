@@ -24,7 +24,15 @@ class AuthService {
           'lastSeen': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
       } catch (e) {
-        // Silently fail if unable to update status
+        // Silently fail if unable to update status in users collection
+      }
+      try {
+        await _firestore.collection('vertex_users').doc(user.uid).set({
+          'isOnline': isOnline,
+          'lastSeen': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } catch (e) {
+        // Silently fail if unable to update status in vertex_users
       }
     }
   }
@@ -80,6 +88,16 @@ class AuthService {
         'email': email.trim().toLowerCase(),
         'role': 'Üye',
         'isVertex': false,
+        'isOnline': true,
+        'createdAt': FieldValue.serverTimestamp(),
+        'lastSeen': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      // Create vertex_users public profile
+      await _firestore.collection('vertex_users').doc(user.uid).set({
+        'name': name,
+        'email': email.trim().toLowerCase(),
+        'role': 'Üye',
         'isOnline': true,
         'createdAt': FieldValue.serverTimestamp(),
         'lastSeen': FieldValue.serverTimestamp(),
@@ -185,6 +203,15 @@ class AuthService {
       role = doc.data()?['role'] ?? role;
       await updateOnlineStatus(true);
     }
+
+    // Always ensure vertex_users public profile is up-to-date
+    await _firestore.collection('vertex_users').doc(user.uid).set({
+      'name': name,
+      'email': user.email ?? '',
+      'role': role,
+      'isOnline': true,
+      'lastSeen': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
 
     return AuthResult.success(
       user: user,
