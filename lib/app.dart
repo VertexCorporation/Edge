@@ -118,7 +118,7 @@ class _SplashScreen extends StatelessWidget {
               baseColor: isDark ? Colors.white24 : Colors.black26,
               highlightColor: isDark ? Colors.white : Colors.black,
               child: Image.asset(
-                'assets/icons/Edge.png',
+                'assets/icons/edge/transparent.png',
                 width: 80,
                 height: 80,
                 fit: BoxFit.contain,

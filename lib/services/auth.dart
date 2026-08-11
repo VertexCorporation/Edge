@@ -19,10 +19,10 @@ class AuthService {
     final user = _auth.currentUser;
     if (user != null) {
       try {
-        await _firestore.collection('users').doc(user.uid).set({
+        await _firestore.collection('users').doc(user.uid).update({
           'isOnline': isOnline,
           'lastSeen': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+        });
       } catch (e) {
         // Silently fail if unable to update status in users collection
       }
@@ -96,17 +96,6 @@ class AuthService {
       }
 
       await user.updateDisplayName(name);
-
-      // Create user document
-      await _firestore.collection('users').doc(user.uid).set({
-        'name': name,
-        'email': email.trim().toLowerCase(),
-        'role': 'Üye',
-        'isVertex': false,
-        'isOnline': true,
-        'createdAt': FieldValue.serverTimestamp(),
-        'lastSeen': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
 
       await _syncUsernameProfile(user, name: name, email: email.trim().toLowerCase(), role: 'Üye', isOnline: true);
 
@@ -194,21 +183,16 @@ class AuthService {
     String name = user.displayName ?? 'Kullanıcı';
     String role = 'Üye';
 
-    if (!doc.exists) {
-      // First time login
-      await _firestore.collection('users').doc(user.uid).set({
-        'name': name,
-        'email': user.email ?? '',
-        'role': role,
-        'isVertex': false,
-        'isOnline': true,
-        'createdAt': FieldValue.serverTimestamp(),
-        'lastSeen': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    } else {
+    if (doc.exists) {
       name = doc.data()?['name'] ?? name;
       role = doc.data()?['role'] ?? role;
       await updateOnlineStatus(true);
+    } else {
+      // Cloud Function will create the document.
+      // We just need to update the display name in Auth if needed.
+      if (user.displayName == null || user.displayName!.isEmpty) {
+        await user.updateDisplayName(name);
+      }
     }
 
     await _syncUsernameProfile(user, name: name, email: user.email ?? '', role: role, isOnline: true);
