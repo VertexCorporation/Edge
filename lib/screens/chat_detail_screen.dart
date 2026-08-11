@@ -8,6 +8,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../theme/colors.dart';
 import '../widgets/background.dart';
 import '../services/chat_service.dart';
@@ -196,7 +197,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           content = Column(
              crossAxisAlignment: CrossAxisAlignment.start,
              children: [
-               const Icon(Icons.image, size: 40, color: Colors.grey),
+               const FaIcon(FontAwesomeIcons.image, size: 40, color: Colors.grey),
                const SizedBox(height: 4),
                Text('Şifreli Görsel (Link: ${payload['url'].substring(0, 20)}...)', 
                     style: TextStyle(color: isMe ? Colors.white : Colors.black)),
@@ -206,7 +207,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           content = Row(
              mainAxisSize: MainAxisSize.min,
              children: [
-               const Icon(Icons.mic, color: Colors.grey),
+               const FaIcon(FontAwesomeIcons.microphone, color: Colors.grey),
                const SizedBox(width: 8),
                Text('Ses Kaydı', style: TextStyle(color: isMe ? Colors.white : Colors.black)),
              ],
@@ -215,7 +216,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
            content = Row(
              mainAxisSize: MainAxisSize.min,
              children: [
-               const Icon(Icons.insert_drive_file, color: Colors.grey),
+               const FaIcon(FontAwesomeIcons.file, color: Colors.grey),
                const SizedBox(width: 8),
                Text('Dosya: ${payload['fileName']}', style: TextStyle(color: isMe ? Colors.white : Colors.black)),
              ],
@@ -268,11 +269,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         child: Row(
           children: [
             IconButton(
-              icon: Icon(Icons.attach_file, color: VertexColors.textMuted(brightness)),
+              icon: FaIcon(FontAwesomeIcons.paperclip, color: VertexColors.textMuted(brightness), size: 20),
               onPressed: _pickAndSendFile,
             ),
             IconButton(
-              icon: Icon(Icons.image, color: VertexColors.textMuted(brightness)),
+              icon: FaIcon(FontAwesomeIcons.image, color: VertexColors.textMuted(brightness), size: 20),
               onPressed: _pickAndSendImage,
             ),
             Expanded(
@@ -291,15 +292,16 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               onLongPress: _startRecording,
               onLongPressUp: _stopRecording,
               child: IconButton(
-                icon: Icon(
-                  _isRecording ? Icons.mic : Icons.mic_none, 
-                  color: _isRecording ? Colors.red : VertexColors.textMuted(brightness)
+                icon: FaIcon(
+                  _isRecording ? FontAwesomeIcons.microphone : FontAwesomeIcons.microphoneLines, 
+                  color: _isRecording ? Colors.red : VertexColors.textMuted(brightness),
+                  size: 20,
                 ),
                 onPressed: () {},
               ),
             ),
             IconButton(
-              icon: Icon(Icons.send, color: VertexColors.primary(brightness)),
+              icon: FaIcon(FontAwesomeIcons.paperPlane, color: VertexColors.primary(brightness), size: 20),
               onPressed: _sendMessage,
             ),
           ],

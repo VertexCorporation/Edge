@@ -1,14 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_contacts/flutter_contacts.dart';
 import 'dart:async';
 import '../theme/colors.dart';
 import '../widgets/background.dart';
+import '../widgets/text.dart';
+import '../widgets/edge_drawer.dart';
 import '../services/chat_service.dart';
 import 'chat_detail_screen.dart';
 
 class ChatListScreen extends StatefulWidget {
-  const ChatListScreen({super.key});
+  final String userName;
+  final String userRole;
+  final String userEmail;
+  final bool isVertex;
+
+  const ChatListScreen({
+    super.key,
+    required this.userName,
+    required this.userRole,
+    required this.userEmail,
+    required this.isVertex,
+  });
 
   @override
   State<ChatListScreen> createState() => _ChatListScreenState();
@@ -16,6 +32,8 @@ class ChatListScreen extends StatefulWidget {
 
 class _ChatListScreenState extends State<ChatListScreen> {
   final ChatService _chatService = ChatService();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   bool _isInitializingKeys = true;
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
@@ -23,10 +41,16 @@ class _ChatListScreenState extends State<ChatListScreen> {
   Timer? _debounce;
 
   final ScrollController _scrollController = ScrollController();
-  final List<Map<String, dynamic>> _users = [];
+  
+  // Suggested Users State
+  final List<Map<String, dynamic>> _suggestedUsers = [];
   DocumentSnapshot? _lastDocument;
-  bool _isLoading = false;
-  bool _hasMore = true;
+  bool _isLoadingUsers = false;
+  bool _hasMoreUsers = true;
+  bool _showSuggestions = false;
+  
+  // Phone contacts cache
+  List<Contact> _phoneContacts = [];
 
   @override
   void initState() {
@@ -39,18 +63,22 @@ class _ChatListScreenState extends State<ChatListScreen> {
   Future<void> _initKeys() async {
     try {
       await _chatService.initializeKeys();
+      if (!kIsWeb) {
+        if (await FlutterContacts.requestPermission()) {
+          _phoneContacts = await FlutterContacts.getContacts(withProperties: true);
+        }
+      }
     } catch (e) {
-      debugPrint('Error initializing keys: $e');
+      debugPrint('Error initializing: $e');
     }
     if (mounted) {
       setState(() => _isInitializingKeys = false);
-      _fetchUsers();
     }
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
-      _fetchUsers();
+    if (_showSuggestions && _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      _fetchSuggestedUsers();
     }
   }
 
@@ -61,19 +89,19 @@ class _ChatListScreenState extends State<ChatListScreen> {
       if (_searchQuery != query) {
         setState(() {
           _searchQuery = query;
-          _users.clear();
+          _suggestedUsers.clear();
           _lastDocument = null;
-          _hasMore = true;
+          _hasMoreUsers = true;
+          _showSuggestions = true; // Automatically show suggestions when searching
         });
-        _fetchUsers();
+        _fetchSuggestedUsers();
       }
     });
   }
 
-  Future<void> _fetchUsers() async {
-    if (_isLoading || !_hasMore) return;
-
-    setState(() => _isLoading = true);
+  Future<void> _fetchSuggestedUsers() async {
+    if (_isLoadingUsers || !_hasMoreUsers) return;
+    setState(() => _isLoadingUsers = true);
 
     try {
       final result = await _chatService.getUsersPaginated(
@@ -83,17 +111,47 @@ class _ChatListScreenState extends State<ChatListScreen> {
       );
 
       if (mounted) {
+        List<Map<String, dynamic>> newUsers = List<Map<String, dynamic>>.from(result['users']);
+        
+        // Sorting logic: if in phone contacts, bump to top
+        if (_phoneContacts.isNotEmpty) {
+          final phones = _phoneContacts.expand((c) => c.phones).map((p) => p.number.replaceAll(RegExp(r'\D'), '')).toList();
+          final emails = _phoneContacts.expand((c) => c.emails).map((e) => e.address.toLowerCase()).toList();
+
+          newUsers.sort((a, b) {
+            final aEmail = (a['email'] ?? '').toString().toLowerCase();
+            final bEmail = (b['email'] ?? '').toString().toLowerCase();
+            
+            final aInContacts = emails.contains(aEmail);
+            final bInContacts = emails.contains(bEmail);
+
+            if (aInContacts && !bInContacts) return -1;
+            if (!aInContacts && bInContacts) return 1;
+            
+            final aName = (a['name'] ?? a['username'] ?? '').toString().toLowerCase();
+            final bName = (b['name'] ?? b['username'] ?? '').toString().toLowerCase();
+            return aName.compareTo(bName);
+          });
+        } else {
+          // Just alphabetize
+          newUsers.sort((a, b) {
+            final aName = (a['name'] ?? a['username'] ?? '').toString().toLowerCase();
+            final bName = (b['name'] ?? b['username'] ?? '').toString().toLowerCase();
+            return aName.compareTo(bName);
+          });
+        }
+
         setState(() {
-          _users.addAll(result['users'] as List<Map<String, dynamic>>);
+          _suggestedUsers.addAll(newUsers);
           _lastDocument = result['lastDocument'] as DocumentSnapshot?;
-          _hasMore = result['hasMore'] as bool;
-          _isLoading = false;
+          _hasMoreUsers = result['hasMore'] as bool;
+          _isLoadingUsers = false;
         });
       }
     } catch (e) {
       debugPrint('Error fetching users: $e');
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() => _isLoadingUsers = false);
       }
     }
   }
@@ -112,26 +170,48 @@ class _ChatListScreenState extends State<ChatListScreen> {
     final isDark = brightness == Brightness.dark;
 
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: EdgeDrawer(
+        userName: widget.userName,
+        userRole: widget.userRole,
+        userEmail: widget.userEmail,
+        isVertex: widget.isVertex,
+      ),
       body: GeoBackground(
         child: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Custom AppBar
               Padding(
-                padding: const EdgeInsets.all(24.0),
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Kullanıcılar',
+                    GestureDetector(
+                      onTap: () => _scaffoldKey.currentState?.openDrawer(),
+                      child: CircleAvatar(
+                        backgroundColor: VertexColors.primary(brightness).withValues(alpha: 0.2),
+                        child: Text(
+                          widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : '?',
+                          style: GoogleFonts.inter(
+                            color: VertexColors.primary(brightness),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    GradientText(
+                      'Edge',
                       style: GoogleFonts.inter(
-                        fontSize: 32,
+                        fontSize: 28,
                         fontWeight: FontWeight.w800,
-                        color: isDark ? VertexColors.textMainDark : VertexColors.textMainLight,
                       ),
                     ),
                     IconButton(
-                      icon: Icon(_isSearching ? Icons.close : Icons.search),
+                      icon: FaIcon(
+                        _isSearching ? FontAwesomeIcons.xmark : FontAwesomeIcons.magnifyingGlass,
+                      ),
                       color: isDark ? Colors.white : Colors.black,
                       onPressed: () {
                         setState(() {
@@ -145,6 +225,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   ],
                 ),
               ),
+
+              // Search Bar
               AnimatedSize(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
@@ -161,7 +243,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                             filled: true,
                             fillColor: isDark ? Colors.white10 : Colors.black12,
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(20),
                               borderSide: BorderSide.none,
                             ),
                           ),
@@ -169,6 +251,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       )
                     : const SizedBox.shrink(),
               ),
+
               if (_isInitializingKeys)
                 Expanded(
                   child: Center(
@@ -177,114 +260,238 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 )
               else
                 Expanded(
-                  child: _users.isEmpty && _isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : _users.isEmpty
-                          ? Center(
-                              child: Text(
-                                _searchQuery.isEmpty ? 'Henüz kullanıcı yok.' : 'Kullanıcı bulunamadı.',
-                                style: GoogleFonts.inter(
-                                  color: VertexColors.textMuted(brightness),
-                                ),
-                              ),
-                            )
-                          : ListView.builder(
-                              controller: _scrollController,
-                              itemCount: _users.length + (_hasMore ? 1 : 0),
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              itemBuilder: (context, index) {
-                                if (index == _users.length) {
-                                  return const Padding(
-                                    padding: EdgeInsets.all(16.0),
-                                    child: Center(child: CircularProgressIndicator()),
-                                  );
-                                }
-
-                                final user = _users[index];
-                                final isOnline = user['isOnline'] == true;
-                                
-                                String displayName = (user['name'] ?? '').toString().trim();
-                                if (displayName.isEmpty) {
-                                  displayName = (user['username'] ?? user['email'] ?? 'İsimsiz Kullanıcı').toString().trim();
-                                }
-
-                                return Card(
-                                  color: VertexColors.glassBg(brightness),
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    side: BorderSide(color: VertexColors.glassBorder(brightness)),
-                                  ),
-                                  margin: const EdgeInsets.only(bottom: 8),
-                                  child: ListTile(
-                                    leading: Stack(
-                                      children: [
-                                        CircleAvatar(
-                                          backgroundColor: VertexColors.primary(brightness).withValues(alpha: 0.2),
-                                          child: Text(
-                                            displayName.isNotEmpty ? displayName.substring(0, 1).toUpperCase() : '?',
-                                            style: GoogleFonts.inter(
-                                              color: VertexColors.primary(brightness),
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                        if (isOnline)
-                                          Positioned(
-                                            right: 0,
-                                            bottom: 0,
-                                            child: Container(
-                                              width: 12,
-                                              height: 12,
-                                              decoration: BoxDecoration(
-                                                color: Colors.green,
-                                                shape: BoxShape.circle,
-                                                border: Border.all(
-                                                  color: VertexColors.bgCard(brightness),
-                                                  width: 2,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    title: Text(
-                                      displayName,
-                                      style: GoogleFonts.inter(
-                                        fontWeight: FontWeight.w600,
-                                        color: isDark ? Colors.white : Colors.black,
-                                      ),
-                                    ),
-                                    subtitle: Text(
-                                      user['role'] ?? 'Üye',
-                                      style: GoogleFonts.inter(
-                                        color: VertexColors.textMuted(brightness),
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                    trailing: Icon(
-                                      Icons.chevron_right,
-                                      color: VertexColors.textMuted(brightness),
-                                    ),
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => ChatDetailScreen(
-                                            receiverId: user['id'],
-                                            receiverName: displayName,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                );
-                              },
+                  child: CustomScrollView(
+                    controller: _scrollController,
+                    slivers: [
+                      // Recent Chats Section
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+                          child: Text(
+                            'Sohbetler',
+                            style: GoogleFonts.inter(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? Colors.white : Colors.black,
                             ),
+                          ),
+                        ),
+                      ),
+                      _buildRecentChatsStream(brightness, isDark),
+
+                      // Suggested Users Button
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _showSuggestions = !_showSuggestions;
+                              });
+                              if (_showSuggestions && _suggestedUsers.isEmpty) {
+                                _fetchSuggestedUsers();
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: VertexColors.primary(brightness).withValues(alpha: 0.2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: FaIcon(
+                                    FontAwesomeIcons.userPlus,
+                                    size: 16,
+                                    color: VertexColors.primary(brightness),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Kişiler Öner',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: VertexColors.primary(brightness),
+                                  ),
+                                ),
+                                const Spacer(),
+                                Icon(
+                                  _showSuggestions ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                  color: VertexColors.primary(brightness),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Suggested Users List
+                      if (_showSuggestions)
+                        SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              if (index == _suggestedUsers.length) {
+                                return _isLoadingUsers
+                                    ? const Padding(
+                                        padding: EdgeInsets.all(16.0),
+                                        child: Center(child: CircularProgressIndicator()),
+                                      )
+                                    : const SizedBox.shrink();
+                              }
+
+                              final user = _suggestedUsers[index];
+                              return _buildUserTile(user, brightness, isDark);
+                            },
+                            childCount: _suggestedUsers.length + (_hasMoreUsers ? 1 : 0),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildRecentChatsStream(Brightness brightness, bool isDark) {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: _chatService.getRecentChats(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.all(24.0),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          );
+        }
+
+        final chats = snapshot.data ?? [];
+        if (chats.isEmpty) {
+          return SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
+              child: Text(
+                'Henüz kimseyle konuşmadınız, hemen sohbete başlayın.',
+                style: GoogleFonts.inter(
+                  color: VertexColors.textMuted(brightness),
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          );
+        }
+
+        return SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) {
+              final chat = chats[index];
+              return FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance.collection('users').doc(chat['otherUserId']).get(),
+                builder: (context, userSnapshot) {
+                  if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
+                    return const SizedBox.shrink();
+                  }
+                  final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+                  userData['uid'] = userSnapshot.data!.id; // ensure ID is passed
+                  return _buildUserTile(userData, brightness, isDark);
+                },
+              );
+            },
+            childCount: chats.length,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildUserTile(Map<String, dynamic> user, Brightness brightness, bool isDark) {
+    final isOnline = user['isOnline'] == true;
+    String displayName = (user['name'] ?? '').toString().trim();
+    if (displayName.isEmpty) {
+      displayName = (user['username'] ?? user['email'] ?? 'İsimsiz Kullanıcı').toString().trim();
+    }
+    
+    // Some endpoints may return 'uid' or 'userId' or 'id'
+    final uid = user['uid'] ?? user['userId'] ?? user['id'] ?? '';
+
+    return Card(
+      color: VertexColors.glassBg(brightness),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: VertexColors.glassBorder(brightness)),
+      ),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: ListTile(
+        leading: Stack(
+          children: [
+            CircleAvatar(
+              backgroundColor: VertexColors.primary(brightness).withValues(alpha: 0.2),
+              child: Text(
+                displayName.isNotEmpty ? displayName.substring(0, 1).toUpperCase() : '?',
+                style: GoogleFonts.inter(
+                  color: VertexColors.primary(brightness),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            if (isOnline)
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: VertexColors.bgCard(brightness),
+                      width: 2,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        title: Text(
+          displayName,
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white : Colors.black,
+          ),
+        ),
+        subtitle: user['username'] != null
+            ? Text(
+                '@${user['username']}',
+                style: GoogleFonts.inter(
+                  color: VertexColors.textMuted(brightness),
+                  fontSize: 12,
+                ),
+              )
+            : null,
+        trailing: FaIcon(
+          FontAwesomeIcons.chevronRight,
+          color: VertexColors.textMuted(brightness),
+          size: 16,
+        ),
+        onTap: () {
+          if (uid.isEmpty) return;
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ChatDetailScreen(
+                receiverId: uid,
+                receiverName: displayName,
+              ),
+            ),
+          );
+        },
       ),
     );
   }

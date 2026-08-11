@@ -3,8 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shimmer/shimmer.dart';
 import 'theme/theme.dart';
 import 'screens/login.dart';
-import 'screens/home.dart';
+import 'screens/chat_list_screen.dart';
 import 'services/auth.dart';
+import 'main.dart' show themeNotifier;
 
 /// Root application widget
 /// Handles authentication state and routing
@@ -42,12 +43,15 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Vertex Edge',
-      debugShowCheckedModeBanner: false,
-      theme: VertexTheme.light,
-      darkTheme: VertexTheme.dark,
-      themeMode: ThemeMode.dark, // Default to dark mode (Vertex style)
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeNotifier,
+      builder: (context, currentThemeMode, child) {
+        return MaterialApp(
+          title: 'Vertex Edge',
+          debugShowCheckedModeBanner: false,
+          theme: VertexTheme.light,
+          darkTheme: VertexTheme.dark,
+          themeMode: currentThemeMode,
       home: StreamBuilder<User?>(
         stream: _authService.authStateChanges,
         builder: (context, snapshot) {
@@ -71,12 +75,13 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
               }
 
               final userData = userDataSnapshot.data;
-              return HomeScreen(
+              return ChatListScreen(
                 userName: userData?['name'] ??
                     snapshot.data?.displayName ??
                     'Vertex Üyesi',
                 userRole: userData?['role'] ?? 'Üye',
                 userEmail: snapshot.data?.email ?? '',
+                isVertex: userData?['isVertex'] == true,
               );
             },
           );

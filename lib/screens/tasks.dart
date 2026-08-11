@@ -9,11 +9,13 @@ import '../widgets/text.dart';
 class TasksScreen extends StatefulWidget {
   final String userName;
   final String userRole;
+  final bool isEmbedded;
 
   const TasksScreen({
     super.key,
     required this.userName,
     required this.userRole,
+    this.isEmbedded = false,
   });
 
   @override
@@ -70,8 +72,9 @@ class _TasksScreenState extends State<TasksScreen>
     final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
 
-    return SafeArea(
-      child: CustomScrollView(
+    final content = CustomScrollView(
+        shrinkWrap: widget.isEmbedded,
+        physics: widget.isEmbedded ? const NeverScrollableScrollPhysics() : null,
         slivers: [
           // ─── Header ───
           SliverToBoxAdapter(

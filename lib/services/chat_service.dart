@@ -116,6 +116,31 @@ class ChatService {
     return ids.join('_');
   }
 
+  /// Get recent chats for the current user
+  Stream<List<Map<String, dynamic>>> getRecentChats() {
+    return _firestore
+        .collection('chats')
+        .where('participants', arrayContains: currentUserId)
+        .orderBy('lastMessageTimestamp', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        final participants = List<String>.from(data['participants'] ?? []);
+        // Find the other user's ID
+        final otherUserId = participants.firstWhere(
+          (id) => id != currentUserId,
+          orElse: () => '',
+        );
+        return {
+          'chatId': doc.id,
+          'otherUserId': otherUserId,
+          'lastMessageTimestamp': data['lastMessageTimestamp'],
+        };
+      }).where((chat) => chat['otherUserId'].isNotEmpty).toList();
+    });
+  }
+
   /// Get messages stream for a specific chat, decrypted
   Stream<List<Map<String, dynamic>>> getMessages(String receiverId) {
     final chatId = getChatId(currentUserId, receiverId);
@@ -210,14 +235,12 @@ class ChatService {
         .doc(chatId)
         .collection('messages')
         .add(messageData);
-        
-    // Also trigger the cloud function by writing to global messages (optional, or CF listens to chats/{chatId}/messages/{msgId})
-    // Let's write a trigger doc to global messages for FCM
-    await _firestore.collection('messages').add({
-      'senderId': currentUserId,
-      'receiverId': receiverId,
-      'timestamp': FieldValue.serverTimestamp(),
-    });
+    // Update the main chat document to track participants and latest timestamp
+    // This allows querying recent chats for the user
+    await _firestore.collection('chats').doc(chatId).set({
+      'participants': [currentUserId, receiverId],
+      'lastMessageTimestamp': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   /// Send a file/image/audio securely

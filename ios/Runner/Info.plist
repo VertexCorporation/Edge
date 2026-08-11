@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSContactsUsageDescription</key>
+	<string>Rehberindeki Edge kullanıcılarını önermek için rehbere erişim gereklidir.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
@@ -28,13 +30,19 @@
 	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
+	<key>NSContactsUsageDescription</key>
+	<string>Rehberindeki Edge kullanıcılarını önermek için rehbere erişim gereklidir.</string>
 		<key>UIApplicationSupportsMultipleScenes</key>
 		<false/>
 		<key>UISceneConfigurations</key>
 		<dict>
+	<key>NSContactsUsageDescription</key>
+	<string>Rehberindeki Edge kullanıcılarını önermek için rehbere erişim gereklidir.</string>
 			<key>UIWindowSceneSessionRoleApplication</key>
 			<array>
 				<dict>
+	<key>NSContactsUsageDescription</key>
+	<string>Rehberindeki Edge kullanıcılarını önermek için rehbere erişim gereklidir.</string>
 					<key>UISceneClassName</key>
 					<string>UIWindowScene</string>
 					<key>UISceneConfigurationName</key>
