@@ -84,10 +84,12 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
                 isVertex: userData?['isVertex'] == true,
               );
             },
-          );
+          ); // Closes FutureBuilder
         },
-      ),
-    );
+      ), // Closes StreamBuilder
+        ); // Closes MaterialApp
+      },
+    ); // Closes ValueListenableBuilder
   }
 }
 

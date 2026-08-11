@@ -149,8 +149,9 @@ class _TasksScreenState extends State<TasksScreen>
             ),
           ),
         ],
-      ),
-    );
+      );
+
+    return widget.isEmbedded ? content : SafeArea(child: content);
   }
 
   Widget _buildWelcomeCard(Brightness brightness, bool isDark) {

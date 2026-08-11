@@ -64,8 +64,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
     try {
       await _chatService.initializeKeys();
       if (!kIsWeb) {
-        if (await FlutterContacts.requestPermission()) {
-          _phoneContacts = await FlutterContacts.getContacts(withProperties: true);
+        if (await FlutterContacts.permissions.request(PermissionType.read) == PermissionStatus.granted) {
+          _phoneContacts = await FlutterContacts.getAll(
+            properties: {ContactProperty.phone, ContactProperty.email},
+          );
         }
       }
     } catch (e) {
@@ -121,9 +123,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
           newUsers.sort((a, b) {
             final aEmail = (a['email'] ?? '').toString().toLowerCase();
             final bEmail = (b['email'] ?? '').toString().toLowerCase();
+            final aPhone = (a['phone'] ?? '').toString().replaceAll(RegExp(r'\D'), '');
+            final bPhone = (b['phone'] ?? '').toString().replaceAll(RegExp(r'\D'), '');
             
-            final aInContacts = emails.contains(aEmail);
-            final bInContacts = emails.contains(bEmail);
+            final aInContacts = emails.contains(aEmail) || (aPhone.isNotEmpty && phones.contains(aPhone));
+            final bInContacts = emails.contains(bEmail) || (bPhone.isNotEmpty && phones.contains(bPhone));
 
             if (aInContacts && !bInContacts) return -1;
             if (!aInContacts && bInContacts) return 1;

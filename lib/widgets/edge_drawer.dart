@@ -156,7 +156,8 @@ class EdgeDrawer extends StatelessWidget {
           ),
         ),
         value: isDark,
-        activeColor: VertexColors.primary(brightness),
+        activeTrackColor: VertexColors.primary(brightness).withValues(alpha: 0.5),
+        activeThumbColor: VertexColors.primary(brightness),
         onChanged: (val) {
           themeNotifier.value = val ? ThemeMode.dark : ThemeMode.light;
         },
