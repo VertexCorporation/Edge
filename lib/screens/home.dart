@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/colors.dart';
 import '../widgets/background.dart';
 import 'tasks.dart';
-import 'communication.dart';
+import 'chat_list_screen.dart';
 import 'account.dart';
 
 /// Main home screen with bottom navigation bar
@@ -62,12 +62,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final isDark = brightness == Brightness.dark;
 
     return Scaffold(
+      extendBody: true,
       body: GeoBackground(
         child: PageView(
           controller: _pageController,
           onPageChanged: (index) => setState(() => _currentIndex = index),
           children: [
-            CommunicationScreen(userName: widget.userName),
+            const ChatListScreen(),
             TasksScreen(
               userName: widget.userName,
               userRole: widget.userRole,
@@ -94,16 +95,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         curve: Curves.easeOutCubic,
       )),
       child: Container(
-        margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        margin: const EdgeInsets.only(left: 20, right: 20, bottom: 32),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(40),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
               height: 72,
               decoration: BoxDecoration(
                 color: VertexColors.glassBg(brightness),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(40),
                 border: Border.all(
                   color: VertexColors.glassBorder(brightness),
                 ),
@@ -177,7 +178,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 color: isDark
                     ? Colors.white.withValues(alpha: 0.08)
                     : Colors.black.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(30),
               )
             : null,
         child: Column(

@@ -2,13 +2,11 @@ import 'dart:ui' as ui;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../theme/colors.dart';
-import '../widgets/background.dart';
 import '../widgets/button.dart';
 import '../widgets/input.dart';
-import '../widgets/text.dart';
 import '../services/auth.dart';
-
 /// Login screen with Vertex branding
 /// Features: geo background, glassmorphic card, gradient text, animated logo
 class LoginScreen extends StatefulWidget {
@@ -28,6 +26,8 @@ class _LoginScreenState extends State<LoginScreen>
 
   bool _isLogin = true;
   bool _isLoading = false;
+  bool _isLoadingGoogle = false;
+  bool _isLoadingApple = false;
   bool _obscurePassword = true;
   String? _errorMessage;
 
@@ -37,6 +37,9 @@ class _LoginScreenState extends State<LoginScreen>
   
   late AnimationController _shakeController;
   late Animation<double> _shakeAnimation;
+
+  late AnimationController _fillController;
+  late Animation<double> _fillAnimation;
 
   @override
   void initState() {
@@ -65,6 +68,15 @@ class _LoginScreenState extends State<LoginScreen>
       CurvedAnimation(parent: _shakeController, curve: Curves.elasticIn),
     );
 
+    _fillController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _fillAnimation = CurvedAnimation(
+      parent: _fillController,
+      curve: Curves.easeInOut,
+    );
+
     _fadeController.forward();
   }
 
@@ -75,6 +87,7 @@ class _LoginScreenState extends State<LoginScreen>
     _passwordController.dispose();
     _fadeController.dispose();
     _shakeController.dispose();
+    _fillController.dispose();
     super.dispose();
   }
 
@@ -85,6 +98,7 @@ class _LoginScreenState extends State<LoginScreen>
       _isLoading = true;
       _errorMessage = null;
     });
+    _fillController.forward();
 
     final result = _isLogin
         ? await _authService.signIn(
@@ -102,6 +116,7 @@ class _LoginScreenState extends State<LoginScreen>
     if (result.isSuccess) {
       // Navigation will be handled by auth state listener in app.dart
     } else {
+      _fillController.reverse();
       setState(() {
         _isLoading = false;
         _errorMessage = result.errorMessage;
@@ -129,9 +144,69 @@ class _LoginScreenState extends State<LoginScreen>
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
-      body: GeoBackground(
-        child: Center(
+      backgroundColor: const Color(0xFF101010),
+      body: Stack(
+        children: [
+          // Background Blurs
+          AnimatedBuilder(
+            animation: _fillAnimation,
+            builder: (context, child) {
+              final fillValue = _fillAnimation.value;
+              final topSize = 300.0 + (screenHeight * fillValue);
+              final bottomSize = 400.0 + (screenHeight * fillValue);
+              
+              return Stack(
+                children: [
+                  // Top light blue blur
+                  Positioned(
+                    top: -150 - (fillValue * 100),
+                    left: -100 - (fillValue * 100),
+                    child: Container(
+                      width: topSize,
+                      height: topSize,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.transparent,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF00E5FF).withValues(alpha: 0.15 + (fillValue * 0.85)),
+                            blurRadius: 100 - (fillValue * 50),
+                            spreadRadius: 20,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Bottom dark blue blur
+                  Positioned(
+                    bottom: -200 - (fillValue * 100),
+                    right: -100 - (fillValue * 100),
+                    child: Container(
+                      width: bottomSize,
+                      height: bottomSize,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.transparent,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF2F6BF5).withValues(alpha: 0.15 + (fillValue * 0.85)),
+                            blurRadius: 120 - (fillValue * 60),
+                            spreadRadius: 20,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          
+          // Content
+          Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: FadeTransition(
@@ -184,8 +259,9 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
               ),
             ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -366,13 +442,61 @@ class _LoginScreenState extends State<LoginScreen>
                     key: ValueKey<bool>(_isLogin),
                     label: _isLogin ? 'Giriş Yap' : 'Kayıt Ol',
                     onPressed: _handleAuth,
-                    isLoading: _isLoading,
+                    isLoading: _isLoading && !_isLoadingGoogle && !_isLoadingApple,
                     width: double.infinity,
                     icon: _isLogin ? Icons.arrow_forward_rounded : Icons.person_add_rounded,
                   ),
                 ),
                 
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
+                
+                // OAuth Dividers
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: VertexColors.glassBorder(brightness))),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'VEYA',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: VertexColors.textMuted(brightness),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: VertexColors.glassBorder(brightness))),
+                  ],
+                ),
+                
+                const SizedBox(height: 24),
+
+                // OAuth Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildOAuthButton(
+                        icon: FontAwesomeIcons.google,
+                        label: 'Google ile devam et',
+                        isLoading: _isLoadingGoogle,
+                        onPressed: _handleGoogleSignIn,
+                        brightness: brightness,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildOAuthButton(
+                        icon: FontAwesomeIcons.apple,
+                        label: 'Apple ile devam et',
+                        isLoading: _isLoadingApple,
+                        onPressed: _handleAppleSignIn,
+                        brightness: brightness,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 24),
                 
                 // Toggle mode button
                 Center(
@@ -398,6 +522,121 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildOAuthButton({
+    required dynamic icon,
+    required String label,
+    required bool isLoading,
+    required VoidCallback onPressed,
+    required Brightness brightness,
+  }) {
+    final isDark = brightness == Brightness.dark;
+    return Material(
+      color: VertexColors.glassBg(brightness),
+      borderRadius: BorderRadius.circular(12),
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: VertexColors.glassBorder(brightness)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: isLoading || _isLoading ? null : onPressed,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: isLoading
+              ? const SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    FaIcon(icon, size: 20, color: isDark ? Colors.white : Colors.black),
+                    const SizedBox(width: 8),
+                    Text(
+                      label,
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() {
+      _isLoadingGoogle = true;
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    _fillController.forward();
+
+    final result = await _authService.signInWithGoogle();
+
+    if (!mounted) return;
+
+    if (!result.isSuccess) {
+      _fillController.reverse();
+      setState(() {
+        _isLoadingGoogle = false;
+        _isLoading = false;
+        _errorMessage = result.errorMessage;
+      });
+      _shakeController.forward(from: 0);
+    }
+  }
+
+  Future<void> _handleAppleSignIn() async {
+    setState(() {
+      _isLoadingApple = true;
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    _fillController.forward();
+
+    final result = await _authService.signInWithApple();
+
+    if (!mounted) return;
+
+    if (!result.isSuccess) {
+      _fillController.reverse();
+      setState(() {
+        _isLoadingApple = false;
+        _isLoading = false;
+        _errorMessage = result.errorMessage;
+      });
+      _shakeController.forward(from: 0);
+    }
+  }
+}
+
+extension BlurExtension on Widget {
+  Widget applyBlur({double sigma = 10}) {
+    return ImageFilterWidget(sigma: sigma, child: this);
+  }
+}
+
+class ImageFilterWidget extends StatelessWidget {
+  final double sigma;
+  final Widget child;
+
+  const ImageFilterWidget({super.key, required this.sigma, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+        child: child,
       ),
     );
   }

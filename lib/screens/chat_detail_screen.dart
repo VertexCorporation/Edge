@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -63,21 +64,27 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   Future<void> _pickAndSendImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
-      _sendFile(File(image.path), 'image');
+      final bytes = await image.readAsBytes();
+      _sendFile(bytes, 'image');
     }
   }
 
   Future<void> _pickAndSendFile() async {
-    final FilePickerResult? result = await FilePicker.platform.pickFiles();
-    if (result != null && result.files.single.path != null) {
-      _sendFile(File(result.files.single.path!), 'file');
+    final FilePickerResult? result = await FilePicker.platform.pickFiles(withData: true);
+    if (result != null) {
+      if (result.files.single.bytes != null) {
+        _sendFile(result.files.single.bytes!, 'file');
+      } else if (result.files.single.path != null) {
+        final bytes = await File(result.files.single.path!).readAsBytes();
+        _sendFile(bytes, 'file');
+      }
     }
   }
 
-  Future<void> _sendFile(File file, String type) async {
+  Future<void> _sendFile(Uint8List bytes, String type) async {
     setState(() => _isSending = true);
     try {
-      await _chatService.sendFile(widget.receiverId, file, type);
+      await _chatService.sendFile(widget.receiverId, bytes, type);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Dosya gönderim hatası: $e')));
@@ -106,7 +113,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       final path = await _record.stop();
       setState(() => _isRecording = false);
       if (path != null) {
-        _sendFile(File(path), 'audio');
+        final bytes = await File(path).readAsBytes();
+        _sendFile(bytes, 'audio');
       }
     } catch (e) {
       debugPrint('Kayıt durdurma hatası: $e');

@@ -12,6 +12,7 @@ class ChatListScreen extends StatefulWidget {
   State<ChatListScreen> createState() => _ChatListScreenState();
 }
 
+class _ChatListScreenState extends State<ChatListScreen> {
   final ChatService _chatService = ChatService();
   bool _isInitializingKeys = true;
   bool _isSearching = false;

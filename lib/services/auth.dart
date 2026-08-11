@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 /// Authentication service for Vertex Edge
 /// Handles Firebase Auth + Firestore isVertex verification
 class AuthService {
@@ -34,7 +35,7 @@ class AuthService {
     try {
       // 1. Authenticate with Firebase Auth
       final credential = await _auth.signInWithEmailAndPassword(
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         password: password,
       );
 
@@ -62,7 +63,7 @@ class AuthService {
   Future<AuthResult> createUser(String email, String password, String name) async {
     try {
       final credential = await _auth.createUserWithEmailAndPassword(
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         password: password,
       );
 
@@ -76,7 +77,7 @@ class AuthService {
       // Create user document
       await _firestore.collection('users').doc(user.uid).set({
         'name': name,
-        'email': email.trim(),
+        'email': email.trim().toLowerCase(),
         'role': 'Üye',
         'isVertex': false,
         'isOnline': true,
@@ -94,6 +95,102 @@ class AuthService {
     } catch (e) {
       return AuthResult.error('Beklenmeyen bir hata oluştu: $e');
     }
+  }
+
+  /// Sign in with Google
+  Future<AuthResult> signInWithGoogle() async {
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        return AuthResult.error('Google girişi iptal edildi.');
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final userCredential = await _auth.signInWithCredential(credential);
+      final user = userCredential.user;
+      
+      if (user == null) {
+        return AuthResult.error('Google girişi başarısız.');
+      }
+
+      return await _handleOAuthLogin(user);
+    } on FirebaseAuthException catch (e) {
+      return AuthResult.error(_getAuthErrorMessage(e.code));
+    } catch (e) {
+      return AuthResult.error('Beklenmeyen bir hata oluştu: $e');
+    }
+  }
+
+  /// Sign in with Apple
+  Future<AuthResult> signInWithApple() async {
+    try {
+      final AuthorizationCredentialAppleID appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      final credential = OAuthProvider('apple.com').credential(
+        idToken: appleCredential.identityToken,
+        accessToken: appleCredential.authorizationCode,
+      );
+
+      final userCredential = await _auth.signInWithCredential(credential);
+      final user = userCredential.user;
+
+      if (user == null) {
+        return AuthResult.error('Apple girişi başarısız.');
+      }
+
+      // If Apple returned a name, we can update it
+      if (appleCredential.givenName != null || appleCredential.familyName != null) {
+        final name = '${appleCredential.givenName ?? ''} ${appleCredential.familyName ?? ''}'.trim();
+        if (name.isNotEmpty) {
+          await user.updateDisplayName(name);
+        }
+      }
+
+      return await _handleOAuthLogin(user);
+    } on FirebaseAuthException catch (e) {
+      return AuthResult.error(_getAuthErrorMessage(e.code));
+    } catch (e) {
+      return AuthResult.error('Beklenmeyen bir hata oluştu: $e');
+    }
+  }
+
+  Future<AuthResult> _handleOAuthLogin(User user) async {
+    final doc = await _firestore.collection('users').doc(user.uid).get();
+    String name = user.displayName ?? 'Kullanıcı';
+    String role = 'Üye';
+
+    if (!doc.exists) {
+      // First time login
+      await _firestore.collection('users').doc(user.uid).set({
+        'name': name,
+        'email': user.email ?? '',
+        'role': role,
+        'isVertex': false,
+        'isOnline': true,
+        'createdAt': FieldValue.serverTimestamp(),
+        'lastSeen': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } else {
+      name = doc.data()?['name'] ?? name;
+      role = doc.data()?['role'] ?? role;
+      await updateOnlineStatus(true);
+    }
+
+    return AuthResult.success(
+      user: user,
+      name: name,
+      role: role,
+    );
   }
 
   /// Check if user has isVertex: true in Firestore or is an admin

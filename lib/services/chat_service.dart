@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -158,8 +157,7 @@ class ChatService {
   }
 
   /// Send a file/image/audio securely
-  Future<void> sendFile(String receiverId, File file, String type) async {
-    final bytes = await file.readAsBytes();
+  Future<void> sendFile(String receiverId, Uint8List bytes, String type) async {
 
     // Generate AES key for file encryption
     final aesKey = enc.Key.fromSecureRandom(32);
