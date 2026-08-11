@@ -41,7 +41,7 @@ class ChatService {
     }
   }
 
-  /// Get list of users to chat with
+  /// Get list of users to chat with (Stream - Deprecated for large lists)
   Stream<List<Map<String, dynamic>>> getUsers() {
     return _firestore
         .collection('usernames')
@@ -56,6 +56,57 @@ class ChatService {
               })
           .toList();
     });
+  }
+
+  /// Get a paginated list of users, filtering out those without a public key
+  Future<Map<String, dynamic>> getUsersPaginated({
+    DocumentSnapshot? lastDocument,
+    int limit = 20,
+    String? searchQuery,
+  }) async {
+    Query query = _firestore.collection('usernames');
+
+    if (searchQuery != null && searchQuery.isNotEmpty) {
+      // If searching, we range-filter on document ID (username)
+      final searchLower = searchQuery.toLowerCase();
+      query = query
+          .where(FieldPath.documentId, isGreaterThanOrEqualTo: searchLower)
+          .where(FieldPath.documentId, isLessThanOrEqualTo: '$searchLower\uf8ff')
+          .orderBy(FieldPath.documentId);
+    } else {
+      // If not searching, orderBy publicKey filters out docs where it is null/missing
+      // We also order by documentId as a secondary tie-breaker for stable pagination
+      query = query.orderBy('publicKey').orderBy(FieldPath.documentId);
+    }
+
+    if (lastDocument != null) {
+      query = query.startAfterDocument(lastDocument);
+    }
+
+    query = query.limit(limit);
+
+    final snapshot = await query.get();
+
+    List<Map<String, dynamic>> users = [];
+    for (var doc in snapshot.docs) {
+      final data = doc.data() as Map<String, dynamic>;
+      
+      // Client-side filters
+      if (data['userId'] == currentUserId) continue; // Skip self
+      if (data['publicKey'] == null) continue; // Skip users without keys (useful for search query)
+      
+      users.add({
+        'id': data['userId'],
+        'username': doc.id,
+        ...data,
+      });
+    }
+
+    return {
+      'users': users,
+      'lastDocument': snapshot.docs.isNotEmpty ? snapshot.docs.last : null,
+      'hasMore': snapshot.docs.length == limit,
+    };
   }
 
   /// Get or create a chat ID for two users
