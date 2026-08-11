@@ -26,14 +26,28 @@ class AuthService {
       } catch (e) {
         // Silently fail if unable to update status in users collection
       }
-      try {
-        await _firestore.collection('vertex_users').doc(user.uid).set({
+      await _syncUsernameProfile(user, isOnline: isOnline);
+    }
+  }
+
+  /// Syncs public profile info to the usernames collection if the user has a username
+  Future<void> _syncUsernameProfile(User user, {String? name, String? email, String? role, bool isOnline = true}) async {
+    try {
+      final query = await _firestore.collection('usernames').where('userId', '==', user.uid).limit(1).get();
+      if (query.docs.isNotEmpty) {
+        final docId = query.docs.first.id;
+        final data = <String, dynamic>{
           'isOnline': isOnline,
           'lastSeen': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-      } catch (e) {
-        // Silently fail if unable to update status in vertex_users
+        };
+        if (name != null) data['name'] = name;
+        if (email != null) data['email'] = email;
+        if (role != null) data['role'] = role;
+
+        await _firestore.collection('usernames').doc(docId).set(data, SetOptions(merge: true));
       }
+    } catch (e) {
+      // Ignore if it fails
     }
   }
 
@@ -93,15 +107,7 @@ class AuthService {
         'lastSeen': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      // Create vertex_users public profile
-      await _firestore.collection('vertex_users').doc(user.uid).set({
-        'name': name,
-        'email': email.trim().toLowerCase(),
-        'role': 'Üye',
-        'isOnline': true,
-        'createdAt': FieldValue.serverTimestamp(),
-        'lastSeen': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      await _syncUsernameProfile(user, name: name, email: email.trim().toLowerCase(), role: 'Üye', isOnline: true);
 
       return AuthResult.success(
         user: user,
@@ -204,14 +210,7 @@ class AuthService {
       await updateOnlineStatus(true);
     }
 
-    // Always ensure vertex_users public profile is up-to-date
-    await _firestore.collection('vertex_users').doc(user.uid).set({
-      'name': name,
-      'email': user.email ?? '',
-      'role': role,
-      'isOnline': true,
-      'lastSeen': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    await _syncUsernameProfile(user, name: name, email: user.email ?? '', role: role, isOnline: true);
 
     return AuthResult.success(
       user: user,

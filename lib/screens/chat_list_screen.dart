@@ -133,7 +133,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       final users = allUsers.where((u) {
                         String name = (u['name'] ?? '').toString().trim();
                         if (name.isEmpty) {
-                          name = (u['email'] ?? 'İsimsiz Kullanıcı').toString().trim();
+                          name = (u['username'] ?? u['email'] ?? 'İsimsiz Kullanıcı').toString().trim();
                         }
                         return name.toLowerCase().contains(_searchQuery);
                       }).toList();
@@ -172,7 +172,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                                       builder: (context) {
                                         String displayName = (user['name'] ?? '').toString().trim();
                                         if (displayName.isEmpty) {
-                                          displayName = (user['email'] ?? 'İsimsiz').toString().trim();
+                                          displayName = (user['username'] ?? user['email'] ?? 'İsimsiz').toString().trim();
                                         }
                                         final initial = displayName.isNotEmpty ? displayName.substring(0, 1).toUpperCase() : '?';
                                         
@@ -209,7 +209,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                                 builder: (context) {
                                   String displayName = (user['name'] ?? '').toString().trim();
                                   if (displayName.isEmpty) {
-                                    displayName = (user['email'] ?? 'İsimsiz Kullanıcı').toString().trim();
+                                    displayName = (user['username'] ?? user['email'] ?? 'İsimsiz Kullanıcı').toString().trim();
                                   }
                                   return Text(
                                     displayName,
@@ -234,7 +234,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                                 onTap: () {
                                   String displayName = (user['name'] ?? '').toString().trim();
                                   if (displayName.isEmpty) {
-                                    displayName = (user['email'] ?? 'İsimsiz').toString().trim();
+                                    displayName = (user['username'] ?? user['email'] ?? 'İsimsiz').toString().trim();
                                   }
                                   Navigator.push(
                                     context,

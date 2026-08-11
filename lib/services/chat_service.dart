@@ -18,20 +18,25 @@ class ChatService {
   /// Ensure the current user has keys generated and public key is in Firestore
   Future<void> initializeKeys() async {
     final hasKeys = await _cryptoService.hasKeys();
+    String? publicKey;
+    
     if (!hasKeys) {
-      final publicKeyPem = await _cryptoService.generateAndStoreKeys();
-      await _firestore.collection('vertex_users').doc(currentUserId).set(
-        {'publicKey': publicKeyPem},
-        SetOptions(merge: true),
-      );
+      publicKey = await _cryptoService.generateAndStoreKeys();
     } else {
-      // Ensure it's in firestore
-      final publicKey = await _cryptoService.getPublicKey();
-      if (publicKey != null) {
-        await _firestore.collection('vertex_users').doc(currentUserId).set(
-          {'publicKey': publicKey},
-          SetOptions(merge: true),
-        );
+      publicKey = await _cryptoService.getPublicKey();
+    }
+    
+    if (publicKey != null) {
+      try {
+        final query = await _firestore.collection('usernames').where('userId', '==', currentUserId).limit(1).get();
+        if (query.docs.isNotEmpty) {
+          await _firestore.collection('usernames').doc(query.docs.first.id).set(
+            {'publicKey': publicKey},
+            SetOptions(merge: true),
+          );
+        }
+      } catch (e) {
+        // Silently fail if unable to write keys
       }
     }
   }
@@ -39,12 +44,16 @@ class ChatService {
   /// Get list of users to chat with
   Stream<List<Map<String, dynamic>>> getUsers() {
     return _firestore
-        .collection('vertex_users')
+        .collection('usernames')
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
-          .where((doc) => doc.id != currentUserId)
-          .map((doc) => {'id': doc.id, ...doc.data()})
+          .where((doc) => doc.data()['userId'] != currentUserId)
+          .map((doc) => {
+                'id': doc.data()['userId'], 
+                'username': doc.id,
+                ...doc.data()
+              })
           .toList();
     });
   }
@@ -111,9 +120,13 @@ class ChatService {
   Future<void> sendMessage(String receiverId, String text, {String type = 'text'}) async {
     final chatId = getChatId(currentUserId, receiverId);
     
-    // Get receiver's public key
-    final receiverDoc = await _firestore.collection('vertex_users').doc(receiverId).get();
-    final receiverPublicKey = receiverDoc.data()?['publicKey'];
+    // Get receiver's public key by querying usernames collection for their userId
+    final receiverQuery = await _firestore.collection('usernames').where('userId', '==', receiverId).limit(1).get();
+    if (receiverQuery.docs.isEmpty) {
+      throw Exception('Alıcı bulunamadı (Kullanıcı adı yok).');
+    }
+    
+    final receiverPublicKey = receiverQuery.docs.first.data()['publicKey'];
     
     if (receiverPublicKey == null) {
       throw Exception('Alıcının genel anahtarı (Public Key) bulunamadı.');
