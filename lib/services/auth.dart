@@ -225,8 +225,8 @@ class AuthService {
 
   /// Check if user has isVertex: true in Firestore or is an admin
   Future<bool> checkIsVertex(String uid) async {
+    // First check if user has admin claim
     try {
-      // First check if user has admin claim
       final user = _auth.currentUser;
       if (user != null && user.uid == uid) {
         final idTokenResult = await user.getIdTokenResult();
@@ -236,17 +236,41 @@ class AuthService {
           return true;
         }
       }
-
-      final doc = await _firestore.collection('users').doc(uid).get();
-      if (!doc.exists) return false;
-
-      final data = doc.data();
-      if (data == null) return false;
-
-      return data['isVertex'] == true;
     } catch (e) {
-      return false;
+      debugPrint('Error checking admin claims: $e');
     }
+
+    // Retry logic to handle Cloud Function delay and WebChannel errors
+    int retries = 4;
+    while (retries > 0) {
+      try {
+        final doc = await _firestore.collection('users').doc(uid).get();
+        if (doc.exists) {
+          final data = doc.data();
+          if (data != null && data['isVertex'] == true) {
+            return true;
+          }
+          // If document exists but isVertex is not true, we can definitively return false
+          if (data != null && data.containsKey('isVertex')) {
+            return false;
+          }
+        }
+        
+        // If document doesn't exist yet, wait and retry (Cloud Function might be running)
+        retries--;
+        if (retries > 0) {
+          await Future.delayed(const Duration(seconds: 1));
+        }
+      } catch (e) {
+        debugPrint('Error checking isVertex (Retries left: $retries): $e');
+        retries--;
+        if (retries > 0) {
+          await Future.delayed(const Duration(seconds: 1));
+        }
+      }
+    }
+    
+    return false;
   }
 
   /// Get user profile data from Firestore
