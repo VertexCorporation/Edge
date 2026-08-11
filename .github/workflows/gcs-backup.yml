@@ -88,7 +88,7 @@ jobs:
           
           echo "Exporting Firebase Auth users..."
           # Uses the GCP Service Account already authenticated by google-github-actions/auth
-          firebase auth:export $AUTH_FILE --format=json --project=vertex-ai-1618
+          npx --yes firebase-tools auth:export $AUTH_FILE --format=json --project=vertex-ai-1618
           
           echo "Uploading Auth backup to GCS..."
           gsutil cp $AUTH_FILE ${BUCKET}/${PREFIX}/${AUTH_FILE}

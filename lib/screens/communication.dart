@@ -63,7 +63,6 @@ class _CommunicationScreenState extends State<CommunicationScreen>
     _TeamMember(name: 'Mustafa Çakı', role: 'CEO', initial: 'M'),
     _TeamMember(name: 'Ata Türkçü', role: 'CTO', initial: 'A'),
     _TeamMember(name: 'Murat Coşkun', role: 'Baş Mimar', initial: 'M'),
-    _TeamMember(name: 'Fazlı Özlemiş', role: 'Yazılımcı', initial: 'F'),
   ];
 
   @override

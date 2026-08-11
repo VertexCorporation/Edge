@@ -20,11 +20,13 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen>
     with TickerProviderStateMixin {
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   final _authService = AuthService();
 
+  bool _isLogin = true;
   bool _isLoading = false;
   bool _obscurePassword = true;
   String? _errorMessage;
@@ -68,6 +70,7 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _fadeController.dispose();
@@ -75,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
+  Future<void> _handleAuth() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -83,10 +86,16 @@ class _LoginScreenState extends State<LoginScreen>
       _errorMessage = null;
     });
 
-    final result = await _authService.signIn(
-      _emailController.text,
-      _passwordController.text,
-    );
+    final result = _isLogin
+        ? await _authService.signIn(
+            _emailController.text,
+            _passwordController.text,
+          )
+        : await _authService.createUser(
+            _emailController.text,
+            _passwordController.text,
+            _nameController.text.isEmpty ? 'Kullanıcı' : _nameController.text,
+          );
 
     if (!mounted) return;
 
@@ -135,15 +144,11 @@ class _LoginScreenState extends State<LoginScreen>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // ─── Logo & Branding ───
-                        _buildLogo(isDark),
-                        const SizedBox(height: 48),
-
                         // ─── Login Card ───
                         AnimatedBuilder(
                           animation: _shakeAnimation,
                           builder: (context, child) {
-                            final sineValue = 
+                            final _ =
                                 (ui.PlatformDispatcher.instance.views.first.physicalSize.width > 0) ? 
                                   // Just a simple sine wave for shaking
                                   (1 - (_shakeController.value)) * 
@@ -185,56 +190,7 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildLogo(bool isDark) {
-    return Column(
-      children: [
-        // Vertex Logo glow
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.05)
-                : Colors.black.withValues(alpha: 0.05),
-            boxShadow: [
-              BoxShadow(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.black.withValues(alpha: 0.05),
-                blurRadius: 40,
-                spreadRadius: 10,
-              ),
-            ],
-          ),
-          child: Icon(
-            Icons.hexagon_outlined,
-            size: 36,
-            color: isDark ? Colors.white : Colors.black,
-          ),
-        ),
-        const SizedBox(height: 20),
-        // "Edge" gradient text
-        const GradientText(
-          'Edge',
-          style: TextStyle(
-            fontSize: 36,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -1,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Vertex İç Yönetim Paneli',
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            color: VertexColors.textMutedDark.withValues(alpha: 0.7),
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-      ],
-    );
-  }
+
 
   Widget _buildLoginCard(Brightness brightness, bool isDark) {
     return ClipRRect(
@@ -256,7 +212,7 @@ class _LoginScreenState extends State<LoginScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Giriş Yap',
+                  _isLogin ? 'Giriş Yap' : 'Kayıt Ol',
                   style: GoogleFonts.inter(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
@@ -267,13 +223,40 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Vertex hesabınız ile devam edin',
+                  _isLogin ? 'Vertex hesabınız ile devam edin' : 'Yeni bir hesap oluşturun',
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     color: VertexColors.textMuted(brightness),
                   ),
                 ),
                 const SizedBox(height: 28),
+
+                // Name input (only for Sign Up) with smooth animation
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.fastOutSlowIn,
+                  child: !_isLogin
+                      ? Padding(
+                          padding: const EdgeInsets.only(bottom: 20),
+                          child: VertexInput(
+                            label: 'Ad Soyad',
+                            hint: 'Örn: Ahmet Yılmaz',
+                            controller: _nameController,
+                            prefixIcon: Icon(
+                              Icons.person_outline_rounded,
+                              size: 18,
+                              color: VertexColors.textMuted(brightness),
+                            ),
+                            validator: (value) {
+                              if (!_isLogin && (value == null || value.isEmpty)) {
+                                return 'Ad Soyad gerekli';
+                              }
+                              return null;
+                            },
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
 
                 // Email input
                 VertexInput(
@@ -364,13 +347,52 @@ class _LoginScreenState extends State<LoginScreen>
 
                 const SizedBox(height: 28),
 
-                // Login button
-                VertexButton(
-                  label: 'Giriş Yap',
-                  onPressed: _handleLogin,
-                  isLoading: _isLoading,
-                  width: double.infinity,
-                  icon: Icons.arrow_forward_rounded,
+                // Login/Register button
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  transitionBuilder: (Widget child, Animation<double> animation) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0.0, 0.2),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: VertexButton(
+                    key: ValueKey<bool>(_isLogin),
+                    label: _isLogin ? 'Giriş Yap' : 'Kayıt Ol',
+                    onPressed: _handleAuth,
+                    isLoading: _isLoading,
+                    width: double.infinity,
+                    icon: _isLogin ? Icons.arrow_forward_rounded : Icons.person_add_rounded,
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Toggle mode button
+                Center(
+                  child: TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _isLogin = !_isLogin;
+                        _errorMessage = null;
+                      });
+                    },
+                    child: Text(
+                      _isLogin 
+                          ? 'Hesabınız yok mu? Kayıt Olun' 
+                          : 'Zaten hesabınız var mı? Giriş Yapın',
+                      style: GoogleFonts.inter(
+                        color: VertexColors.primary(brightness),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),

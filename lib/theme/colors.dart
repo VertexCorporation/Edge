@@ -8,17 +8,17 @@ class VertexColors {
   // ═══════════════════════════════════
   //  DARK THEME COLORS
   // ═══════════════════════════════════
-  static const Color bgDark = Color(0xFF050505);
-  static const Color bgSecondaryDark = Color(0xFF0A0A0A);
-  static const Color bgCardDark = Color(0xFF121212);
+  static const Color bgDark = Color(0xFF171717); // #171717
+  static const Color bgSecondaryDark = Color(0xFF2A2A2A);
+  static const Color bgCardDark = Color(0xFF2E2E2E);
   static const Color textMainDark = Color(0xFFFFFFFF);
   static const Color textMutedDark = Color(0xFFD4D4D8);
-  static const Color primaryDark = Color(0xFFFFFFFF);
-  static const Color primaryHoverDark = Color(0xFFE4E4E7);
-  static const Color accentDark = Color(0xFFD4D4D8);
-  static const Color btnTextDark = Color(0xFF000000);
-  static const Color borderDark = Color(0xFF27272A);
-  static const Color glassBgDark = Color(0xCC0A0A0A); // rgba(10,10,10,0.8)
+  static const Color primaryDark = Color(0xFF2F6BF5); // Signal Blue
+  static const Color primaryHoverDark = Color(0xFF4A7DF6);
+  static const Color accentDark = Color(0xFF00E5FF); // Beam Cyan
+  static const Color btnTextDark = Color(0xFFFFFFFF);
+  static const Color borderDark = Color(0xFF3F3F46);
+  static const Color glassBgDark = Color(0xCC222222); // rgba(34,34,34,0.8)
   static const Color glassBorderDark = Color(0x1AFFFFFF); // rgba(255,255,255,0.1)
 
   // ═══════════════════════════════════
@@ -29,9 +29,9 @@ class VertexColors {
   static const Color bgCardLight = Color(0xFFFFFFFF);
   static const Color textMainLight = Color(0xFF18181B);
   static const Color textMutedLight = Color(0xFF3F3F46);
-  static const Color primaryLight = Color(0xFF000000);
-  static const Color primaryHoverLight = Color(0xFF333333);
-  static const Color accentLight = Color(0xFF27272A);
+  static const Color primaryLight = Color(0xFF2F6BF5); // Signal Blue
+  static const Color primaryHoverLight = Color(0xFF1A56E0);
+  static const Color accentLight = Color(0xFF00E5FF); // Beam Cyan
   static const Color btnTextLight = Color(0xFFFFFFFF);
   static const Color borderLight = Color(0xFFE4E4E7);
   static const Color glassBgLight = Color(0xCCFFFFFF); // rgba(255,255,255,0.8)
@@ -56,25 +56,25 @@ class VertexColors {
   //  GRADIENTS
   // ═══════════════════════════════════
 
-  /// Dark mode main gradient: white to zinc-400
+  /// Dark mode main gradient: Signal Blue to Beam Cyan
   static const LinearGradient gradientMainDark = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFFFFFFF), Color(0xFFA1A1AA)],
+    colors: [Color(0xFF2F6BF5), Color(0xFF00E5FF)],
   );
 
-  /// Light mode main gradient: black to zinc-700
+  /// Light mode main gradient: Signal Blue to Beam Cyan
   static const LinearGradient gradientMainLight = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF000000), Color(0xFF27272A)],
+    colors: [Color(0xFF2F6BF5), Color(0xFF00E5FF)],
   );
 
   /// Dark mode text gradient
   static const LinearGradient gradientTextDark = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFFFFFFF), Color(0xFF52525B)],
+    colors: [Color(0xFFFFFFFF), Color(0xFFE0E0E0)],
   );
 
   /// Subtle glow gradient for backgrounds
@@ -82,8 +82,8 @@ class VertexColors {
     center: Alignment.center,
     radius: 0.8,
     colors: [
-      Color(0x15FFFFFF),
-      Color(0x00FFFFFF),
+      Color(0x332F6BF5),
+      Color(0x002F6BF5),
     ],
   );
 
@@ -92,10 +92,9 @@ class VertexColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF000000),
-      Color(0xFF1A1A1A),
-      Color(0xFF2A2A2A),
-      Color(0xFF000000),
+      Color(0xFF2F6BF5),
+      Color(0xFF1A56E0),
+      Color(0xFF2F6BF5),
     ],
   );
 
@@ -141,5 +140,10 @@ class VertexColors {
   /// Get border color
   static Color border(Brightness brightness) {
     return brightness == Brightness.dark ? borderDark : borderLight;
+  }
+
+  /// Get primary color
+  static Color primary(Brightness brightness) {
+    return brightness == Brightness.dark ? primaryDark : primaryLight;
   }
 }

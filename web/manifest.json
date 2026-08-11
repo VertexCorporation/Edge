@@ -4,8 +4,8 @@
     "description": "Vertex İç Yönetim Paneli - Görev yönetimi ve ekip iletişimi",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#050505",
-    "theme_color": "#050505",
+    "background_color": "#222222",
+    "theme_color": "#222222",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

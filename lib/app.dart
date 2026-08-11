@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shimmer/shimmer.dart';
 import 'theme/theme.dart';
 import 'screens/login.dart';
 import 'screens/home.dart';
@@ -14,8 +15,30 @@ class EdgeApp extends StatefulWidget {
   State<EdgeApp> createState() => _EdgeAppState();
 }
 
-class _EdgeAppState extends State<EdgeApp> {
+class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
   final AuthService _authService = AuthService();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _authService.updateOnlineStatus(true);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _authService.updateOnlineStatus(true);
+    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      _authService.updateOnlineStatus(false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,29 +113,15 @@ class _SplashScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Logo
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.black.withValues(alpha: 0.05),
-              ),
-              child: Icon(
-                Icons.hexagon_outlined,
-                size: 32,
-                color: isDark ? Colors.white : Colors.black,
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: isDark ? Colors.white : Colors.black,
+            // Logo with Shimmer
+            Shimmer.fromColors(
+              baseColor: isDark ? Colors.white24 : Colors.black26,
+              highlightColor: isDark ? Colors.white : Colors.black,
+              child: Image.asset(
+                'assets/icons/Edge.png',
+                width: 80,
+                height: 80,
+                fit: BoxFit.contain,
               ),
             ),
           ],

@@ -13,6 +13,21 @@ class AuthService {
   /// Current user
   User? get currentUser => _auth.currentUser;
 
+  /// Update online status
+  Future<void> updateOnlineStatus(bool isOnline) async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      try {
+        await _firestore.collection('users').doc(user.uid).set({
+          'isOnline': isOnline,
+          'lastSeen': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } catch (e) {
+        // Silently fail if unable to update status
+      }
+    }
+  }
+
   /// Sign in with email and password, then verify isVertex
   /// Returns a result with user data or error message
   Future<AuthResult> signIn(String email, String password) async {
@@ -28,24 +43,51 @@ class AuthService {
         return AuthResult.error('Giriş başarısız. Lütfen tekrar deneyin.');
       }
 
-      // 2. Check isVertex in Firestore
-      final isVertex = await checkIsVertex(user.uid);
-      if (!isVertex) {
-        // Sign out if not a Vertex member
-        await _auth.signOut();
-        return AuthResult.error(
-          'Bu hesap Vertex personeline ait değil.\n'
-          'Yalnızca onaylanmış Vertex üyeleri giriş yapabilir.',
-        );
-      }
-
-      // 3. Get user profile data
+      // 2. Get user profile data
       final userData = await getUserData(user.uid);
 
       return AuthResult.success(
         user: user,
         name: userData?['name'] ?? user.displayName ?? 'Vertex Üyesi',
         role: userData?['role'] ?? 'Üye',
+      );
+    } on FirebaseAuthException catch (e) {
+      return AuthResult.error(_getAuthErrorMessage(e.code));
+    } catch (e) {
+      return AuthResult.error('Beklenmeyen bir hata oluştu: $e');
+    }
+  }
+
+  /// Create a new user with email and password
+  Future<AuthResult> createUser(String email, String password, String name) async {
+    try {
+      final credential = await _auth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+
+      final user = credential.user;
+      if (user == null) {
+        return AuthResult.error('Kayıt başarısız. Lütfen tekrar deneyin.');
+      }
+
+      await user.updateDisplayName(name);
+
+      // Create user document
+      await _firestore.collection('users').doc(user.uid).set({
+        'name': name,
+        'email': email.trim(),
+        'role': 'Üye',
+        'isVertex': false,
+        'isOnline': true,
+        'createdAt': FieldValue.serverTimestamp(),
+        'lastSeen': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      return AuthResult.success(
+        user: user,
+        name: name,
+        role: 'Üye',
       );
     } on FirebaseAuthException catch (e) {
       return AuthResult.error(_getAuthErrorMessage(e.code));
