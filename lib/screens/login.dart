@@ -536,7 +536,6 @@ class _LoginScreenState extends State<LoginScreen>
     final isDark = brightness == Brightness.dark;
     return Material(
       color: VertexColors.glassBg(brightness),
-      borderRadius: BorderRadius.circular(12),
       shape: RoundedRectangleBorder(
         side: BorderSide(color: VertexColors.glassBorder(brightness)),
         borderRadius: BorderRadius.circular(12),
