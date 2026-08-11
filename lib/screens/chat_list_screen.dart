@@ -131,8 +131,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
                       final allUsers = snapshot.data ?? [];
                       final users = allUsers.where((u) {
-                        final name = (u['name'] ?? '').toString().toLowerCase();
-                        return name.contains(_searchQuery);
+                        String name = (u['name'] ?? '').toString().trim();
+                        if (name.isEmpty) {
+                          name = (u['email'] ?? 'İsimsiz Kullanıcı').toString().trim();
+                        }
+                        return name.toLowerCase().contains(_searchQuery);
                       }).toList();
 
                       if (users.isEmpty) {
@@ -165,12 +168,22 @@ class _ChatListScreenState extends State<ChatListScreen> {
                                 children: [
                                   CircleAvatar(
                                     backgroundColor: VertexColors.primary(brightness).withValues(alpha: 0.2),
-                                    child: Text(
-                                      user['name']?.substring(0, 1).toUpperCase() ?? '?',
-                                      style: GoogleFonts.inter(
-                                        color: VertexColors.primary(brightness),
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                    child: Builder(
+                                      builder: (context) {
+                                        String displayName = (user['name'] ?? '').toString().trim();
+                                        if (displayName.isEmpty) {
+                                          displayName = (user['email'] ?? 'İsimsiz').toString().trim();
+                                        }
+                                        final initial = displayName.isNotEmpty ? displayName.substring(0, 1).toUpperCase() : '?';
+                                        
+                                        return Text(
+                                          initial,
+                                          style: GoogleFonts.inter(
+                                            color: VertexColors.primary(brightness),
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        );
+                                      }
                                     ),
                                   ),
                                   if (isOnline)
@@ -192,12 +205,20 @@ class _ChatListScreenState extends State<ChatListScreen> {
                                     ),
                                 ],
                               ),
-                              title: Text(
-                                user['name'] ?? 'İsimsiz Kullanıcı',
-                                style: GoogleFonts.inter(
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark ? Colors.white : Colors.black,
-                                ),
+                              title: Builder(
+                                builder: (context) {
+                                  String displayName = (user['name'] ?? '').toString().trim();
+                                  if (displayName.isEmpty) {
+                                    displayName = (user['email'] ?? 'İsimsiz Kullanıcı').toString().trim();
+                                  }
+                                  return Text(
+                                    displayName,
+                                    style: GoogleFonts.inter(
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark ? Colors.white : Colors.black,
+                                    ),
+                                  );
+                                }
                               ),
                               subtitle: Text(
                                 user['role'] ?? 'Üye',
@@ -210,17 +231,21 @@ class _ChatListScreenState extends State<ChatListScreen> {
                                 Icons.chevron_right,
                                 color: VertexColors.textMuted(brightness),
                               ),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => ChatDetailScreen(
-                                      receiverId: user['id'],
-                                      receiverName: user['name'] ?? 'İsimsiz',
+                                onTap: () {
+                                  String displayName = (user['name'] ?? '').toString().trim();
+                                  if (displayName.isEmpty) {
+                                    displayName = (user['email'] ?? 'İsimsiz').toString().trim();
+                                  }
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ChatDetailScreen(
+                                        receiverId: user['id'],
+                                        receiverName: displayName,
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
+                                  );
+                                },
                             ),
                           );
                         },
