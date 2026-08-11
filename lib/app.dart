@@ -61,37 +61,22 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
             return const LoginScreen();
           }
 
-          // Authenticated - verify isVertex and show home
-          return FutureBuilder<bool>(
-            future: _authService.checkIsVertex(snapshot.data!.uid),
-            builder: (context, vertexSnapshot) {
-              if (vertexSnapshot.connectionState == ConnectionState.waiting) {
+          // Authenticated - show home directly
+          return FutureBuilder<Map<String, dynamic>?>(
+            future: _authService.getUserData(snapshot.data!.uid),
+            builder: (context, userDataSnapshot) {
+              if (userDataSnapshot.connectionState ==
+                  ConnectionState.waiting) {
                 return const _SplashScreen();
               }
 
-              if (vertexSnapshot.data != true) {
-                // If not vertex member, show login. 
-                // The actual signOut and error message is handled by AuthService.signIn
-                return const LoginScreen();
-              }
-
-              return FutureBuilder<Map<String, dynamic>?>(
-                future: _authService.getUserData(snapshot.data!.uid),
-                builder: (context, userDataSnapshot) {
-                  if (userDataSnapshot.connectionState ==
-                      ConnectionState.waiting) {
-                    return const _SplashScreen();
-                  }
-
-                  final userData = userDataSnapshot.data;
-                  return HomeScreen(
-                    userName: userData?['name'] ??
-                        snapshot.data?.displayName ??
-                        'Vertex Üyesi',
-                    userRole: userData?['role'] ?? 'Üye',
-                    userEmail: snapshot.data?.email ?? '',
-                  );
-                },
+              final userData = userDataSnapshot.data;
+              return HomeScreen(
+                userName: userData?['name'] ??
+                    snapshot.data?.displayName ??
+                    'Vertex Üyesi',
+                userRole: userData?['role'] ?? 'Üye',
+                userEmail: snapshot.data?.email ?? '',
               );
             },
           );

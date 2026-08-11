@@ -556,12 +556,15 @@ class _LoginScreenState extends State<LoginScreen>
                   children: [
                     FaIcon(icon, size: 20, color: isDark ? Colors.white : Colors.black),
                     const SizedBox(width: 8),
-                    Text(
-                      label,
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: isDark ? Colors.white : Colors.black,
+                    Flexible(
+                      child: Text(
+                        label,
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
