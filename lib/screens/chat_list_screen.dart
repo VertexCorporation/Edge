@@ -23,7 +23,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
   Timer? _debounce;
 
   final ScrollController _scrollController = ScrollController();
-  List<Map<String, dynamic>> _users = [];
+  final List<Map<String, dynamic>> _users = [];
   DocumentSnapshot? _lastDocument;
   bool _isLoading = false;
   bool _hasMore = true;
