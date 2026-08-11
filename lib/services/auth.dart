@@ -34,7 +34,7 @@ class AuthService {
   /// Syncs public profile info to the usernames collection
   Future<void> _syncUsernameProfile(User user, {String? name, String? email, String? role, bool isOnline = true}) async {
     try {
-      final query = await _firestore.collection('usernames').where('userId', '==', user.uid).limit(1).get();
+      final query = await _firestore.collection('usernames').where('userId', isEqualTo: user.uid).limit(1).get();
       
       if (query.docs.isNotEmpty) {
         final data = <String, dynamic>{
@@ -180,7 +180,7 @@ class AuthService {
         if (appleCredential.givenName != null || appleCredential.familyName != null) {
           final name = '${appleCredential.givenName ?? ''} ${appleCredential.familyName ?? ''}'.trim();
           if (name.isNotEmpty) {
-            await user.updateDisplayName(name);
+            await user!.updateDisplayName(name);
           }
         }
       }

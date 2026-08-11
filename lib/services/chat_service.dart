@@ -28,7 +28,7 @@ class ChatService {
     
     if (publicKey != null) {
       try {
-        final query = await _firestore.collection('usernames').where('userId', '==', currentUserId).limit(1).get();
+        final query = await _firestore.collection('usernames').where('userId', isEqualTo: currentUserId).limit(1).get();
         if (query.docs.isNotEmpty) {
           await _firestore.collection('usernames').doc(query.docs.first.id).set(
             {'publicKey': publicKey},
@@ -121,7 +121,7 @@ class ChatService {
     final chatId = getChatId(currentUserId, receiverId);
     
     // Get receiver's public key by querying usernames collection for their userId
-    final receiverQuery = await _firestore.collection('usernames').where('userId', '==', receiverId).limit(1).get();
+    final receiverQuery = await _firestore.collection('usernames').where('userId', isEqualTo: receiverId).limit(1).get();
     if (receiverQuery.docs.isEmpty) {
       throw Exception('Alıcı bulunamadı (Kullanıcı adı yok).');
     }
