@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 /// Authentication service for Vertex Edge
@@ -114,19 +115,27 @@ class AuthService {
   /// Sign in with Google
   Future<AuthResult> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) {
-        return AuthResult.error('Google girişi iptal edildi.');
+      User? user;
+      
+      if (kIsWeb) {
+        final authProvider = GoogleAuthProvider();
+        final userCredential = await _auth.signInWithPopup(authProvider);
+        user = userCredential.user;
+      } else {
+        final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+        if (googleUser == null) {
+          return AuthResult.error('Google girişi iptal edildi.');
+        }
+
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        final userCredential = await _auth.signInWithCredential(credential);
+        user = userCredential.user;
       }
-
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final userCredential = await _auth.signInWithCredential(credential);
-      final user = userCredential.user;
       
       if (user == null) {
         return AuthResult.error('Google girişi başarısız.');
@@ -143,31 +152,41 @@ class AuthService {
   /// Sign in with Apple
   Future<AuthResult> signInWithApple() async {
     try {
-      final AuthorizationCredentialAppleID appleCredential = await SignInWithApple.getAppleIDCredential(
-        scopes: [
-          AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
-        ],
-      );
+      User? user;
+      
+      if (kIsWeb) {
+        final authProvider = OAuthProvider('apple.com');
+        authProvider.addScope('email');
+        authProvider.addScope('name');
+        final userCredential = await _auth.signInWithPopup(authProvider);
+        user = userCredential.user;
+      } else {
+        final AuthorizationCredentialAppleID appleCredential = await SignInWithApple.getAppleIDCredential(
+          scopes: [
+            AppleIDAuthorizationScopes.email,
+            AppleIDAuthorizationScopes.fullName,
+          ],
+        );
 
-      final credential = OAuthProvider('apple.com').credential(
-        idToken: appleCredential.identityToken,
-        accessToken: appleCredential.authorizationCode,
-      );
+        final credential = OAuthProvider('apple.com').credential(
+          idToken: appleCredential.identityToken,
+          accessToken: appleCredential.authorizationCode,
+        );
 
-      final userCredential = await _auth.signInWithCredential(credential);
-      final user = userCredential.user;
+        final userCredential = await _auth.signInWithCredential(credential);
+        user = userCredential.user;
+
+        // If Apple returned a name on mobile, we can update it
+        if (appleCredential.givenName != null || appleCredential.familyName != null) {
+          final name = '${appleCredential.givenName ?? ''} ${appleCredential.familyName ?? ''}'.trim();
+          if (name.isNotEmpty) {
+            await user.updateDisplayName(name);
+          }
+        }
+      }
 
       if (user == null) {
         return AuthResult.error('Apple girişi başarısız.');
-      }
-
-      // If Apple returned a name, we can update it
-      if (appleCredential.givenName != null || appleCredential.familyName != null) {
-        final name = '${appleCredential.givenName ?? ''} ${appleCredential.familyName ?? ''}'.trim();
-        if (name.isNotEmpty) {
-          await user.updateDisplayName(name);
-        }
       }
 
       return await _handleOAuthLogin(user);
