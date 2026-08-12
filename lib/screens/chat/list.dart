@@ -194,7 +194,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
             onTap: () {
               Navigator.push(
                 context,
-                SlideRightRoute(
+                SlideLeftRoute(
                   page: Scaffold(
                     appBar: const VertexAppBar(leadingMode: VertexLeadingMode.back),
                     body: AccountScreen(

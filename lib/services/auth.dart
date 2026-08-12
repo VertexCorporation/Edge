@@ -84,7 +84,7 @@ class AuthService {
   }
 
   /// Create a new user with email and password
-  Future<AuthResult> createUser(String email, String password, String name) async {
+  Future<AuthResult> createUser(String email, String password, String name, String? phoneNumber) async {
     try {
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email.trim().toLowerCase(),
@@ -99,6 +99,16 @@ class AuthService {
       await user.updateDisplayName(name);
 
       await _syncUsernameProfile(user, name: name, email: email.trim().toLowerCase(), role: 'Üye', isOnline: true);
+      
+      if (phoneNumber != null && phoneNumber.isNotEmpty) {
+        try {
+          await _firestore.collection('users').doc(user.uid).set({
+            'phoneNumber': phoneNumber,
+          }, SetOptions(merge: true));
+        } catch (e) {
+          debugPrint('Failed to save phone number: $e');
+        }
+      }
 
       return AuthResult.success(
         user: user,

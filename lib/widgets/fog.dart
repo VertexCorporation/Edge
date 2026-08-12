@@ -102,14 +102,12 @@ class _ScrollFogState extends State<ScrollFog> with TickerProviderStateMixin {
     final position = controller.position;
     final bool hasDimensions = position.hasContentDimensions;
 
-    final bool shouldShowTop = widget.showTop &&
-        hasDimensions &&
-        position.pixels > widget.scrollThreshold;
+    final bool isReversed = position.axisDirection == AxisDirection.up || position.axisDirection == AxisDirection.left;
+    final bool isNotAtStart = position.pixels > widget.scrollThreshold;
+    final bool isNotAtEnd = position.maxScrollExtent > 0 && position.pixels < position.maxScrollExtent - widget.scrollThreshold;
 
-    final bool shouldShowBottom = widget.showBottom &&
-        hasDimensions &&
-        position.maxScrollExtent > 0 &&
-        position.pixels < position.maxScrollExtent - widget.scrollThreshold;
+    final bool shouldShowTop = widget.showTop && hasDimensions && (isReversed ? isNotAtEnd : isNotAtStart);
+    final bool shouldShowBottom = widget.showBottom && hasDimensions && (isReversed ? isNotAtStart : isNotAtEnd);
 
     if (_isTopVisible != shouldShowTop) {
       _isTopVisible = shouldShowTop;
@@ -309,12 +307,12 @@ class _ScrollFogHorizontalState extends State<ScrollFogHorizontal>
     if (controller.positions.length > 1) return;
     final position = controller.position;
 
-    final bool shouldShowStart =
-        widget.showStart && position.pixels > widget.scrollThreshold;
+    final bool isReversed = position.axisDirection == AxisDirection.left || position.axisDirection == AxisDirection.up;
+    final bool isNotAtStart = position.pixels > widget.scrollThreshold;
+    final bool isNotAtEnd = position.maxScrollExtent > 0 && position.pixels < position.maxScrollExtent - widget.scrollThreshold;
 
-    final bool shouldShowEnd = widget.showEnd &&
-        position.maxScrollExtent > 0 &&
-        position.pixels < position.maxScrollExtent - widget.scrollThreshold;
+    final bool shouldShowStart = widget.showStart && (isReversed ? isNotAtEnd : isNotAtStart);
+    final bool shouldShowEnd = widget.showEnd && (isReversed ? isNotAtStart : isNotAtEnd);
 
     if (_isStartVisible != shouldShowStart) {
       _isStartVisible = shouldShowStart;
