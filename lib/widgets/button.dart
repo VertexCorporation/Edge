@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../theme/colors.dart';
+import '../theme.dart';
 
 /// Primary button matching Vertex website's btn-primary style
 class VertexButton extends StatefulWidget {
@@ -44,12 +44,12 @@ class _VertexButtonState extends State<VertexButton> {
 
     final bgColor = widget.isOutline
         ? Colors.transparent
-        : (isDark ? VertexColors.primaryDark : VertexColors.primaryLight);
+        : (isDark ? AppColors.senaryColor : AppColors.senaryColor);
     final textColor = widget.isOutline
-        ? (isDark ? VertexColors.textMainDark : VertexColors.textMainLight)
-        : (isDark ? VertexColors.btnTextDark : VertexColors.btnTextLight);
+        ? (isDark ? AppColors.primaryColor.inverted : AppColors.primaryColor.inverted)
+        : (isDark ? AppColors.primaryColor.inverted : AppColors.primaryColor.inverted);
     final borderColor = widget.isOutline
-        ? VertexColors.border(brightness)
+        ? AppColors.border
         : bgColor;
 
     return MouseRegion(
@@ -65,8 +65,8 @@ class _VertexButtonState extends State<VertexButton> {
                       ? Colors.white.withValues(alpha: 0.05)
                       : Colors.black.withValues(alpha: 0.05))
                   : (isDark
-                      ? VertexColors.primaryHoverDark
-                      : VertexColors.primaryHoverLight))
+                      ? AppColors.senaryColor
+                      : AppColors.senaryColor))
               : bgColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(

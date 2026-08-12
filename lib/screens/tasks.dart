@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../theme/colors.dart';
+import '../theme.dart';
 import '../widgets/card.dart';
 import '../widgets/text.dart';
+import '../widgets/fog.dart';
+import 'package:edge/l10n/app_localizations.dart';
 
 /// Tasks screen - main content (center tab)
 /// Shows welcome card and task list with status badges
@@ -27,52 +29,67 @@ class _TasksScreenState extends State<TasksScreen>
   @override
   bool get wantKeepAlive => true;
 
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   // Mock task data - will be replaced with Firestore
-  final List<_Task> _tasks = [
-    _Task(
-      title: 'Cortex v2.0 Arayüz Güncellemesi',
-      description: 'Yeni AI model entegrasyonu için arayüz güncellemelerini tamamla.',
-      status: TaskStatus.inProgress,
-      dueDate: '12 Ağustos 2026',
-      priority: 'Yüksek',
-    ),
-    _Task(
-      title: 'Solar Browser Performans Testi',
-      description: 'WebAssembly modüllerinin render performansını test et ve raporla.',
-      status: TaskStatus.todo,
-      dueDate: '15 Ağustos 2026',
-      priority: 'Orta',
-    ),
-    _Task(
-      title: 'Mergen API Dokümantasyonu',
-      description: 'RESTful API endpoint\'lerinin Swagger dokümantasyonunu hazırla.',
-      status: TaskStatus.done,
-      dueDate: '5 Ağustos 2026',
-      priority: 'Orta',
-    ),
-    _Task(
-      title: 'Haftalık Sprint Raporu',
-      description: 'Bu haftaki geliştirme ilerlemesini ve blocker\'ları raporla.',
-      status: TaskStatus.todo,
-      dueDate: '9 Ağustos 2026',
-      priority: 'Düşük',
-    ),
-    _Task(
-      title: 'All Star Multiplayer Modülü',
-      description: 'Gerçek zamanlı çok oyunculu mod için WebSocket altyapısını kur.',
-      status: TaskStatus.inProgress,
-      dueDate: '20 Ağustos 2026',
-      priority: 'Yüksek',
-    ),
-  ];
+  List<_Task> _getTasks(BuildContext context) {
+    return [
+      _Task(
+        title: AppLocalizations.of(context)!.mockTask1Title,
+        description: AppLocalizations.of(context)!.mockTask1Desc,
+        status: TaskStatus.inProgress,
+        dueDate: AppLocalizations.of(context)!.august12,
+        priority: AppLocalizations.of(context)!.priorityHigh,
+      ),
+      _Task(
+        title: AppLocalizations.of(context)!.mockTask2Title,
+        description: AppLocalizations.of(context)!.mockTask2Desc,
+        status: TaskStatus.todo,
+        dueDate: AppLocalizations.of(context)!.august15,
+        priority: AppLocalizations.of(context)!.priorityMedium,
+      ),
+      _Task(
+        title: AppLocalizations.of(context)!.mockTask3Title,
+        description: AppLocalizations.of(context)!.mockTask3Desc,
+        status: TaskStatus.done,
+        dueDate: AppLocalizations.of(context)!.august5,
+        priority: AppLocalizations.of(context)!.priorityMedium,
+      ),
+      _Task(
+        title: AppLocalizations.of(context)!.mockTask4Title,
+        description: AppLocalizations.of(context)!.mockTask4Desc,
+        status: TaskStatus.todo,
+        dueDate: AppLocalizations.of(context)!.august9,
+        priority: AppLocalizations.of(context)!.priorityLow,
+      ),
+      _Task(
+        title: AppLocalizations.of(context)!.mockTask5Title,
+        description: AppLocalizations.of(context)!.mockTask5Desc,
+        status: TaskStatus.inProgress,
+        dueDate: AppLocalizations.of(context)!.august20,
+        priority: AppLocalizations.of(context)!.priorityHigh,
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
     final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
+    final tasks = _getTasks(context);
 
-    final content = CustomScrollView(
+    final content = ScrollFog(
+      scrollController: _scrollController,
+      color: AppColors.background,
+      child: CustomScrollView(
+        controller: _scrollController,
         shrinkWrap: widget.isEmbedded,
         physics: widget.isEmbedded ? const NeverScrollableScrollPhysics() : null,
         slivers: [
@@ -84,11 +101,11 @@ class _TasksScreenState extends State<TasksScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Welcome card
-                  _buildWelcomeCard(brightness, isDark),
+                  _buildWelcomeCard(brightness, isDark, tasks),
                   const SizedBox(height: 28),
 
                   // Stats row
-                  _buildStatsRow(brightness),
+                  _buildStatsRow(brightness, tasks),
                   const SizedBox(height: 28),
 
                   // Section title
@@ -96,13 +113,13 @@ class _TasksScreenState extends State<TasksScreen>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Aktif Görevler',
+                        AppLocalizations.of(context)!.activeTasks,
                         style: GoogleFonts.inter(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
                           color: isDark
-                              ? VertexColors.textMainDark
-                              : VertexColors.textMainLight,
+                              ? AppColors.primaryColor.inverted
+                              : AppColors.primaryColor.inverted,
                         ),
                       ),
                       Container(
@@ -117,11 +134,11 @@ class _TasksScreenState extends State<TasksScreen>
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          '${_tasks.length} görev',
+                          AppLocalizations.of(context)!.taskCount(tasks.length),
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            color: VertexColors.textMuted(brightness),
+                            color: AppColors.tertiaryColor,
                           ),
                         ),
                       ),
@@ -141,20 +158,21 @@ class _TasksScreenState extends State<TasksScreen>
                 (context, index) {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: _buildTaskCard(_tasks[index], brightness, isDark),
+                    child: _buildTaskCard(tasks[index], brightness, isDark),
                   );
                 },
-                childCount: _tasks.length,
+                childCount: tasks.length,
               ),
             ),
           ),
         ],
-      );
+      ),
+    );
 
     return widget.isEmbedded ? content : SafeArea(child: content);
   }
 
-  Widget _buildWelcomeCard(Brightness brightness, bool isDark) {
+  Widget _buildWelcomeCard(Brightness brightness, bool isDark, List<_Task> tasks) {
     return VertexCard(
       animatedBorder: true,
       padding: const EdgeInsets.all(28),
@@ -181,8 +199,8 @@ class _TasksScreenState extends State<TasksScreen>
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: isDark
-                          ? VertexColors.textMainDark
-                          : VertexColors.textMainLight,
+                          ? AppColors.primaryColor.inverted
+                          : AppColors.primaryColor.inverted,
                     ),
                   ),
                 ),
@@ -204,7 +222,7 @@ class _TasksScreenState extends State<TasksScreen>
                       widget.userRole,
                       style: GoogleFonts.inter(
                         fontSize: 13,
-                        color: VertexColors.textMuted(brightness),
+                        color: AppColors.tertiaryColor,
                       ),
                     ),
                   ],
@@ -214,10 +232,10 @@ class _TasksScreenState extends State<TasksScreen>
           ),
           const SizedBox(height: 16),
           Text(
-            'Bugün ${_tasks.where((t) => t.status != TaskStatus.done).length} tamamlanmamış görevin var.',
+            AppLocalizations.of(context)!.uncompletedTasksToday(tasks.where((t) => t.status != TaskStatus.done).length),
             style: GoogleFonts.inter(
               fontSize: 14,
-              color: VertexColors.textMuted(brightness),
+              color: AppColors.tertiaryColor,
               height: 1.5,
             ),
           ),
@@ -226,37 +244,37 @@ class _TasksScreenState extends State<TasksScreen>
     );
   }
 
-  Widget _buildStatsRow(Brightness brightness) {
-    final todo = _tasks.where((t) => t.status == TaskStatus.todo).length;
+  Widget _buildStatsRow(Brightness brightness, List<_Task> tasks) {
+    final todo = tasks.where((t) => t.status == TaskStatus.todo).length;
     final inProgress =
-        _tasks.where((t) => t.status == TaskStatus.inProgress).length;
-    final done = _tasks.where((t) => t.status == TaskStatus.done).length;
+        tasks.where((t) => t.status == TaskStatus.inProgress).length;
+    final done = tasks.where((t) => t.status == TaskStatus.done).length;
 
     return Row(
       children: [
         Expanded(
           child: _buildStatCard(
-            label: 'Yapılacak',
+            label: AppLocalizations.of(context)!.todo,
             value: '$todo',
-            color: VertexColors.statusTodo,
+            color: Colors.grey,
             brightness: brightness,
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _buildStatCard(
-            label: 'Devam Eden',
+            label: AppLocalizations.of(context)!.inProgress,
             value: '$inProgress',
-            color: VertexColors.statusInProgress,
+            color: Colors.blue,
             brightness: brightness,
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _buildStatCard(
-            label: 'Tamamlanan',
+            label: AppLocalizations.of(context)!.completed,
             value: '$done',
-            color: VertexColors.statusDone,
+            color: Colors.green,
             brightness: brightness,
           ),
         ),
@@ -273,9 +291,9 @@ class _TasksScreenState extends State<TasksScreen>
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       decoration: BoxDecoration(
-        color: VertexColors.glassBg(brightness),
+        color: AppColors.secondaryColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: VertexColors.glassBorder(brightness)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         children: [
@@ -293,7 +311,7 @@ class _TasksScreenState extends State<TasksScreen>
             style: GoogleFonts.inter(
               fontSize: 11,
               fontWeight: FontWeight.w500,
-              color: VertexColors.textMuted(brightness),
+              color: AppColors.tertiaryColor,
             ),
           ),
         ],
@@ -332,12 +350,12 @@ class _TasksScreenState extends State<TasksScreen>
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: isDark
-                        ? VertexColors.textMainDark
-                        : VertexColors.textMainLight,
+                        ? AppColors.primaryColor.inverted
+                        : AppColors.primaryColor.inverted,
                     decoration: task.status == TaskStatus.done
                         ? TextDecoration.lineThrough
                         : null,
-                    decorationColor: VertexColors.textMuted(brightness),
+                    decorationColor: AppColors.tertiaryColor,
                   ),
                 ),
               ),
@@ -365,7 +383,7 @@ class _TasksScreenState extends State<TasksScreen>
             task.description,
             style: GoogleFonts.inter(
               fontSize: 13,
-              color: VertexColors.textMuted(brightness),
+              color: AppColors.tertiaryColor,
               height: 1.5,
             ),
           ),
@@ -396,7 +414,7 @@ class _TasksScreenState extends State<TasksScreen>
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      task.statusLabel,
+                      task.getStatusLabel(context),
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
@@ -413,14 +431,14 @@ class _TasksScreenState extends State<TasksScreen>
                   Icon(
                     Icons.schedule_rounded,
                     size: 14,
-                    color: VertexColors.textMuted(brightness),
+                    color: AppColors.tertiaryColor,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     task.dueDate,
                     style: GoogleFonts.inter(
                       fontSize: 12,
-                      color: VertexColors.textMuted(brightness),
+                      color: AppColors.tertiaryColor,
                     ),
                   ),
                 ],
@@ -435,13 +453,13 @@ class _TasksScreenState extends State<TasksScreen>
   Color _getPriorityColor(String priority) {
     switch (priority) {
       case 'Yüksek':
-        return VertexColors.error;
+        return AppColors.septenaryColor;
       case 'Orta':
-        return VertexColors.warning;
+        return Colors.orange;
       case 'Düşük':
-        return VertexColors.info;
+        return Colors.blue;
       default:
-        return VertexColors.statusTodo;
+        return Colors.grey;
     }
   }
 }
@@ -468,22 +486,22 @@ class _Task {
   Color get statusColor {
     switch (status) {
       case TaskStatus.todo:
-        return VertexColors.statusTodo;
+        return Colors.grey;
       case TaskStatus.inProgress:
-        return VertexColors.statusInProgress;
+        return Colors.blue;
       case TaskStatus.done:
-        return VertexColors.statusDone;
+        return Colors.green;
     }
   }
 
-  String get statusLabel {
+  String getStatusLabel(BuildContext context) {
     switch (status) {
       case TaskStatus.todo:
-        return 'Yapılacak';
+        return AppLocalizations.of(context)!.todo;
       case TaskStatus.inProgress:
-        return 'Devam Ediyor';
+        return AppLocalizations.of(context)!.statusInProgress;
       case TaskStatus.done:
-        return 'Tamamlandı';
+        return AppLocalizations.of(context)!.statusDone;
     }
   }
 }

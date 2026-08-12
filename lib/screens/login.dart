@@ -3,10 +3,12 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../theme/colors.dart';
+import '../theme.dart';
 import '../widgets/button.dart';
 import '../widgets/input.dart';
 import '../services/auth.dart';
+import 'package:edge/l10n/app_localizations.dart';
+
 /// Login screen with Vertex branding
 /// Features: geo background, glassmorphic card, gradient text, animated logo
 class LoginScreen extends StatefulWidget {
@@ -108,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen>
         : await _authService.createUser(
             _emailController.text,
             _passwordController.text,
-            _nameController.text.isEmpty ? 'Kullanıcı' : _nameController.text,
+            _nameController.text.isEmpty ? AppLocalizations.of(context)!.user : _nameController.text,
           );
 
     if (!mounted) return;
@@ -128,10 +130,10 @@ class _LoginScreenState extends State<LoginScreen>
             children: [
               const Icon(Icons.error_outline, color: Colors.white),
               const SizedBox(width: 8),
-              Expanded(child: Text(result.errorMessage ?? 'Giriş hatası')),
+              Expanded(child: Text(result.errorMessage ?? AppLocalizations.of(context)!.loginError)),
             ],
           ),
-          backgroundColor: VertexColors.error,
+          backgroundColor: AppColors.septenaryColor,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           margin: const EdgeInsets.all(16),
@@ -246,10 +248,10 @@ class _LoginScreenState extends State<LoginScreen>
 
                         // ─── Footer ───
                         Text(
-                          '© 2026 Vertex Corporation',
+                          AppLocalizations.of(context)!.copyRightText,
                           style: GoogleFonts.inter(
                             fontSize: 12,
-                            color: VertexColors.textMuted(brightness)
+                            color: AppColors.tertiaryColor
                                 .withValues(alpha: 0.5),
                           ),
                         ),
@@ -276,10 +278,10 @@ class _LoginScreenState extends State<LoginScreen>
         child: Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: VertexColors.glassBg(brightness),
+            color: AppColors.secondaryColor,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: VertexColors.glassBorder(brightness),
+              color: AppColors.border,
             ),
           ),
           child: Form(
@@ -288,21 +290,21 @@ class _LoginScreenState extends State<LoginScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _isLogin ? 'Giriş Yap' : 'Kayıt Ol',
+                  _isLogin ? AppLocalizations.of(context)!.login : AppLocalizations.of(context)!.signUp,
                   style: GoogleFonts.inter(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
                     color: isDark
-                        ? VertexColors.textMainDark
-                        : VertexColors.textMainLight,
+                        ? AppColors.primaryColor.inverted
+                        : AppColors.primaryColor.inverted,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _isLogin ? 'Vertex hesabınız ile devam edin' : 'Yeni bir hesap oluşturun',
+                  _isLogin ? AppLocalizations.of(context)!.continueWithVertex : AppLocalizations.of(context)!.createNewAccount,
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: VertexColors.textMuted(brightness),
+                    color: AppColors.tertiaryColor,
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -315,17 +317,17 @@ class _LoginScreenState extends State<LoginScreen>
                       ? Padding(
                           padding: const EdgeInsets.only(bottom: 20),
                           child: VertexInput(
-                            label: 'Ad Soyad',
-                            hint: 'Örn: Ahmet Yılmaz',
+                            label: AppLocalizations.of(context)!.fullName,
+                            hint: AppLocalizations.of(context)!.exampleName,
                             controller: _nameController,
                             prefixIcon: Icon(
                               Icons.person_outline_rounded,
                               size: 18,
-                              color: VertexColors.textMuted(brightness),
+                              color: AppColors.tertiaryColor,
                             ),
                             validator: (value) {
                               if (!_isLogin && (value == null || value.isEmpty)) {
-                                return 'Ad Soyad gerekli';
+                                return AppLocalizations.of(context)!.fullNameRequired;
                               }
                               return null;
                             },
@@ -336,21 +338,21 @@ class _LoginScreenState extends State<LoginScreen>
 
                 // Email input
                 VertexInput(
-                  label: 'E-posta',
-                  hint: 'isim@vertex.com',
+                  label: AppLocalizations.of(context)!.email,
+                  hint: AppLocalizations.of(context)!.exampleEmail,
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   prefixIcon: Icon(
                     Icons.mail_outline_rounded,
                     size: 18,
-                    color: VertexColors.textMuted(brightness),
+                    color: AppColors.tertiaryColor,
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'E-posta adresi gerekli';
+                      return AppLocalizations.of(context)!.emailRequired;
                     }
                     if (!value.contains('@')) {
-                      return 'Geçerli bir e-posta adresi girin';
+                      return AppLocalizations.of(context)!.enterValidEmail;
                     }
                     return null;
                   },
@@ -359,14 +361,14 @@ class _LoginScreenState extends State<LoginScreen>
 
                 // Password input
                 VertexInput(
-                  label: 'Şifre',
+                  label: AppLocalizations.of(context)!.password,
                   hint: '••••••••',
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   prefixIcon: Icon(
                     Icons.lock_outline_rounded,
                     size: 18,
-                    color: VertexColors.textMuted(brightness),
+                    color: AppColors.tertiaryColor,
                   ),
                   suffixIcon: IconButton(
                     onPressed: () =>
@@ -376,12 +378,12 @@ class _LoginScreenState extends State<LoginScreen>
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
                       size: 18,
-                      color: VertexColors.textMuted(brightness),
+                      color: AppColors.tertiaryColor,
                     ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Şifre gerekli';
+                      return AppLocalizations.of(context)!.passwordRequired;
                     }
                     return null;
                   },
@@ -393,18 +395,18 @@ class _LoginScreenState extends State<LoginScreen>
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: VertexColors.error.withValues(alpha: 0.1),
+                      color: AppColors.septenaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: VertexColors.error.withValues(alpha: 0.3),
+                        color: AppColors.septenaryColor.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.error_outline_rounded,
                           size: 16,
-                          color: VertexColors.error,
+                          color: AppColors.septenaryColor,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -412,7 +414,7 @@ class _LoginScreenState extends State<LoginScreen>
                             _errorMessage!,
                             style: GoogleFonts.inter(
                               fontSize: 13,
-                              color: VertexColors.error,
+                              color: AppColors.septenaryColor,
                             ),
                           ),
                         ),
@@ -440,7 +442,7 @@ class _LoginScreenState extends State<LoginScreen>
                   },
                   child: VertexButton(
                     key: ValueKey<bool>(_isLogin),
-                    label: _isLogin ? 'Giriş Yap' : 'Kayıt Ol',
+                    label: _isLogin ? AppLocalizations.of(context)!.login : AppLocalizations.of(context)!.signUp,
                     onPressed: _handleAuth,
                     isLoading: _isLoading && !_isLoadingGoogle && !_isLoadingApple,
                     width: double.infinity,
@@ -453,19 +455,19 @@ class _LoginScreenState extends State<LoginScreen>
                 // OAuth Dividers
                 Row(
                   children: [
-                    Expanded(child: Divider(color: VertexColors.glassBorder(brightness))),
+                    Expanded(child: Divider(color: AppColors.border)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
-                        'VEYA',
+                        AppLocalizations.of(context)!.or,
                         style: GoogleFonts.inter(
                           fontSize: 12,
-                          color: VertexColors.textMuted(brightness),
+                          color: AppColors.tertiaryColor,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
-                    Expanded(child: Divider(color: VertexColors.glassBorder(brightness))),
+                    Expanded(child: Divider(color: AppColors.border)),
                   ],
                 ),
                 
@@ -477,7 +479,7 @@ class _LoginScreenState extends State<LoginScreen>
                     Expanded(
                       child: _buildOAuthButton(
                         icon: FontAwesomeIcons.google,
-                        label: 'Google ile devam et',
+                        label: AppLocalizations.of(context)!.continueWithGoogle,
                         isLoading: _isLoadingGoogle,
                         onPressed: _handleGoogleSignIn,
                         brightness: brightness,
@@ -487,7 +489,7 @@ class _LoginScreenState extends State<LoginScreen>
                     Expanded(
                       child: _buildOAuthButton(
                         icon: FontAwesomeIcons.apple,
-                        label: 'Apple ile devam et',
+                        label: AppLocalizations.of(context)!.continueWithApple,
                         isLoading: _isLoadingApple,
                         onPressed: _handleAppleSignIn,
                         brightness: brightness,
@@ -509,10 +511,10 @@ class _LoginScreenState extends State<LoginScreen>
                     },
                     child: Text(
                       _isLogin 
-                          ? 'Hesabınız yok mu? Kayıt Olun' 
-                          : 'Zaten hesabınız var mı? Giriş Yapın',
+                          ? AppLocalizations.of(context)!.dontHaveAccount 
+                          : AppLocalizations.of(context)!.alreadyHaveAccount,
                       style: GoogleFonts.inter(
-                        color: VertexColors.primary(brightness),
+                        color: AppColors.senaryColor,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -535,9 +537,9 @@ class _LoginScreenState extends State<LoginScreen>
   }) {
     final isDark = brightness == Brightness.dark;
     return Material(
-      color: VertexColors.glassBg(brightness),
+      color: AppColors.secondaryColor,
       shape: RoundedRectangleBorder(
-        side: BorderSide(color: VertexColors.glassBorder(brightness)),
+        side: BorderSide(color: AppColors.border),
         borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(

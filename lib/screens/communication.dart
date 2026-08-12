@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:edge/l10n/app_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../theme/colors.dart';
+import '../theme.dart';
 import '../widgets/card.dart';
 import '../widgets/text.dart';
 
@@ -33,7 +34,7 @@ class _CommunicationScreenState extends State<CommunicationScreen>
       name: 'E-posta',
       description: 'Resmi yazışmalar ve dış iletişim',
       icon: Icons.email_outlined,
-      color: VertexColors.textMutedDark,
+      color: AppColors.tertiaryColor,
       url: 'mailto:contact@vertexishere.com',
     ),
     _Channel(
@@ -54,7 +55,7 @@ class _CommunicationScreenState extends State<CommunicationScreen>
       name: 'GitHub',
       description: 'Açık kaynak projeler ve kod incelemeleri',
       icon: Icons.code_rounded,
-      color: VertexColors.textMutedDark,
+      color: AppColors.tertiaryColor,
       url: 'https://github.com/VertexCorporation',
     ),
   ];
@@ -90,23 +91,23 @@ class _CommunicationScreenState extends State<CommunicationScreen>
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Vertex ekibi ve kanallarıyla iletişime geç',
+                    AppLocalizations.of(context)!.contactVertexTeam,
                     style: GoogleFonts.inter(
                       fontSize: 14,
-                      color: VertexColors.textMuted(brightness),
+                      color: AppColors.tertiaryColor,
                     ),
                   ),
                   const SizedBox(height: 28),
 
                   // Quick contacts
                   Text(
-                    'Ekip Üyeleri',
+                    AppLocalizations.of(context)!.teamMembers,
                     style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: isDark
-                          ? VertexColors.textMainDark
-                          : VertexColors.textMainLight,
+                          ? AppColors.primaryColor.inverted
+                          : AppColors.primaryColor.inverted,
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -115,13 +116,13 @@ class _CommunicationScreenState extends State<CommunicationScreen>
 
                   // Channels
                   Text(
-                    'İletişim Kanalları',
+                    AppLocalizations.of(context)!.communicationChannels,
                     style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: isDark
-                          ? VertexColors.textMainDark
-                          : VertexColors.textMainLight,
+                          ? AppColors.primaryColor.inverted
+                          : AppColors.primaryColor.inverted,
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -173,7 +174,7 @@ class _CommunicationScreenState extends State<CommunicationScreen>
                         ? Colors.white.withValues(alpha: 0.08)
                         : Colors.black.withValues(alpha: 0.05),
                     border: Border.all(
-                      color: VertexColors.glassBorder(brightness),
+                      color: AppColors.border,
                     ),
                   ),
                   child: Center(
@@ -183,8 +184,8 @@ class _CommunicationScreenState extends State<CommunicationScreen>
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                         color: isDark
-                            ? VertexColors.textMainDark
-                            : VertexColors.textMainLight,
+                            ? AppColors.primaryColor.inverted
+                            : AppColors.primaryColor.inverted,
                       ),
                     ),
                   ),
@@ -196,8 +197,8 @@ class _CommunicationScreenState extends State<CommunicationScreen>
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
                     color: isDark
-                        ? VertexColors.textMainDark
-                        : VertexColors.textMainLight,
+                        ? AppColors.primaryColor.inverted
+                        : AppColors.primaryColor.inverted,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
@@ -207,7 +208,7 @@ class _CommunicationScreenState extends State<CommunicationScreen>
                   contact.role,
                   style: GoogleFonts.inter(
                     fontSize: 10,
-                    color: VertexColors.textMuted(brightness),
+                    color: AppColors.tertiaryColor,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
@@ -252,8 +253,8 @@ class _CommunicationScreenState extends State<CommunicationScreen>
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: isDark
-                        ? VertexColors.textMainDark
-                        : VertexColors.textMainLight,
+                        ? AppColors.primaryColor.inverted
+                        : AppColors.primaryColor.inverted,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -261,7 +262,7 @@ class _CommunicationScreenState extends State<CommunicationScreen>
                   channel.description,
                   style: GoogleFonts.inter(
                     fontSize: 12,
-                    color: VertexColors.textMuted(brightness),
+                    color: AppColors.tertiaryColor,
                   ),
                 ),
               ],
@@ -270,7 +271,7 @@ class _CommunicationScreenState extends State<CommunicationScreen>
           Icon(
             Icons.arrow_forward_ios_rounded,
             size: 14,
-            color: VertexColors.textMuted(brightness),
+            color: AppColors.tertiaryColor,
           ),
         ],
       ),

@@ -1,6 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../theme/colors.dart';
+import '../theme.dart';
 
 /// Glassmorphic card widget matching Vertex website's card style.
 /// Features: frosted glass effect, subtle border, animated hover state.
@@ -62,12 +62,12 @@ class _VertexCardState extends State<VertexCard>
           ? (Matrix4.identity()..setTranslationRaw(0.0, -2.0, 0.0))
           : Matrix4.identity(),
       decoration: BoxDecoration(
-        color: VertexColors.glassBg(brightness),
+        color: AppColors.secondaryColor,
         borderRadius: borderRadius,
         border: Border.all(
           color: _isHovered
-              ? VertexColors.glassBorder(brightness).withValues(alpha: 0.3)
-              : VertexColors.glassBorder(brightness),
+              ? AppColors.border.withValues(alpha: 0.3)
+              : AppColors.border,
           width: 1,
         ),
         boxShadow: _isHovered

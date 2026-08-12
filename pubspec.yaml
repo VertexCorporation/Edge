@@ -57,6 +57,14 @@ dependencies:
   firebase_storage: ^12.4.10
   font_awesome_flutter: ^11.0.0
   flutter_contacts: ^2.3.1
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+  provider: ^6.1.5+1
+  shared_preferences: ^2.5.5
+  firebase_messaging: ^15.2.10
+  flutter_local_notifications: ^22.3.0
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:
@@ -80,6 +88,7 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  generate: true
 
   # To add assets to your application, add an assets section, like this:
   assets:

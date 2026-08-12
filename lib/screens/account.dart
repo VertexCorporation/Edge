@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:edge/l10n/app_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../theme/colors.dart';
+import '../theme.dart';
 import '../widgets/card.dart';
 import '../widgets/button.dart';
 import '../widgets/text.dart';
 import '../services/auth.dart';
+import '../widgets/fog.dart';
 
 /// Account screen - right tab
 /// Shows user profile, settings, and logout
@@ -30,6 +32,13 @@ class _AccountScreenState extends State<AccountScreen>
   bool get wantKeepAlive => true;
 
   final _authService = AuthService();
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,9 +47,13 @@ class _AccountScreenState extends State<AccountScreen>
     final isDark = brightness == Brightness.dark;
 
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
-        child: Column(
+      child: ScrollFog(
+        scrollController: _scrollController,
+        color: AppColors.background,
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header
@@ -53,10 +66,10 @@ class _AccountScreenState extends State<AccountScreen>
             ),
             const SizedBox(height: 6),
             Text(
-              'Profil bilgileri ve ayarlar',
+              AppLocalizations.of(context)!.profileInfoAndSettings,
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: VertexColors.textMuted(brightness),
+                color: AppColors.tertiaryColor,
               ),
             ),
             const SizedBox(height: 28),
@@ -79,13 +92,14 @@ class _AccountScreenState extends State<AccountScreen>
 
             // Logout button
             VertexButton.outline(
-              label: 'Çıkış Yap',
+              label: AppLocalizations.of(context)!.logout,
               icon: Icons.logout_rounded,
               width: double.infinity,
               onPressed: _handleLogout,
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -102,7 +116,7 @@ class _AccountScreenState extends State<AccountScreen>
             height: 64,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: VertexColors.gradientMain(brightness),
+              gradient: const LinearGradient(colors: [Color(0xFF2F6BF5), Color(0xFF00E5FF)]),
             ),
             child: Center(
               child: Text(
@@ -128,8 +142,8 @@ class _AccountScreenState extends State<AccountScreen>
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: isDark
-                        ? VertexColors.textMainDark
-                        : VertexColors.textMainLight,
+                        ? AppColors.primaryColor.inverted
+                        : AppColors.primaryColor.inverted,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -147,7 +161,7 @@ class _AccountScreenState extends State<AccountScreen>
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: VertexColors.textMuted(brightness),
+                      color: AppColors.tertiaryColor,
                     ),
                   ),
                 ),
@@ -159,10 +173,10 @@ class _AccountScreenState extends State<AccountScreen>
                       height: 8,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: VertexColors.success,
+                        color: Colors.green,
                         boxShadow: [
                           BoxShadow(
-                            color: VertexColors.success.withValues(alpha: 0.4),
+                            color: Colors.green.withValues(alpha: 0.4),
                             blurRadius: 6,
                           ),
                         ],
@@ -170,11 +184,11 @@ class _AccountScreenState extends State<AccountScreen>
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Vertex Üyesi',
+                      AppLocalizations.of(context)!.vertexMember,
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: VertexColors.success,
+                        color: Colors.green,
                       ),
                     ),
                   ],
@@ -194,13 +208,13 @@ class _AccountScreenState extends State<AccountScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Hesap Bilgileri',
+            AppLocalizations.of(context)!.accountInfo,
             style: GoogleFonts.inter(
               fontSize: 15,
               fontWeight: FontWeight.w600,
               color: isDark
-                  ? VertexColors.textMainDark
-                  : VertexColors.textMainLight,
+                  ? AppColors.primaryColor.inverted
+                  : AppColors.primaryColor.inverted,
             ),
           ),
           const SizedBox(height: 16),
@@ -229,7 +243,7 @@ class _AccountScreenState extends State<AccountScreen>
             label: 'Durum',
             value: 'Doğrulanmış Üye',
             brightness: brightness,
-            valueColor: VertexColors.success,
+            valueColor: Colors.green,
           ),
         ],
       ),
@@ -249,7 +263,7 @@ class _AccountScreenState extends State<AccountScreen>
         Icon(
           icon,
           size: 18,
-          color: VertexColors.textMuted(brightness),
+          color: AppColors.tertiaryColor,
         ),
         const SizedBox(width: 12),
         Column(
@@ -260,7 +274,7 @@ class _AccountScreenState extends State<AccountScreen>
               style: GoogleFonts.inter(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
-                color: VertexColors.textMuted(brightness),
+                color: AppColors.tertiaryColor,
               ),
             ),
             const SizedBox(height: 2),
@@ -271,8 +285,8 @@ class _AccountScreenState extends State<AccountScreen>
                 fontWeight: FontWeight.w500,
                 color: valueColor ??
                     (isDark
-                        ? VertexColors.textMainDark
-                        : VertexColors.textMainLight),
+                        ? AppColors.primaryColor.inverted
+                        : AppColors.primaryColor.inverted),
               ),
             ),
           ],
@@ -293,14 +307,14 @@ class _AccountScreenState extends State<AccountScreen>
               fontSize: 15,
               fontWeight: FontWeight.w600,
               color: isDark
-                  ? VertexColors.textMainDark
-                  : VertexColors.textMainLight,
+                  ? AppColors.primaryColor.inverted
+                  : AppColors.primaryColor.inverted,
             ),
           ),
           const SizedBox(height: 16),
           _buildSettingsTile(
             icon: Icons.dark_mode_outlined,
-            title: 'Koyu Tema',
+            title: AppLocalizations.of(context)!.darkTheme,
             subtitle: isDark ? 'Aktif' : 'Pasif',
             brightness: brightness,
             trailing: Switch.adaptive(
@@ -309,8 +323,8 @@ class _AccountScreenState extends State<AccountScreen>
                 // Theme toggle will be handled by parent
               },
               activeTrackColor: isDark
-                  ? VertexColors.primaryDark
-                  : VertexColors.primaryLight,
+                  ? AppColors.senaryColor
+                  : AppColors.senaryColor,
             ),
           ),
           const Padding(
@@ -325,7 +339,7 @@ class _AccountScreenState extends State<AccountScreen>
             trailing: Icon(
               Icons.arrow_forward_ios_rounded,
               size: 14,
-              color: VertexColors.textMuted(brightness),
+              color: AppColors.tertiaryColor,
             ),
           ),
         ],
@@ -346,7 +360,7 @@ class _AccountScreenState extends State<AccountScreen>
         Icon(
           icon,
           size: 20,
-          color: VertexColors.textMuted(brightness),
+          color: AppColors.tertiaryColor,
         ),
         const SizedBox(width: 14),
         Expanded(
@@ -359,15 +373,15 @@ class _AccountScreenState extends State<AccountScreen>
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: isDark
-                      ? VertexColors.textMainDark
-                      : VertexColors.textMainLight,
+                      ? AppColors.primaryColor.inverted
+                      : AppColors.primaryColor.inverted,
                 ),
               ),
               Text(
                 subtitle,
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: VertexColors.textMuted(brightness),
+                  color: AppColors.tertiaryColor,
                 ),
               ),
             ],
@@ -390,8 +404,8 @@ class _AccountScreenState extends State<AccountScreen>
               fontSize: 15,
               fontWeight: FontWeight.w600,
               color: isDark
-                  ? VertexColors.textMainDark
-                  : VertexColors.textMainLight,
+                  ? AppColors.primaryColor.inverted
+                  : AppColors.primaryColor.inverted,
             ),
           ),
           const SizedBox(height: 16),
@@ -433,42 +447,42 @@ class _AccountScreenState extends State<AccountScreen>
         final isDark = Theme.of(context).brightness == Brightness.dark;
         return AlertDialog(
           backgroundColor: isDark
-              ? VertexColors.bgCardDark
-              : VertexColors.bgCardLight,
+              ? AppColors.background
+              : AppColors.background,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
             side: BorderSide(
               color: isDark
-                  ? VertexColors.borderDark
-                  : VertexColors.borderLight,
+                  ? AppColors.border
+                  : AppColors.border,
             ),
           ),
           title: Text(
-            'Çıkış Yap',
+            AppLocalizations.of(context)!.logout,
             style: GoogleFonts.inter(fontWeight: FontWeight.w600),
           ),
           content: Text(
-            'Hesabınızdan çıkış yapmak istediğinize emin misiniz?',
+            AppLocalizations.of(context)!.logoutConfirmation,
             style: GoogleFonts.inter(
-              color: VertexColors.textMuted(Theme.of(context).brightness),
+              color: AppColors.tertiaryColor,
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
               child: Text(
-                'İptal',
+                AppLocalizations.of(context)!.cancel,
                 style: GoogleFonts.inter(
-                  color: VertexColors.textMuted(Theme.of(context).brightness),
+                  color: AppColors.tertiaryColor,
                 ),
               ),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
               child: Text(
-                'Çıkış Yap',
+                AppLocalizations.of(context)!.logout,
                 style: GoogleFonts.inter(
-                  color: VertexColors.error,
+                  color: AppColors.septenaryColor,
                   fontWeight: FontWeight.w600,
                 ),
               ),

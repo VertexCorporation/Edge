@@ -1,0 +1,127 @@
+{
+  "@@locale": "tr",
+  "vertexMember": "Vertex Üyesi",
+  "member": "Üye",
+  "login": "Giriş Yap",
+  "signUp": "Kayıt Ol",
+  "continueWithVertex": "Vertex hesabınız ile devam edin",
+  "createNewAccount": "Yeni bir hesap oluşturun",
+  "fullName": "Ad Soyad",
+  "exampleName": "Örn: Ahmet Yılmaz",
+  "fullNameRequired": "Ad Soyad gerekli",
+  "email": "E-posta",
+  "exampleEmail": "isim@vertex.com",
+  "emailRequired": "E-posta adresi gerekli",
+  "enterValidEmail": "Geçerli bir e-posta adresi girin",
+  "password": "Şifre",
+  "passwordRequired": "Şifre gerekli",
+  "loginError": "Giriş hatası",
+  "user": "Kullanıcı",
+  "or": "VEYA",
+  "continueWithGoogle": "Google ile devam et",
+  "continueWithApple": "Apple ile devam et",
+  "dontHaveAccount": "Hesabınız yok mu? Kayıt Olun",
+  "alreadyHaveAccount": "Zaten hesabınız var mı? Giriş Yapın",
+  "anonymousUser": "İsimsiz Kullanıcı",
+  "appName": "Edge",
+  "searchUser": "Kullanıcı Ara...",
+  "chats": "Sohbetler",
+  "suggestContacts": "Kişiler Öner",
+  "noChatsYet": "Henüz kimseyle konuşmadınız, hemen sohbete başlayın.",
+  "encryptedImageLink": "Şifreli Görsel (Link: {link}...)",
+  "@encryptedImageLink": {
+    "placeholders": {
+      "link": {
+        "type": "String"
+      }
+    }
+  },
+  "audioRecord": "Ses Kaydı",
+  "fileWithFileName": "Dosya: {fileName}",
+  "@fileWithFileName": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "unsupportedMediaType": "Desteklenmeyen Medya Tipi",
+  "typeMessage": "Bir mesaj yaz...",
+  "activeTasks": "Aktif Görevler",
+  "taskCount": "{count} görev",
+  "@taskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "helloUser": "Merhaba, {name}! 👋",
+  "@helloUser": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "uncompletedTasksToday": "Bugün {count} tamamlanmamış görevin var.",
+  "@uncompletedTasksToday": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todo": "Yapılacak",
+  "inProgress": "Devam Eden",
+  "completed": "Tamamlanan",
+  "priorityHigh": "Yüksek",
+  "priorityMedium": "Orta",
+  "priorityLow": "Düşük",
+  "statusInProgress": "Devam Ediyor",
+  "statusDone": "Tamamlandı",
+  "account": "Hesap",
+  "tasks": "Görevler",
+  "logout": "Çıkış Yap",
+  "darkTheme": "Karanlık Tema",
+  "copyRightText": "© 2026 Vertex Corporation",
+  "mockTask1Title": "Cortex v2.0 Arayüz Güncellemesi",
+  "mockTask1Desc": "Yeni AI model entegrasyonu için arayüz güncellemelerini tamamla.",
+  "mockTask2Title": "Solar Browser Performans Testi",
+  "mockTask2Desc": "WebAssembly modüllerinin render performansını test et ve raporla.",
+  "mockTask3Title": "Mergen API Dokümantasyonu",
+  "mockTask3Desc": "RESTful API endpoint'lerinin Swagger dokümantasyonunu hazırla.",
+  "mockTask4Title": "Haftalık Sprint Raporu",
+  "mockTask4Desc": "Bu haftaki geliştirme ilerlemesini ve blocker'ları raporla.",
+  "mockTask5Title": "All Star Multiplayer Modülü",
+  "mockTask5Desc": "Gerçek zamanlı çok oyunculu mod için WebSocket altyapısını kur.",
+  "august12": "12 Ağustos 2026",
+  "august15": "15 Ağustos 2026",
+  "august5": "5 Ağustos 2026",
+  "august9": "9 Ağustos 2026",
+  "august20": "20 Ağustos 2026",
+  "logoutConfirmation": "Hesabınızdan çıkış yapmak istediğinize emin misiniz?",
+  "cancel": "İptal",
+  "profileInfoAndSettings": "Profil bilgileri ve ayarlar",
+  "accountInfo": "Hesap Bilgileri",
+  "contactVertexTeam": "Vertex ekibi ve kanallarıyla iletişime geç",
+  "teamMembers": "Ekip Üyeleri",
+  "communicationChannels": "İletişim Kanalları",
+  "onlyAdminsCanMessage": "Sadece yöneticiler mesaj gönderebilir",
+  "noGroupsInCommunity": "Bu toplulukta henüz bir grup yok.",
+  "sendFailed": "Gönderilemedi",
+  "fileSendError": "Dosya gönderim hatası",
+  "imageLoadFailed": "Görsel yüklenemedi",
+  "createNewCommunity": "Yeni Topluluk Kur",
+  "notJoinedAnyCommunity": "Henüz hiçbir topluluğa katılmadınız.",
+  "enterGroupName": "Lütfen bir grup adı girin",
+  "selectAtLeastOnePerson": "En az 1 kişi seçmelisiniz",
+  "groupCreationError": "Grup oluşturulamadı",
+  "groupName": "Grup Adı",
+  "searchContact": "Kişi Ara...",
+  "error": "Hata",
+  "newCommunity": "Yeni Topluluk",
+  "communityName": "Topluluk Adı",
+  "addContacts": "Kişileri Ekle",
+  "announcements": "Duyurular"
+}

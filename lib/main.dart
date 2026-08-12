@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase.dart';
 import 'app.dart';
-
-final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.dark);
+import 'theme.dart';
+import 'services/notification.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,5 +14,16 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(const EdgeApp());
+  // Initialize notification service
+  await NotificationService().initialize();
+
+  final prefs = await SharedPreferences.getInstance();
+  final savedTheme = prefs.getString('selectedTheme') ?? 'light';
+
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeProvider(savedTheme),
+      child: const EdgeApp(),
+    ),
+  );
 }

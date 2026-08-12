@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../theme/colors.dart';
+import '../theme.dart';
 
 /// Glassmorphic input field matching Vertex website's input style
 class VertexInput extends StatelessWidget {
@@ -45,7 +45,7 @@ class VertexInput extends StatelessWidget {
           style: GoogleFonts.inter(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: VertexColors.textMuted(brightness),
+            color: AppColors.tertiaryColor,
           ),
         ),
         const SizedBox(height: 8),
@@ -63,12 +63,12 @@ class VertexInput extends StatelessWidget {
               style: GoogleFonts.inter(
                 fontSize: 14,
                 color: isDark
-                    ? VertexColors.textMainDark
-                    : VertexColors.textMainLight,
+                    ? AppColors.primaryColor.inverted
+                    : AppColors.primaryColor.inverted,
               ),
               cursorColor: isDark
-                  ? VertexColors.primaryDark
-                  : VertexColors.primaryLight,
+                  ? AppColors.senaryColor
+                  : AppColors.senaryColor,
               decoration: InputDecoration(
                 hintText: hint,
                 errorText: errorText,
@@ -76,8 +76,8 @@ class VertexInput extends StatelessWidget {
                 prefixIcon: prefixIcon,
                 filled: true,
                 fillColor: isDark
-                    ? VertexColors.bgCardDark.withValues(alpha: 0.6)
-                    : VertexColors.bgSecondaryLight.withValues(alpha: 0.6),
+                    ? AppColors.background.withValues(alpha: 0.6)
+                    : AppColors.secondaryColor,
               ),
             ),
           ),

@@ -30,19 +30,16 @@
 	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
-	<key>NSContactsUsageDescription</key>
-	<string>Rehberindeki Edge kullanıcılarını önermek için rehbere erişim gereklidir.</string>
+
 		<key>UIApplicationSupportsMultipleScenes</key>
 		<false/>
 		<key>UISceneConfigurations</key>
 		<dict>
-	<key>NSContactsUsageDescription</key>
-	<string>Rehberindeki Edge kullanıcılarını önermek için rehbere erişim gereklidir.</string>
+
 			<key>UIWindowSceneSessionRoleApplication</key>
 			<array>
 				<dict>
-	<key>NSContactsUsageDescription</key>
-	<string>Rehberindeki Edge kullanıcılarını önermek için rehbere erişim gereklidir.</string>
+
 					<key>UISceneClassName</key>
 					<string>UIWindowScene</string>
 					<key>UISceneConfigurationName</key>

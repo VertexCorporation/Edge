@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/colors.dart';
 
 /// Gradient text widget matching Vertex website's .gradient-text class
 class GradientText extends StatelessWidget {
@@ -18,9 +17,8 @@ class GradientText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
     final effectiveGradient =
-        gradient ?? VertexColors.gradientMain(brightness);
+        gradient ?? const LinearGradient(colors: [Color(0xFF2F6BF5), Color(0xFF00E5FF)]);
 
     return ShaderMask(
       blendMode: BlendMode.srcIn,
