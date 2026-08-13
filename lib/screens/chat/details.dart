@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -48,7 +49,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final AudioRecorder _record = AudioRecorder();
 
   bool _isRecording = false;
-  bool _isSending = false;
+  final List<Map<String, dynamic>> _pendingMessages = [];
 
   @override
   void initState() {
@@ -67,19 +68,38 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
-    // Optimistic UI Update: Clear immediately
+    final localId = 'local_${DateTime.now().microsecondsSinceEpoch}';
+    final pending = {
+      'id': localId,
+      'senderId': _chatService.currentUserId,
+      'receiverId': widget.receiverId ?? '',
+      'text': text,
+      'timestamp': Timestamp.now(),
+      'type': 'text',
+      'pending': true,
+    };
+
     _messageController.clear();
-    
-    // Fire and forget
+    setState(() => _pendingMessages.insert(0, pending));
+
     _chatService.sendMessage(
-      text, 
+      text,
       type: 'text',
       receiverId: widget.receiverId,
       explicitChatId: widget.chatId,
       isGroup: widget.isGroup,
-    ).catchError((e) {
+    ).then((_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gönderilemedi: $e')));
+        setState(() => _pendingMessages.removeWhere((m) => m['id'] == localId));
+      }
+    }).catchError((e) {
+      if (mounted) {
+        setState(() {
+          _pendingMessages.removeWhere((m) => m['id'] == localId);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gönderilemedi: $e')),
+        );
       }
     });
   }
@@ -105,9 +125,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 
   Future<void> _sendFile(Uint8List bytes, String type) async {
-    setState(() => _isSending = true);
     try {
-      // Not awaiting the main send operation for UI optimisim, but files do need uploading first.
       await _chatService.sendFile(
         bytes, 
         type,
@@ -120,7 +138,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Dosya gönderim hatası: $e')));
       }
     }
-    if (mounted) setState(() => _isSending = false);
   }
 
   Future<void> _startRecording() async {
@@ -175,13 +192,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                       widget.receiverId!,
                     ),
                 isGroup: widget.isGroup,
+                pendingMessages: _pendingMessages,
               ),
             ),
-            if (_isSending)
-               const Padding(
-                 padding: EdgeInsets.all(8.0),
-                 child: LinearProgressIndicator(),
-               ),
             if (widget.isAnnouncementGroup && !widget.isAdmin)
                Container(
                  padding: const EdgeInsets.all(16),
@@ -217,13 +230,31 @@ class _ChatMessagesList extends StatelessWidget {
   final ScrollController scrollController;
   final String chatId;
   final bool isGroup;
+  final List<Map<String, dynamic>> pendingMessages;
 
   const _ChatMessagesList({
     required this.chatService,
     required this.scrollController,
     required this.chatId,
     required this.isGroup,
+    required this.pendingMessages,
   });
+
+  List<Map<String, dynamic>> _mergeMessages(List<Map<String, dynamic>> remote) {
+    final remoteIds = remote.map((m) => m['id']).toSet();
+    final locals = pendingMessages.where((m) => !remoteIds.contains(m['id'])).toList();
+    final merged = [...locals, ...remote];
+    merged.sort((a, b) {
+      final tA = a['timestamp'];
+      final tB = b['timestamp'];
+      if (tA == null && tB == null) return 0;
+      if (tA == null) return 1;
+      if (tB == null) return -1;
+      if (tA is Timestamp && tB is Timestamp) return tB.compareTo(tA);
+      return 0;
+    });
+    return merged;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -232,10 +263,7 @@ class _ChatMessagesList extends StatelessWidget {
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: chatService.getMessages(chatId, isGroup: isGroup),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final messages = snapshot.data ?? [];
+        final messages = _mergeMessages(snapshot.data ?? []);
 
         return ScrollFog(
           scrollController: scrollController,

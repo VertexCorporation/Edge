@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -12,6 +14,10 @@ class ChatService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final CryptoService _cryptoService = CryptoService();
+
+  final Map<String, _DecryptionCacheEntry> _decryptionCache = {};
+  final Queue<_OutboundMessage> _outboundQueue = Queue();
+  bool _processingOutboundQueue = false;
 
   String get currentUserId => _auth.currentUser!.uid;
 
@@ -176,6 +182,25 @@ class ChatService {
       }
       rethrow;
     }
+  }
+
+  String _encryptionFingerprint(Map<String, dynamic> data) {
+    if (data['selfEncryptedMessage'] != null) {
+      return '${data['selfEncryptedMessage']}|${data['selfEncryptedKey']}';
+    }
+    return '${data['encryptedMessage']}|${data['encryptedKey']}';
+  }
+
+  Future<String> _decryptChatMessageCached(String docId, Map<String, dynamic> data) async {
+    final fingerprint = _encryptionFingerprint(data);
+    final cached = _decryptionCache[docId];
+    if (cached != null && cached.fingerprint == fingerprint) {
+      return cached.text;
+    }
+
+    final text = await _decryptChatMessage(data);
+    _decryptionCache[docId] = _DecryptionCacheEntry(fingerprint, text);
+    return text;
   }
 
   /// Get list of users to chat with (Stream - Deprecated for large lists)
@@ -414,7 +439,7 @@ class ChatService {
               decryptedText = data['text'] ?? '';
             } else {
               try {
-                decryptedText = await _decryptChatMessage(data);
+                decryptedText = await _decryptChatMessageCached(doc.id, data);
               } catch (e) {
                 debugPrint('E2EE: Message decrypt failed: $e');
                 decryptedText = '[Şifre Çözülemedi]';
@@ -434,8 +459,54 @@ class ChatService {
         });
   }
 
-  /// Send a text message
+  /// Send a text message (queued — returns immediately, sends in background).
   Future<void> sendMessage(String text, {
+    String? receiverId, 
+    String? explicitChatId, 
+    bool isGroup = false, 
+    String type = 'text',
+    List<String> groupParticipants = const [],
+  }) {
+    final completer = Completer<void>();
+    _outboundQueue.add(_OutboundMessage(
+      text: text,
+      receiverId: receiverId,
+      explicitChatId: explicitChatId,
+      isGroup: isGroup,
+      type: type,
+      groupParticipants: groupParticipants,
+      completer: completer,
+    ));
+    _processOutboundQueue();
+    return completer.future;
+  }
+
+  Future<void> _processOutboundQueue() async {
+    if (_processingOutboundQueue) return;
+    _processingOutboundQueue = true;
+
+    while (_outboundQueue.isNotEmpty) {
+      final item = _outboundQueue.removeFirst();
+      try {
+        await _sendMessageInternal(
+          item.text,
+          receiverId: item.receiverId,
+          explicitChatId: item.explicitChatId,
+          isGroup: item.isGroup,
+          type: item.type,
+          groupParticipants: item.groupParticipants,
+        );
+        if (!item.completer.isCompleted) item.completer.complete();
+      } catch (e, stack) {
+        debugPrint('Send queue error: $e\n$stack');
+        if (!item.completer.isCompleted) item.completer.completeError(e);
+      }
+    }
+
+    _processingOutboundQueue = false;
+  }
+
+  Future<void> _sendMessageInternal(String text, {
     String? receiverId, 
     String? explicitChatId, 
     bool isGroup = false, 
@@ -533,4 +604,31 @@ class ChatService {
       isGroup: isGroup,
     );
   }
+}
+
+class _DecryptionCacheEntry {
+  final String fingerprint;
+  final String text;
+
+  const _DecryptionCacheEntry(this.fingerprint, this.text);
+}
+
+class _OutboundMessage {
+  final String text;
+  final String? receiverId;
+  final String? explicitChatId;
+  final bool isGroup;
+  final String type;
+  final List<String> groupParticipants;
+  final Completer<void> completer;
+
+  _OutboundMessage({
+    required this.text,
+    required this.receiverId,
+    required this.explicitChatId,
+    required this.isGroup,
+    required this.type,
+    required this.groupParticipants,
+    required this.completer,
+  });
 }
