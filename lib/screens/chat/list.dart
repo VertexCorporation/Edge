@@ -39,7 +39,6 @@ class ChatListScreen extends StatefulWidget {
 class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProviderStateMixin {
   final ChatService _chatService = ChatService();
 
-  bool _isInitializingKeys = true;
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
@@ -85,9 +84,6 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
       }
     } catch (e) {
       debugPrint('Error initializing: $e');
-    }
-    if (mounted) {
-      setState(() => _isInitializingKeys = false);
     }
   }
 
@@ -333,14 +329,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                     : const SizedBox.shrink(),
               ),
 
-              if (_isInitializingKeys)
-                Expanded(
-                  child: Center(
-                    child: CircularProgressIndicator(color: AppColors.senaryColor),
-                  ),
-                )
-              else
-                Expanded(
+              Expanded(
                   child: Column(
                     children: [
                       TabBar(
@@ -434,12 +423,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                                       delegate: SliverChildBuilderDelegate(
                                         (context, index) {
                                           if (index == _suggestedUsers.length) {
-                                            return _isLoadingUsers
-                                                ? const Padding(
-                                                    padding: EdgeInsets.all(16.0),
-                                                    child: Center(child: CircularProgressIndicator()),
-                                                  )
-                                                : const SizedBox.shrink();
+                                            return const SizedBox.shrink();
                                           }
 
                                           final user = _suggestedUsers[index];
@@ -492,7 +476,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
             stream: _communitiesStream,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return const SizedBox.shrink();
               }
               final comms = snapshot.data ?? [];
               if (comms.isEmpty) {
@@ -542,12 +526,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
       stream: _recentChatsStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.all(24.0),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-          );
+          return const SliverToBoxAdapter(child: SizedBox.shrink());
         }
 
         final chats = snapshot.data ?? [];

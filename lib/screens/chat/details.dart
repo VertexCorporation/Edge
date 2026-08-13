@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -11,7 +12,6 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:encrypt/encrypt.dart' as enc;
-import 'package:shimmer/shimmer.dart';
 import '../../theme.dart';
 import '../../services/chat.dart';
 import '../../widgets/appbar.dart';
@@ -50,18 +50,47 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   bool _isRecording = false;
   final List<Map<String, dynamic>> _pendingMessages = [];
+  Timer? _typingIdleTimer;
+  bool _amTyping = false;
+  late final String _resolvedChatId;
 
   @override
   void initState() {
     super.initState();
+    _resolvedChatId = widget.chatId ??
+        _chatService.getChatId(_chatService.currentUserId, widget.receiverId!);
+    _messageController.addListener(_onComposeChanged);
   }
 
   @override
   void dispose() {
+    _typingIdleTimer?.cancel();
+    _messageController.removeListener(_onComposeChanged);
+    _setTyping(false);
     _messageController.dispose();
     _scrollController.dispose();
     _record.dispose();
     super.dispose();
+  }
+
+  void _onComposeChanged() {
+    final hasText = _messageController.text.trim().isNotEmpty;
+    if (hasText) {
+      if (!_amTyping) _setTyping(true);
+      _typingIdleTimer?.cancel();
+      _typingIdleTimer = Timer(const Duration(seconds: 2), () {
+        _setTyping(false);
+      });
+    } else {
+      _typingIdleTimer?.cancel();
+      _setTyping(false);
+    }
+  }
+
+  void _setTyping(bool isTyping) {
+    if (_amTyping == isTyping) return;
+    _amTyping = isTyping;
+    _chatService.setTypingStatus(_resolvedChatId, isTyping);
   }
 
   Future<void> _sendMessage() async {
@@ -80,6 +109,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     };
 
     _messageController.clear();
+    _typingIdleTimer?.cancel();
+    _setTyping(false);
     setState(() => _pendingMessages.insert(0, pending));
 
     _chatService.sendMessage(
@@ -186,15 +217,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               child: _ChatMessagesList(
                 chatService: _chatService,
                 scrollController: _scrollController,
-                chatId: widget.chatId ??
-                    _chatService.getChatId(
-                      _chatService.currentUserId,
-                      widget.receiverId!,
-                    ),
+                chatId: _resolvedChatId,
                 isGroup: widget.isGroup,
                 pendingMessages: _pendingMessages,
               ),
             ),
+            if (!widget.isGroup && widget.receiverId != null)
+              _PeerTypingIndicator(
+                stream: _chatService.watchPeerTyping(
+                  _resolvedChatId,
+                  widget.receiverId!,
+                ),
+                name: widget.title,
+              ),
             if (widget.isAnnouncementGroup && !widget.isAdmin)
                Container(
                  padding: const EdgeInsets.all(16),
@@ -223,6 +258,40 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     );
   }
 
+}
+
+class _PeerTypingIndicator extends StatelessWidget {
+  final Stream<bool> stream;
+  final String name;
+
+  const _PeerTypingIndicator({
+    required this.stream,
+    required this.name,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<bool>(
+      stream: stream,
+      builder: (context, snapshot) {
+        if (snapshot.data != true) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 4),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '$name typing...',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+                color: AppColors.tertiaryColor,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
 class _ChatMessagesList extends StatelessWidget {
@@ -549,18 +618,7 @@ class _DecryptedImageWidgetState extends State<_DecryptedImageWidget> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Shimmer.fromColors(
-        baseColor: Colors.grey[800]!,
-        highlightColor: Colors.grey[600]!,
-        child: Container(
-          width: 250,
-          height: 250,
-          decoration: BoxDecoration(
-            color: Colors.grey[800],
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-      );
+      return const SizedBox(width: 250, height: 250);
     }
     if (_hasError || _decryptedBytes == null) {
       return Container(
@@ -689,23 +747,9 @@ class _DecryptedAudioWidgetState extends State<_DecryptedAudioWidget> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return SizedBox(
-        width: 120,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2, color: widget.textColor),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              AppLocalizations.of(context)!.audioRecord,
-              style: TextStyle(color: widget.textColor),
-            ),
-          ],
-        ),
+      return Text(
+        AppLocalizations.of(context)!.audioRecord,
+        style: TextStyle(color: widget.textColor.withValues(alpha: 0.6)),
       );
     }
 

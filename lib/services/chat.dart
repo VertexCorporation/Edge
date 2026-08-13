@@ -278,6 +278,30 @@ class ChatService {
     return ids.join('_');
   }
 
+  /// Mark current user as typing / not typing in a chat.
+  Future<void> setTypingStatus(String chatId, bool isTyping) async {
+    try {
+      await _firestore.collection('chats').doc(chatId).set({
+        'typing': {
+          currentUserId: isTyping ? FieldValue.serverTimestamp() : FieldValue.delete(),
+        },
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('Typing status update failed: $e');
+    }
+  }
+
+  /// Emits true while [peerUserId] has typed within the last few seconds.
+  Stream<bool> watchPeerTyping(String chatId, String peerUserId) {
+    return _firestore.collection('chats').doc(chatId).snapshots().map((snap) {
+      final typing = snap.data()?['typing'];
+      if (typing is! Map) return false;
+      final raw = typing[peerUserId];
+      if (raw is! Timestamp) return false;
+      return DateTime.now().difference(raw.toDate()).inSeconds < 5;
+    });
+  }
+
   /// Create a new group chat
   Future<String> createGroupChat(
     String groupName, 
