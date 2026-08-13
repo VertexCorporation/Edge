@@ -1,12 +1,13 @@
-import 'package:flutter/material.dart';
 import 'package:edge/l10n/app_localizations.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../routes.dart';
+import '../../services/chat.dart';
 import '../../theme.dart';
 import '../../widgets/appbar.dart';
-import '../../services/chat.dart';
-import 'details.dart';
 import 'create/group.dart';
+import 'details.dart';
 
 class CommunityDetailScreen extends StatefulWidget {
   final Map<String, dynamic> community;
@@ -19,7 +20,7 @@ class CommunityDetailScreen extends StatefulWidget {
 
 class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
   final ChatService _chatService = ChatService();
-  late bool _isAdmin;
+  late final bool _isAdmin;
 
   @override
   void initState() {
@@ -28,55 +29,161 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
     _isAdmin = admins.contains(_chatService.currentUserId);
   }
 
-  Widget _buildGroupTile(Map<String, dynamic> group, bool isDark) {
+  bool get _isDarkTheme => AppColors.currentTheme == 'dark';
+
+  Color get _primaryTextColor =>
+      _isDarkTheme ? Colors.white : Colors.black;
+
+  Color get _secondaryTextColor =>
+      _isDarkTheme ? Colors.white70 : Colors.black87;
+
+  String get _communityId => widget.community['id'] as String;
+
+  String get _communityName => widget.community['name'] as String? ?? 'Topluluk';
+
+  String get _communityDescription =>
+      widget.community['description'] as String? ?? '';
+
+  String? get _announcementGroupId =>
+      widget.community['announcementGroupId'] as String?;
+
+  void _openChat({
+    required String chatId,
+    required String title,
+    bool isAnnouncementGroup = false,
+  }) {
+    Navigator.push(
+      context,
+      SlideRightRoute(
+        page: ChatDetailScreen(
+          chatId: chatId,
+          isGroup: true,
+          title: title,
+          isAnnouncementGroup: isAnnouncementGroup,
+          isAdmin: _isAdmin,
+        ),
+      ),
+    );
+  }
+
+  void _openCreateGroup() {
+    Navigator.push(
+      context,
+      SlideRightRoute(
+        page: CreateGroupScreen(communityId: _communityId),
+      ),
+    );
+  }
+
+  Widget _buildDescriptionBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      color: _isDarkTheme ? Colors.white10 : Colors.black12,
+      child: Text(
+        _communityDescription,
+        style: TextStyle(color: _secondaryTextColor),
+      ),
+    );
+  }
+
+  Widget _buildAnnouncementTile(AppLocalizations l10n) {
+    final groupId = _announcementGroupId;
+    if (groupId == null) return const SizedBox.shrink();
+
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: AppColors.senaryColor.withValues(alpha: 0.2),
+        child: Icon(Icons.campaign, color: AppColors.senaryColor),
+      ),
+      title: Text(
+        l10n.announcements,
+        style: TextStyle(
+          color: _primaryTextColor,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      subtitle: Text(
+        l10n.onlyAdminsCanMessage,
+        style: TextStyle(color: AppColors.tertiaryColor, fontSize: 12),
+      ),
+      onTap: () => _openChat(
+        chatId: groupId,
+        title: l10n.announcements,
+        isAnnouncementGroup: true,
+      ),
+    );
+  }
+
+  Widget _buildGroupTile(Map<String, dynamic> group) {
+    final groupName = group['groupName'] as String? ?? 'Grup';
+    final chatId = group['chatId'] as String;
+
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: AppColors.secondaryColor.withValues(alpha: 0.2),
         child: Icon(Icons.group, color: AppColors.senaryColor),
       ),
       title: Text(
-        group['groupName'] ?? 'Grup',
-        style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold),
+        groupName,
+        style: TextStyle(
+          color: _primaryTextColor,
+          fontWeight: FontWeight.bold,
+        ),
       ),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ChatDetailScreen(
-              chatId: group['chatId'],
-              isGroup: true,
-              title: group['groupName'] ?? 'Grup',
-            ),
-          ),
-        );
-      },
+      onTap: () => _openChat(chatId: chatId, title: groupName),
+    );
+  }
+
+  Widget _buildGroupsSection(AppLocalizations l10n) {
+    return Expanded(
+      child: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: _chatService.getCommunityGroups(_communityId),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final groups = snapshot.data ?? [];
+          final filteredGroups = groups
+              .where((group) => group['chatId'] != _announcementGroupId)
+              .toList();
+
+          if (filteredGroups.isEmpty) {
+            return Center(child: Text(l10n.noGroupsInCommunity));
+          }
+
+          return ListView.builder(
+            itemCount: filteredGroups.length,
+            itemBuilder: (context, index) =>
+                _buildGroupTile(filteredGroups[index]),
+          );
+        },
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final communityId = widget.community['id'] as String;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: VertexAppBar(
         leadingMode: VertexLeadingMode.back,
         title: Text(
-          widget.community['name'] ?? 'Topluluk',
-          style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.w700, color: Colors.white),
+          _communityName,
+          style: GoogleFonts.outfit(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
         ),
         actions: _isAdmin
             ? [
                 IconButton(
                   icon: const Icon(Icons.group_add, color: Colors.white),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CreateGroupScreen(communityId: communityId),
-                      ),
-                    );
-                  },
+                  onPressed: _openCreateGroup,
+                  tooltip: 'Yeni Grup',
                 ),
               ]
             : null,
@@ -84,77 +191,21 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: isDark ? Colors.white10 : Colors.black12,
-            width: double.infinity,
-            child: Text(
-              widget.community['description'] ?? '',
-              style: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
-            ),
-          ),
-          
-          // Announcements Group
-          if (widget.community['announcementGroupId'] != null)
-            ListTile(
-              leading: CircleAvatar(
-                backgroundColor: AppColors.senaryColor.withValues(alpha: 0.2),
-                child: Icon(Icons.campaign, color: AppColors.senaryColor),
-              ),
-              title: Text(AppLocalizations.of(context)!.announcements, style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold)),
-              subtitle: Text(AppLocalizations.of(context)!.onlyAdminsCanMessage, style: TextStyle(color: AppColors.tertiaryColor, fontSize: 12)),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ChatDetailScreen(
-                      chatId: widget.community['announcementGroupId'],
-                      isGroup: true,
-                      title: AppLocalizations.of(context)!.announcements,
-                      isAnnouncementGroup: true,
-                      isAdmin: _isAdmin,
-                    ),
-                  ),
-                );
-              },
-            ),
-          
+          _buildDescriptionBanner(),
+          _buildAnnouncementTile(l10n),
           const Divider(),
-          
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
-              "Gruplar",
-              style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.senaryColor),
+              'Gruplar',
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.senaryColor,
+              ),
             ),
           ),
-
-          Expanded(
-            child: StreamBuilder<List<Map<String, dynamic>>>(
-              stream: _chatService.getCommunityGroups(communityId),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                
-                final groups = snapshot.data ?? [];
-                
-                // Exclude the announcement group from the general list
-                final filteredGroups = groups.where((g) => g['chatId'] != widget.community['announcementGroupId']).toList();
-
-                if (filteredGroups.isEmpty) {
-                  return Center(child: Text(AppLocalizations.of(context)!.noGroupsInCommunity));
-                }
-                
-                return ListView.builder(
-                  itemCount: filteredGroups.length,
-                  itemBuilder: (context, index) {
-                    return _buildGroupTile(filteredGroups[index], isDark);
-                  },
-                );
-              },
-            ),
-          ),
+          _buildGroupsSection(l10n),
         ],
       ),
     );

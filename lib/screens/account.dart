@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:edge/l10n/app_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../theme.dart';
 import '../widgets/card.dart';
 import '../widgets/button.dart';
@@ -43,8 +44,10 @@ class _AccountScreenState extends State<AccountScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    context.watch<ThemeProvider>();
     final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
+    final isDarkTheme = AppColors.currentTheme == 'dark';
 
     return SafeArea(
       child: ScrollFog(
@@ -83,7 +86,7 @@ class _AccountScreenState extends State<AccountScreen>
             const SizedBox(height: 20),
 
             // Settings
-            _buildSettingsSection(brightness, isDark),
+            _buildSettingsSection(brightness, isDark, isDarkTheme),
             const SizedBox(height: 20),
 
             // About section
@@ -295,7 +298,7 @@ class _AccountScreenState extends State<AccountScreen>
     );
   }
 
-  Widget _buildSettingsSection(Brightness brightness, bool isDark) {
+  Widget _buildSettingsSection(Brightness brightness, bool isDark, bool isDarkTheme) {
     return VertexCard(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -315,12 +318,12 @@ class _AccountScreenState extends State<AccountScreen>
           _buildSettingsTile(
             icon: Icons.dark_mode_outlined,
             title: AppLocalizations.of(context)!.darkTheme,
-            subtitle: isDark ? 'Aktif' : 'Pasif',
+            subtitle: isDarkTheme ? 'Aktif' : 'Pasif',
             brightness: brightness,
             trailing: Switch.adaptive(
-              value: isDark,
+              value: isDarkTheme,
               onChanged: (value) {
-                // Theme toggle will be handled by parent
+                context.read<ThemeProvider>().changeTheme(value ? 'dark' : 'light');
               },
               activeTrackColor: isDark
                   ? AppColors.senaryColor

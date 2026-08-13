@@ -32,7 +32,7 @@ exports.sendNotificationOnMessage = functions.firestore
 
     // Get sender's info (name or username)
     const senderDoc = await admin.firestore().collection("usernames").where("userId", "==", senderId).limit(1).get();
-    let senderName = "Biri";
+    let senderName = "user";
     if (!senderDoc.empty) {
       const data = senderDoc.docs[0].data();
       senderName = data.name || data.username || "Biri";
@@ -69,3 +69,47 @@ exports.sendNotificationOnMessage = functions.firestore
 
     return null;
   });
+
+exports.createUserProfile = functions.auth.user().onCreate(async (user) => {
+  const {uid, email, displayName, photoURL} = user;
+  const name = displayName || "Kullanıcı";
+  const db = admin.firestore();
+
+  await db.collection("users").doc(uid).set({
+    name,
+    email: email || "",
+    role: "Üye",
+    isVertex: false,
+    isOnline: true,
+    photoURL: photoURL || "",
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  let username = email ?
+    email.split("@")[0].toLowerCase().replace(/[^a-z0-9_]/g, "") :
+    uid.slice(0, 8);
+  if (!username) {
+    username = uid.slice(0, 8);
+  }
+
+  let suffix = 1;
+  let usernameRef = db.collection("usernames").doc(username);
+  let usernameDoc = await usernameRef.get();
+  while (usernameDoc.exists && usernameDoc.data().userId !== uid) {
+    username = `${username}${suffix}`;
+    suffix++;
+    usernameRef = db.collection("usernames").doc(username);
+    usernameDoc = await usernameRef.get();
+  }
+
+  await usernameRef.set({
+    userId: uid,
+    name,
+    email: email || "",
+    role: "Üye",
+    isOnline: true,
+    lastSeen: admin.firestore.FieldValue.serverTimestamp(),
+  }, {merge: true});
+
+  return null;
+});

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shimmer/shimmer.dart';
@@ -5,6 +6,7 @@ import 'theme.dart';
 import 'screens/login.dart';
 import 'screens/chat/list.dart';
 import 'services/auth.dart';
+import 'services/notification.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:edge/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -20,16 +22,23 @@ class EdgeApp extends StatefulWidget {
 
 class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
   final AuthService _authService = AuthService();
+  StreamSubscription<User?>? _authSubscription;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _authService.updateOnlineStatus(true);
+    _authSubscription = _authService.authStateChanges.listen((user) {
+      if (user != null) {
+        NotificationService().saveDeviceToken();
+        _authService.updateOnlineStatus(true);
+      }
+    });
   }
 
   @override
   void dispose() {
+    _authSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -126,6 +135,11 @@ class _SplashScreen extends StatelessWidget {
                 width: 80,
                 height: 80,
                 fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => Icon(
+                  Icons.hub_outlined,
+                  size: 80,
+                  color: AppColors.senaryColor,
+                ),
               ),
             ),
           ],

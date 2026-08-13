@@ -248,13 +248,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             ivBase64: payload['iv'] ?? '',
           );
         } else if (type == 'audio') {
-          content = Row(
-             mainAxisSize: MainAxisSize.min,
-             children: [
-               const Icon(Icons.mic, color: Colors.grey),
-               const SizedBox(width: 8),
-               Text(AppLocalizations.of(context)!.audioRecord, style: TextStyle(color: isMe ? Colors.white : Colors.black)),
-             ],
+          content = _DecryptedAudioWidget(
+            url: (payload['url'] ?? '').toString(),
+            keyBase64: payload['key'] ?? '',
+            ivBase64: payload['iv'] ?? '',
+            textColor: isMe ? Colors.white : (isDark ? Colors.white : Colors.black),
           );
         } else {
            content = Row(
@@ -491,3 +489,150 @@ class _DecryptedImageWidgetState extends State<_DecryptedImageWidget> {
 }
 
 final Map<String, Uint8List> _globalImageCache = {};
+
+class _DecryptedAudioWidget extends StatefulWidget {
+  final String url;
+  final String keyBase64;
+  final String ivBase64;
+  final Color textColor;
+
+  const _DecryptedAudioWidget({
+    required this.url,
+    required this.keyBase64,
+    required this.ivBase64,
+    required this.textColor,
+  });
+
+  @override
+  State<_DecryptedAudioWidget> createState() => _DecryptedAudioWidgetState();
+}
+
+class _DecryptedAudioWidgetState extends State<_DecryptedAudioWidget> {
+  final AudioPlayer _player = AudioPlayer();
+  bool _isLoading = true;
+  bool _hasError = false;
+  bool _isPlaying = false;
+  Uint8List? _audioBytes;
+
+  @override
+  void initState() {
+    super.initState();
+    _player.onPlayerComplete.listen((_) {
+      if (mounted) setState(() => _isPlaying = false);
+    });
+    _fetchAndDecrypt();
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchAndDecrypt() async {
+    try {
+      if (widget.url.isEmpty || widget.keyBase64.isEmpty || widget.ivBase64.isEmpty) {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+        });
+        return;
+      }
+
+      final response = await http.get(Uri.parse(widget.url));
+      if (response.statusCode != 200) {
+        throw Exception('HTTP Error: ${response.statusCode}');
+      }
+
+      final aesKey = enc.Key.fromBase64(widget.keyBase64);
+      final iv = enc.IV.fromBase64(widget.ivBase64);
+      final encrypter = enc.Encrypter(enc.AES(aesKey, mode: enc.AESMode.cbc));
+      final decryptedBytes = encrypter.decryptBytes(enc.Encrypted(response.bodyBytes), iv: iv);
+
+      if (mounted) {
+        setState(() {
+          _audioBytes = Uint8List.fromList(decryptedBytes);
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Ses çözme hatası: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+        });
+      }
+    }
+  }
+
+  Future<void> _togglePlayback() async {
+    if (_audioBytes == null) return;
+
+    if (_isPlaying) {
+      await _player.stop();
+      if (mounted) setState(() => _isPlaying = false);
+      return;
+    }
+
+    await _player.play(BytesSource(_audioBytes!));
+    if (mounted) setState(() => _isPlaying = true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return SizedBox(
+        width: 120,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2, color: widget.textColor),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              AppLocalizations.of(context)!.audioRecord,
+              style: TextStyle(color: widget.textColor),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_hasError || _audioBytes == null) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.error_outline, color: widget.textColor.withValues(alpha: 0.7), size: 18),
+          const SizedBox(width: 8),
+          Text(
+            AppLocalizations.of(context)!.unsupportedMediaType,
+            style: TextStyle(color: widget.textColor),
+          ),
+        ],
+      );
+    }
+
+    return InkWell(
+      onTap: _togglePlayback,
+      borderRadius: BorderRadius.circular(8),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            _isPlaying ? Icons.stop_circle_outlined : Icons.play_circle_outline,
+            color: widget.textColor,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            AppLocalizations.of(context)!.audioRecord,
+            style: TextStyle(color: widget.textColor),
+          ),
+        ],
+      ),
+    );
+  }
+}

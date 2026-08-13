@@ -68,6 +68,9 @@ class AuthService {
         return AuthResult.error('Giriş başarısız. Lütfen tekrar deneyin.');
       }
 
+      final accessError = await _requireVertexAccess(user);
+      if (accessError != null) return accessError;
+
       // 2. Get user profile data
       final userData = await getUserData(user.uid);
 
@@ -98,17 +101,30 @@ class AuthService {
 
       await user.updateDisplayName(name);
 
-      await _syncUsernameProfile(user, name: name, email: email.trim().toLowerCase(), role: 'Üye', isOnline: true);
-      
-      if (phoneNumber != null && phoneNumber.isNotEmpty) {
-        try {
-          await _firestore.collection('users').doc(user.uid).set({
-            'phoneNumber': phoneNumber,
-          }, SetOptions(merge: true));
-        } catch (e) {
-          debugPrint('Failed to save phone number: $e');
-        }
-      }
+      final emailNormalized = email.trim().toLowerCase();
+      final username = _usernameFromEmail(emailNormalized);
+
+      await _firestore.collection('users').doc(user.uid).set({
+        'name': name,
+        'email': emailNormalized,
+        'role': 'Üye',
+        'isVertex': false,
+        'isOnline': true,
+        'createdAt': FieldValue.serverTimestamp(),
+        if (phoneNumber != null && phoneNumber.isNotEmpty) 'phoneNumber': phoneNumber,
+      }, SetOptions(merge: true));
+
+      await _firestore.collection('usernames').doc(username).set({
+        'userId': user.uid,
+        'name': name,
+        'email': emailNormalized,
+        'role': 'Üye',
+        'isOnline': true,
+        'lastSeen': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      final accessError = await _requireVertexAccess(user);
+      if (accessError != null) return accessError;
 
       return AuthResult.success(
         user: user,
@@ -226,6 +242,9 @@ class AuthService {
 
     await _syncUsernameProfile(user, name: name, email: user.email ?? '', role: role, isOnline: true);
 
+    final accessError = await _requireVertexAccess(user);
+    if (accessError != null) return accessError;
+
     return AuthResult.success(
       user: user,
       name: name,
@@ -283,6 +302,22 @@ class AuthService {
     return false;
   }
 
+  Future<AuthResult?> _requireVertexAccess(User user) async {
+    final isVertex = await checkIsVertex(user.uid);
+    if (isVertex) return null;
+
+    await signOut();
+    return AuthResult.error(
+      'Bu uygulamaya erişim yetkiniz bulunmuyor. Vertex üyeliğiniz onaylandığında tekrar deneyin.',
+    );
+  }
+
+  String _usernameFromEmail(String email) {
+    final localPart = email.split('@').first.toLowerCase();
+    final sanitized = localPart.replaceAll(RegExp(r'[^a-z0-9_]'), '');
+    return sanitized.isNotEmpty ? sanitized : 'user';
+  }
+
   /// Get user profile data from Firestore
   Future<Map<String, dynamic>?> getUserData(String uid) async {
     try {
@@ -295,6 +330,13 @@ class AuthService {
 
   /// Sign out
   Future<void> signOut() async {
+    try {
+      if (!kIsWeb) {
+        await GoogleSignIn().signOut();
+      }
+    } catch (e) {
+      debugPrint('Google sign out failed: $e');
+    }
     await _auth.signOut();
   }
 

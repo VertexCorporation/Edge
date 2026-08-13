@@ -1,15 +1,26 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:edge/theme.dart';
 
 void main() {
-  testWidgets('Vertex Edge placeholder test', (WidgetTester tester) async {
-    // TODO: Add proper widget tests
-    expect(true, isTrue);
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
+  test('ThemeProvider loads and persists theme changes', () async {
+    final provider = ThemeProvider('light');
+    expect(provider.currentTheme, 'light');
+    expect(AppColors.currentTheme, 'light');
+
+    provider.changeTheme('dark');
+    await Future<void>.delayed(Duration.zero);
+
+    expect(provider.currentTheme, 'dark');
+    expect(AppColors.currentTheme, 'dark');
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('selectedTheme'), 'dark');
   });
 }

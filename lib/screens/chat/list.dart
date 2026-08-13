@@ -12,6 +12,7 @@ import '../../services/chat.dart';
 import 'details.dart';
 import 'create/group.dart';
 import 'create/community.dart';
+import 'community.dart';
 import '../../widgets/fog.dart';
 import '../../routes.dart';
 import 'package:edge/l10n/app_localizations.dart';
@@ -495,7 +496,12 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                       title: Text(comm['name'] ?? '', style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold)),
                       subtitle: Text(comm['description'] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: AppColors.tertiaryColor)),
                       onTap: () {
-                        // TODO: Navigate to Community Detail Screen
+                        Navigator.push(
+                          context,
+                          SlideRightRoute(
+                            page: CommunityDetailScreen(community: comm),
+                          ),
+                        );
                       },
                     );
                   },

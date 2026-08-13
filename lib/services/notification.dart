@@ -1,14 +1,20 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import '../firebase.dart';
 
 // Background message handler must be a top-level function
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // If you're going to use other Firebase services in the background, such as Firestore,
-  // make sure you call `initializeApp` before using other Firebase services.
+  final options = DefaultFirebaseOptions.currentPlatform;
+  if (options != null) {
+    await Firebase.initializeApp(options: options);
+  } else {
+    await Firebase.initializeApp();
+  }
   debugPrint("Arkaplanda mesaj alındı: ${message.messageId}");
 }
 
@@ -21,6 +27,7 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
 
   bool _isInitialized = false;
+  bool _tokenRefreshListenerAttached = false;
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -106,48 +113,46 @@ class NotificationService {
     });
 
     _isInitialized = true;
-    _saveDeviceToken();
+    await saveDeviceToken();
   }
 
-  Future<void> _saveDeviceToken() async {
+  /// Saves the current device's FCM token to Firestore. Call after login.
+  Future<void> saveDeviceToken() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     try {
-      String? token = await _fcm.getToken();
+      final token = await _fcm.getToken();
       if (token != null) {
-        // Save the token to user's profile in Firestore
-        final query = await FirebaseFirestore.instance
-            .collection('usernames')
-            .where('userId', isEqualTo: user.uid)
-            .limit(1)
-            .get();
-
-        if (query.docs.isNotEmpty) {
-          await FirebaseFirestore.instance
-              .collection('usernames')
-              .doc(query.docs.first.id)
-              .set({'fcmToken': token}, SetOptions(merge: true));
-        }
+        await _persistToken(user.uid, token);
       }
 
-      // Listen to token refreshes
-      _fcm.onTokenRefresh.listen((newToken) async {
-        final query = await FirebaseFirestore.instance
-            .collection('usernames')
-            .where('userId', isEqualTo: user.uid)
-            .limit(1)
-            .get();
-
-        if (query.docs.isNotEmpty) {
-          await FirebaseFirestore.instance
-              .collection('usernames')
-              .doc(query.docs.first.id)
-              .set({'fcmToken': newToken}, SetOptions(merge: true));
-        }
-      });
+      if (!_tokenRefreshListenerAttached) {
+        _tokenRefreshListenerAttached = true;
+        _fcm.onTokenRefresh.listen((newToken) async {
+          final currentUser = FirebaseAuth.instance.currentUser;
+          if (currentUser != null) {
+            await _persistToken(currentUser.uid, newToken);
+          }
+        });
+      }
     } catch (e) {
       debugPrint("FCM token alınamadı: $e");
+    }
+  }
+
+  Future<void> _persistToken(String uid, String token) async {
+    final query = await FirebaseFirestore.instance
+        .collection('usernames')
+        .where('userId', isEqualTo: uid)
+        .limit(1)
+        .get();
+
+    if (query.docs.isNotEmpty) {
+      await FirebaseFirestore.instance
+          .collection('usernames')
+          .doc(query.docs.first.id)
+          .set({'fcmToken': token}, SetOptions(merge: true));
     }
   }
 }
