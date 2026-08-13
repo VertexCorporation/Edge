@@ -53,9 +53,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _messageController.addListener(() {
-      setState(() {});
-    });
   }
 
   @override
@@ -169,33 +166,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         child: Column(
           children: [
             Expanded(
-              child: StreamBuilder<List<Map<String, dynamic>>>(
-                stream: _chatService.getMessages(
-                  widget.chatId ?? _chatService.getChatId(_chatService.currentUserId, widget.receiverId!),
-                  isGroup: widget.isGroup,
-                ),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  final messages = snapshot.data ?? [];
-                  
-                  return ScrollFog(
-                    scrollController: _scrollController,
-                    color: AppColors.background,
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      reverse: true,
-                      padding: const EdgeInsets.all(16),
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) {
-                        final msg = messages[index];
-                        final isMe = msg['senderId'] == _chatService.currentUserId;
-                        return _buildMessageBubble(msg, isMe, brightness, isDark);
-                      },
+              child: _ChatMessagesList(
+                chatService: _chatService,
+                scrollController: _scrollController,
+                chatId: widget.chatId ??
+                    _chatService.getChatId(
+                      _chatService.currentUserId,
+                      widget.receiverId!,
                     ),
-                  );
-                },
+                isGroup: widget.isGroup,
               ),
             ),
             if (_isSending)
@@ -215,14 +194,88 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                  ),
                )
             else
-               _buildInputArea(brightness, isDark),
+               _MessageInputBar(
+                 controller: _messageController,
+                 isDark: isDark,
+                 isRecording: _isRecording,
+                 onSend: _sendMessage,
+                 onPickFile: _pickAndSendFile,
+                 onPickImage: _pickAndSendImage,
+                 onStartRecording: _startRecording,
+                 onStopRecording: _stopRecording,
+               ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildMessageBubble(Map<String, dynamic> msg, bool isMe, Brightness brightness, bool isDark) {
+}
+
+class _ChatMessagesList extends StatelessWidget {
+  final ChatService chatService;
+  final ScrollController scrollController;
+  final String chatId;
+  final bool isGroup;
+
+  const _ChatMessagesList({
+    required this.chatService,
+    required this.scrollController,
+    required this.chatId,
+    required this.isGroup,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: chatService.getMessages(chatId, isGroup: isGroup),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final messages = snapshot.data ?? [];
+
+        return ScrollFog(
+          scrollController: scrollController,
+          color: AppColors.background,
+          child: ListView.builder(
+            controller: scrollController,
+            reverse: true,
+            padding: const EdgeInsets.all(16),
+            itemCount: messages.length,
+            itemBuilder: (context, index) {
+              final msg = messages[index];
+              final isMe = msg['senderId'] == chatService.currentUserId;
+              return _MessageBubble(
+                key: ValueKey(msg['id']),
+                msg: msg,
+                isMe: isMe,
+                isDark: isDark,
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MessageBubble extends StatelessWidget {
+  final Map<String, dynamic> msg;
+  final bool isMe;
+  final bool isDark;
+
+  const _MessageBubble({
+    super.key,
+    required this.msg,
+    required this.isMe,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final String type = msg['type'] ?? 'text';
     final String text = msg['text'];
 
@@ -235,13 +288,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         ),
       );
     } else {
-      // Decode payload
       try {
         final payload = jsonDecode(text);
         if (type == 'image') {
-          final link = (payload['url'] ?? '').toString();
           content = _DecryptedImageWidget(
-            url: link,
+            url: (payload['url'] ?? '').toString(),
             keyBase64: payload['key'] ?? '',
             ivBase64: payload['iv'] ?? '',
           );
@@ -253,17 +304,20 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             textColor: isMe ? Colors.white : (isDark ? Colors.white : Colors.black),
           );
         } else {
-           content = Row(
-             mainAxisSize: MainAxisSize.min,
-             children: [
-               const Icon(Icons.insert_drive_file, color: Colors.grey),
-               const SizedBox(width: 8),
-               Text(AppLocalizations.of(context)!.fileWithFileName(payload['fileName'] ?? ''), style: TextStyle(color: isMe ? Colors.white : Colors.black)),
-             ],
+          content = Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.insert_drive_file, color: Colors.grey),
+              const SizedBox(width: 8),
+              Text(
+                AppLocalizations.of(context)!.fileWithFileName(payload['fileName'] ?? ''),
+                style: TextStyle(color: isMe ? Colors.white : Colors.black),
+              ),
+            ],
           );
         }
       } catch (e) {
-         content = Text(AppLocalizations.of(context)!.unsupportedMediaType);
+        content = Text(AppLocalizations.of(context)!.unsupportedMediaType);
       }
     }
 
@@ -283,9 +337,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isMe 
-              ? AppColors.senaryColor 
-              : AppColors.secondaryColor,
+          color: isMe ? AppColors.senaryColor : AppColors.secondaryColor,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
@@ -298,8 +350,31 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       ),
     );
   }
+}
 
-  Widget _buildInputArea(Brightness brightness, bool isDark) {
+class _MessageInputBar extends StatelessWidget {
+  final TextEditingController controller;
+  final bool isDark;
+  final bool isRecording;
+  final VoidCallback onSend;
+  final VoidCallback onPickFile;
+  final VoidCallback onPickImage;
+  final VoidCallback onStartRecording;
+  final VoidCallback onStopRecording;
+
+  const _MessageInputBar({
+    required this.controller,
+    required this.isDark,
+    required this.isRecording,
+    required this.onSend,
+    required this.onPickFile,
+    required this.onPickImage,
+    required this.onStartRecording,
+    required this.onStopRecording,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return SafeArea(
       child: Container(
         margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -320,15 +395,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           children: [
             IconButton(
               icon: Icon(Icons.attach_file_rounded, color: AppColors.tertiaryColor, size: 22),
-              onPressed: _pickAndSendFile,
+              onPressed: onPickFile,
             ),
             IconButton(
               icon: Icon(Icons.image_rounded, color: AppColors.tertiaryColor, size: 22),
-              onPressed: _pickAndSendImage,
+              onPressed: onPickImage,
             ),
             Expanded(
               child: TextField(
-                controller: _messageController,
+                controller: controller,
                 style: GoogleFonts.inter(color: isDark ? Colors.white : Colors.black),
                 decoration: InputDecoration(
                   hintText: AppLocalizations.of(context)!.typeMessage,
@@ -339,26 +414,32 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               ),
             ),
             GestureDetector(
-              onLongPress: _startRecording,
-              onLongPressUp: _stopRecording,
+              onLongPress: onStartRecording,
+              onLongPressUp: onStopRecording,
               child: IconButton(
                 icon: Icon(
-                  _isRecording ? Icons.mic_rounded : Icons.mic_none_rounded, 
-                  color: _isRecording ? Colors.red : AppColors.tertiaryColor, 
-                  size: 24
+                  isRecording ? Icons.mic_rounded : Icons.mic_none_rounded,
+                  color: isRecording ? Colors.red : AppColors.tertiaryColor,
+                  size: 24,
                 ),
                 onPressed: () {},
               ),
             ),
-            IconButton(
-              icon: Icon(
-                Icons.send_rounded, 
-                color: _messageController.text.trim().isEmpty 
-                    ? AppColors.tertiaryColor.withValues(alpha: 0.5) 
-                    : AppColors.senaryColor, 
-                size: 24
-              ),
-              onPressed: _sendMessage,
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: controller,
+              builder: (context, value, _) {
+                final hasText = value.text.trim().isNotEmpty;
+                return IconButton(
+                  icon: Icon(
+                    Icons.send_rounded,
+                    color: hasText
+                        ? AppColors.senaryColor
+                        : AppColors.tertiaryColor.withValues(alpha: 0.5),
+                    size: 24,
+                  ),
+                  onPressed: onSend,
+                );
+              },
             ),
           ],
         ),

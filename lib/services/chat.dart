@@ -1,8 +1,8 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:encrypt/encrypt.dart' as enc;
 import 'package:uuid/uuid.dart';
 import 'crypto.dart';
@@ -17,27 +17,100 @@ class ChatService {
 
   /// Ensure the current user has keys generated and public key is in Firestore
   Future<void> initializeKeys() async {
-    final hasKeys = await _cryptoService.hasKeys();
-    String? publicKey;
-    
-    if (!hasKeys) {
-      publicKey = await _cryptoService.generateAndStoreKeys();
-    } else {
-      publicKey = await _cryptoService.getPublicKey();
-    }
-    
-    if (publicKey != null) {
-      try {
-        final query = await _firestore.collection('usernames').where('userId', isEqualTo: currentUserId).limit(1).get();
-        if (query.docs.isNotEmpty) {
-          await _firestore.collection('usernames').doc(query.docs.first.id).set(
-            {'publicKey': publicKey},
-            SetOptions(merge: true),
-          );
-        }
-      } catch (e) {
-        // Silently fail if unable to write keys
+    final hasLocalKeys = await _cryptoService.hasKeys();
+
+    if (hasLocalKeys) {
+      final publicKey = await _cryptoService.getPublicKey();
+      if (publicKey != null) {
+        await _syncPublicKey(publicKey);
       }
+      await _ensureKeyBackup();
+      return;
+    }
+
+    if (await _tryRestoreKeysFromFirestore()) {
+      final publicKey = await _cryptoService.getPublicKey();
+      if (publicKey != null) {
+        await _syncPublicKey(publicKey);
+      }
+      return;
+    }
+
+    final existingPublicKey = await _getExistingPublicKeyFromFirestore();
+    if (existingPublicKey != null) {
+      debugPrint(
+        'E2EE: Local keys missing and no cloud backup found. '
+        'Open Vertex Edge on your primary device once to sync encryption keys.',
+      );
+      return;
+    }
+
+    final publicKey = await _cryptoService.generateAndStoreKeys();
+    await _syncPublicKey(publicKey);
+    await _ensureKeyBackup();
+  }
+
+  Future<void> _syncPublicKey(String publicKey) async {
+    try {
+      final query = await _firestore
+          .collection('usernames')
+          .where('userId', isEqualTo: currentUserId)
+          .limit(1)
+          .get();
+      if (query.docs.isNotEmpty) {
+        await _firestore.collection('usernames').doc(query.docs.first.id).set(
+          {'publicKey': publicKey},
+          SetOptions(merge: true),
+        );
+      }
+    } catch (e) {
+      debugPrint('E2EE: Failed to sync public key: $e');
+    }
+  }
+
+  Future<String?> _getExistingPublicKeyFromFirestore() async {
+    try {
+      final query = await _firestore
+          .collection('usernames')
+          .where('userId', isEqualTo: currentUserId)
+          .limit(1)
+          .get();
+      if (query.docs.isEmpty) return null;
+      return query.docs.first.data()['publicKey'] as String?;
+    } catch (e) {
+      debugPrint('E2EE: Failed to read public key: $e');
+      return null;
+    }
+  }
+
+  Future<bool> _tryRestoreKeysFromFirestore() async {
+    try {
+      final userDoc = await _firestore.collection('users').doc(currentUserId).get();
+      final backup = userDoc.data()?['e2eeKeyBackup'] as String?;
+      if (backup == null || backup.isEmpty) return false;
+
+      final restored = await _cryptoService.restoreFromKeyBackup(currentUserId, backup);
+      if (restored) {
+        debugPrint('E2EE: Restored encryption keys from cloud backup.');
+      }
+      return restored;
+    } catch (e) {
+      debugPrint('E2EE: Failed to restore keys: $e');
+      return false;
+    }
+  }
+
+  Future<void> _ensureKeyBackup() async {
+    try {
+      final backup = await _cryptoService.createKeyBackup(currentUserId);
+      if (backup == null) return;
+
+      await _firestore.collection('users').doc(currentUserId).set(
+        {'e2eeKeyBackup': backup},
+        SetOptions(merge: true),
+      );
+    } catch (e) {
+      debugPrint('E2EE: Failed to back up keys: $e');
     }
   }
 

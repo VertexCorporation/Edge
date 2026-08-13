@@ -26,6 +26,8 @@ class VertexAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showGradient;
   final bool includeTrailingActionsPadding;
   final bool ignoreActionsForCentering;
+  final bool titleAlignToActions;
+  final double? trailingEdgePadding;
   final ScrollController? scrollController;
   final VertexLeadingMode leadingMode;
 
@@ -40,6 +42,8 @@ class VertexAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.showGradient = true,
     this.includeTrailingActionsPadding = true,
     this.ignoreActionsForCentering = false,
+    this.titleAlignToActions = false,
+    this.trailingEdgePadding,
     this.scrollController,
     this.leadingMode = VertexLeadingMode.auto,
   });
@@ -134,8 +138,9 @@ class VertexAppBar extends StatelessWidget implements PreferredSizeWidget {
     }
 
     if (rightWidgets.isNotEmpty && includeTrailingActionsPadding) {
-      rightWidgets.add(SizedBox(width: horizontalPadding));
-      calculatedActionsWidth += horizontalPadding;
+      final edgePad = trailingEdgePadding ?? horizontalPadding;
+      rightWidgets.add(SizedBox(width: edgePad));
+      calculatedActionsWidth += edgePad;
     }
 
     // --- CENTER CALCULATION ---
@@ -148,12 +153,59 @@ class VertexAppBar extends StatelessWidget implements PreferredSizeWidget {
     final double finalTitleMaxWidth =
         math.max(0.0, math.min(targetWidth, availableCenteredSpace));
 
+    final Widget? titleWidget = title ??
+        (titleText != null
+            ? Text(
+                titleText!,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w500,
+                  fontSize: 18,
+                  color: AppColors.primaryColor.inverted.inverted,
+                ),
+                maxLines: 1,
+              )
+            : null);
+
+    Widget? builtTitle;
+    if (titleWidget != null) {
+      final wrappedTitle = _AnimatedTitleWrapper(
+        controller: scrollController,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: titleAlignToActions ? Alignment.centerRight : Alignment.center,
+          child: titleWidget,
+        ),
+      );
+
+      if (titleAlignToActions) {
+        builtTitle = Align(
+          alignment: Alignment.centerRight,
+          child: Padding(
+            padding: EdgeInsets.only(right: calculatedActionsWidth + 6),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: math.max(0, screenWidth - calculatedLeadingWidth - calculatedActionsWidth - 12),
+              ),
+              child: wrappedTitle,
+            ),
+          ),
+        );
+      } else if (finalTitleMaxWidth > 0) {
+        builtTitle = ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: finalTitleMaxWidth),
+          child: wrappedTitle,
+        );
+      }
+    }
+
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
       automaticallyImplyLeading: false,
-      centerTitle: true,
+      centerTitle: !titleAlignToActions,
       toolbarHeight: kToolbarHeight,
       flexibleSpace: showGradient
           ? Container(
@@ -186,32 +238,7 @@ class VertexAppBar extends StatelessWidget implements PreferredSizeWidget {
           : null,
       leadingWidth: leftWidgets.isNotEmpty ? calculatedLeadingWidth : null,
       actions: rightWidgets,
-      title: finalTitleMaxWidth > 0
-          ? ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: finalTitleMaxWidth),
-              child: _AnimatedTitleWrapper(
-                controller: scrollController,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.center,
-                  child: title ??
-                      (titleText != null
-                          ? Text(
-                              titleText!,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontWeight: FontWeight.w500,
-                                fontSize: 18,
-                                color: AppColors.primaryColor.inverted.inverted,
-                              ),
-                              maxLines: 1,
-                            )
-                          : const SizedBox.shrink()),
-                ),
-              ),
-            )
-          : const SizedBox.shrink(),
+      title: builtTitle ?? const SizedBox.shrink(),
     );
   }
 }

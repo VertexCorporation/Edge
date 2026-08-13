@@ -193,6 +193,8 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
       backgroundColor: AppColors.background,
       appBar: VertexAppBar(
         scrollController: _scrollController,
+        titleAlignToActions: true,
+        trailingEdgePadding: 12,
         leadingActions: [
           GestureDetector(
             onTap: () {
@@ -278,7 +280,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
           GestureDetector(
             onTap: () {
               Navigator.push(
@@ -408,7 +410,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                                             ),
                                             const SizedBox(width: 8),
                                             Text(
-                                              AppLocalizations.of(context)!.suggestContacts,
+                                              'Kişiler',
                                               style: GoogleFonts.inter(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.w600,
