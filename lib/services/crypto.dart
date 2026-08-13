@@ -92,16 +92,24 @@ class CryptoService {
       );
 
       await importKeys(privateKeyPem: privateKeyPem, publicKeyPem: publicKeyPem);
-      return true;
+      return await hasKeys();
     } catch (_) {
       return false;
     }
   }
 
+  /// Normalizes Firestore public key values to JSON string format.
+  static String normalizePublicKey(dynamic raw) {
+    if (raw is String) return raw;
+    if (raw is Map) return jsonEncode(raw);
+    throw Exception('Invalid public key format');
+  }
+
   /// Encrypts a message for a specific user using their public key.
   /// Generates a random AES key, encrypts the message with AES, 
   /// and encrypts the AES key with the receiver's RSA public key.
-  Future<Map<String, String>> encryptMessage(String plaintext, String receiverPublicKeyPem) async {
+  Future<Map<String, String>> encryptMessage(String plaintext, dynamic receiverPublicKeyRaw) async {
+    final receiverPublicKeyPem = normalizePublicKey(receiverPublicKeyRaw);
     // Generate AES key (256-bit) and IV
     final aesKey = enc.Key.fromSecureRandom(32);
     final iv = enc.IV.fromSecureRandom(16);

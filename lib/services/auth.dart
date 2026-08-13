@@ -87,7 +87,7 @@ class AuthService {
   }
 
   /// Create a new user with email and password
-  Future<AuthResult> createUser(String email, String password, String name, String? phoneNumber) async {
+  Future<AuthResult> createUser(String email, String password, String name) async {
     try {
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email.trim().toLowerCase(),
@@ -111,7 +111,6 @@ class AuthService {
         'isVertex': false,
         'isOnline': true,
         'createdAt': FieldValue.serverTimestamp(),
-        if (phoneNumber != null && phoneNumber.isNotEmpty) 'phoneNumber': phoneNumber,
       }, SetOptions(merge: true));
 
       await _firestore.collection('usernames').doc(username).set({

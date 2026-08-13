@@ -86,14 +86,34 @@ class ChatService {
   Future<bool> _tryRestoreKeysFromFirestore() async {
     try {
       final userDoc = await _firestore.collection('users').doc(currentUserId).get();
-      final backup = userDoc.data()?['e2eeKeyBackup'] as String?;
-      if (backup == null || backup.isEmpty) return false;
-
-      final restored = await _cryptoService.restoreFromKeyBackup(currentUserId, backup);
-      if (restored) {
-        debugPrint('E2EE: Restored encryption keys from cloud backup.');
+      final userBackup = userDoc.data()?['e2eeKeyBackup'] as String?;
+      if (userBackup != null && userBackup.isNotEmpty) {
+        final restored = await _cryptoService.restoreFromKeyBackup(currentUserId, userBackup);
+        if (restored) {
+          debugPrint('E2EE: Restored encryption keys from users backup.');
+          return true;
+        }
       }
-      return restored;
+
+      final usernameQuery = await _firestore
+          .collection('usernames')
+          .where('userId', isEqualTo: currentUserId)
+          .limit(1)
+          .get();
+      if (usernameQuery.docs.isNotEmpty) {
+        final usernameBackup =
+            usernameQuery.docs.first.data()['e2eeKeyBackup'] as String?;
+        if (usernameBackup != null && usernameBackup.isNotEmpty) {
+          final restored =
+              await _cryptoService.restoreFromKeyBackup(currentUserId, usernameBackup);
+          if (restored) {
+            debugPrint('E2EE: Restored encryption keys from usernames backup.');
+            return true;
+          }
+        }
+      }
+
+      return false;
     } catch (e) {
       debugPrint('E2EE: Failed to restore keys: $e');
       return false;
@@ -109,8 +129,52 @@ class ChatService {
         {'e2eeKeyBackup': backup},
         SetOptions(merge: true),
       );
+
+      final usernameQuery = await _firestore
+          .collection('usernames')
+          .where('userId', isEqualTo: currentUserId)
+          .limit(1)
+          .get();
+      if (usernameQuery.docs.isNotEmpty) {
+        await _firestore.collection('usernames').doc(usernameQuery.docs.first.id).set(
+          {'e2eeKeyBackup': backup},
+          SetOptions(merge: true),
+        );
+      }
     } catch (e) {
       debugPrint('E2EE: Failed to back up keys: $e');
+    }
+  }
+
+  Future<void> _ensureKeysForDecryption() async {
+    if (await _cryptoService.hasKeys()) return;
+    await _tryRestoreKeysFromFirestore();
+  }
+
+  Future<String> _decryptChatMessage(Map<String, dynamic> data) async {
+    String? encryptedMessage;
+    String? encryptedKey;
+
+    if (data['senderId'] == currentUserId && data['selfEncryptedMessage'] != null) {
+      encryptedMessage = data['selfEncryptedMessage'] as String?;
+      encryptedKey = data['selfEncryptedKey'] as String?;
+    } else if (data['receiverId'] == currentUserId && data['encryptedMessage'] != null) {
+      encryptedMessage = data['encryptedMessage'] as String?;
+      encryptedKey = data['encryptedKey'] as String?;
+    }
+
+    if (encryptedMessage == null || encryptedKey == null) {
+      return '[Mesaj]';
+    }
+
+    try {
+      return await _cryptoService.decryptMessage(encryptedMessage, encryptedKey);
+    } catch (firstError) {
+      debugPrint('E2EE: Decrypt failed, attempting key restore: $firstError');
+      if (await _tryRestoreKeysFromFirestore()) {
+        return await _cryptoService.decryptMessage(encryptedMessage, encryptedKey);
+      }
+      rethrow;
     }
   }
 
@@ -335,6 +399,10 @@ class ChatService {
         .orderBy('timestamp', descending: true)
         .snapshots()
         .asyncMap((snapshot) async {
+          if (!isGroup) {
+            await _ensureKeysForDecryption();
+          }
+
           List<Map<String, dynamic>> messages = [];
           for (var doc in snapshot.docs) {
             final data = doc.data();
@@ -346,18 +414,9 @@ class ChatService {
               decryptedText = data['text'] ?? '';
             } else {
               try {
-                if (data['senderId'] == currentUserId && data['selfEncryptedMessage'] != null) {
-                   decryptedText = await _cryptoService.decryptMessage(
-                     data['selfEncryptedMessage'], 
-                     data['selfEncryptedKey']
-                   );
-                } else if (data['receiverId'] == currentUserId && data['encryptedMessage'] != null) {
-                   decryptedText = await _cryptoService.decryptMessage(
-                     data['encryptedMessage'], 
-                     data['encryptedKey']
-                   );
-                }
+                decryptedText = await _decryptChatMessage(data);
               } catch (e) {
+                debugPrint('E2EE: Message decrypt failed: $e');
                 decryptedText = '[Şifre Çözülemedi]';
               }
             }

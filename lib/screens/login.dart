@@ -111,7 +111,6 @@ class _LoginScreenState extends State<LoginScreen>
             _emailController.text,
             _passwordController.text,
             _nameController.text.isEmpty ? AppLocalizations.of(context)!.user : _nameController.text,
-            null,
           );
 
     if (!mounted) return;
