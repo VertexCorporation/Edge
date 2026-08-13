@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase.dart';
 import 'app.dart';
 import 'theme.dart';
+import 'services/auth.dart';
 import 'services/notification.dart';
 
 void main() async {
@@ -13,6 +14,8 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  await AuthService.configureWebPersistence();
 
   // Initialize notification service
   await NotificationService().initialize();

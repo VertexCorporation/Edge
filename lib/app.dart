@@ -24,6 +24,11 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
   final AuthService _authService = AuthService();
   StreamSubscription<User?>? _authSubscription;
 
+  /// Prevents login-screen flash when auth stream briefly resets on rebuild.
+  User? _stableUser;
+  Future<Map<String, dynamic>?>? _userDataFuture;
+  String? _userDataUid;
+
   @override
   void initState() {
     super.initState();
@@ -47,9 +52,19 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _authService.updateOnlineStatus(true);
-    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
       _authService.updateOnlineStatus(false);
     }
+  }
+
+  Future<Map<String, dynamic>?> _userDataFor(String uid) {
+    if (_userDataUid == uid && _userDataFuture != null) {
+      return _userDataFuture!;
+    }
+    _userDataUid = uid;
+    _userDataFuture = _authService.getUserData(uid);
+    return _userDataFuture!;
   }
 
   @override
@@ -77,45 +92,56 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
       home: StreamBuilder<User?>(
         stream: _authService.authStateChanges,
         builder: (context, snapshot) {
-          // Loading state
+          // Keep showing home while a new stream subscription is warming up.
           if (snapshot.connectionState == ConnectionState.waiting) {
+            if (_stableUser != null) {
+              return _buildHome(_stableUser!);
+            }
             return const _SplashScreen();
           }
 
-          // Not authenticated - show login
-          if (!snapshot.hasData || snapshot.data == null) {
+          final user = snapshot.data;
+          if (user == null) {
+            _stableUser = null;
+            _userDataFuture = null;
+            _userDataUid = null;
             return const LoginScreen();
           }
 
-          // Authenticated - show home directly
-          return FutureBuilder<Map<String, dynamic>?>(
-            future: _authService.getUserData(snapshot.data!.uid),
-            builder: (context, userDataSnapshot) {
-              if (userDataSnapshot.connectionState ==
-                  ConnectionState.waiting) {
-                return const _SplashScreen();
-              }
-
-              final userData = userDataSnapshot.data;
-              return ChatListScreen(
-                userName: userData?['name'] ??
-                    snapshot.data?.displayName ??
-                    AppLocalizations.of(context)!.vertexMember,
-                userRole: userData?['role'] ?? AppLocalizations.of(context)!.member,
-                userEmail: snapshot.data?.email ?? '',
-                isVertex: userData?['isVertex'] == true,
-              );
-            },
-          ); // Closes FutureBuilder
+          _stableUser = user;
+          return _buildHome(user);
         },
-      ), // Closes StreamBuilder
-    ); // Closes MaterialApp
+      ),
+    );
+  }
+
+  Widget _buildHome(User user) {
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: _userDataFor(user.uid),
+      builder: (context, userDataSnapshot) {
+        if (userDataSnapshot.connectionState == ConnectionState.waiting &&
+            !userDataSnapshot.hasData) {
+          return const _SplashScreen();
+        }
+
+        final userData = userDataSnapshot.data;
+        return ChatListScreen(
+          userName: userData?['name'] ??
+              user.displayName ??
+              AppLocalizations.of(context)!.vertexMember,
+          userRole: userData?['role'] ?? AppLocalizations.of(context)!.member,
+          userEmail: user.email ?? '',
+          isVertex: userData?['isVertex'] == true,
+        );
+      },
+    );
   }
 
   ThemeData _buildTheme(Brightness brightness) {
     final themeColors = AppColors.getThemeColors(AppColors.currentTheme);
     final isDarkUi = themeColors.statusBarIconBrightness == Brightness.light;
-    final surface = isDarkUi ? const Color(0xFF0D1B3E) : themeColors.secondaryColor;
+    final surface =
+        isDarkUi ? const Color(0xFF0D1B3E) : themeColors.secondaryColor;
 
     return ThemeData(
       brightness: brightness,
@@ -131,6 +157,7 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
     );
   }
 }
+
 /// Splash screen shown during authentication check
 class _SplashScreen extends StatelessWidget {
   const _SplashScreen();
@@ -142,7 +169,6 @@ class _SplashScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Logo with Shimmer
             Shimmer.fromColors(
               baseColor: AppColors.shimmerBase,
               highlightColor: AppColors.shimmerHighlight,

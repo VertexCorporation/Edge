@@ -3,17 +3,27 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+
 /// Authentication service for Vertex Edge
-/// Handles Firebase Auth + Firestore isVertex verification
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Current user stream
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  /// Single shared stream so StreamBuilder rebuilds don't drop the session.
+  late final Stream<User?> authStateChanges = _auth.authStateChanges();
 
   /// Current user
   User? get currentUser => _auth.currentUser;
+
+  /// Keep auth session in browser storage (prevents random web logouts).
+  static Future<void> configureWebPersistence() async {
+    if (!kIsWeb) return;
+    try {
+      await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
+    } catch (e) {
+      debugPrint('Auth persistence setup failed: $e');
+    }
+  }
 
   /// Update online status
   Future<void> updateOnlineStatus(bool isOnline) async {
