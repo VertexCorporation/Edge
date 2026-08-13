@@ -42,12 +42,22 @@ class _AccountScreenState extends State<AccountScreen>
       _isDarkTheme ? Colors.white : AppColors.primaryColor.inverted;
 
   Color get _profileCardColor => _isDarkTheme
-      ? AppColors.senaryColor.withValues(alpha: 0.12)
+      ? const Color(0xFF0D2048)
       : AppColors.secondaryColor;
 
   Color get _profileCardBorder => _isDarkTheme
       ? AppColors.senaryColor.withValues(alpha: 0.35)
       : AppColors.border;
+
+  Widget _sectionDivider({EdgeInsetsGeometry padding = const EdgeInsets.symmetric(vertical: 12)}) {
+    return Padding(
+      padding: padding,
+      child: Divider(
+        height: 1,
+        color: _isDarkTheme ? AppColors.border : null,
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -244,19 +254,13 @@ class _AccountScreenState extends State<AccountScreen>
             label: 'E-posta',
             value: widget.userEmail,
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Divider(height: 1),
-          ),
+          _sectionDivider(),
           _buildInfoRow(
             icon: Icons.badge_outlined,
             label: 'Rol',
             value: widget.userRole,
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Divider(height: 1),
-          ),
+          _sectionDivider(),
           _buildInfoRow(
             icon: Icons.verified_outlined,
             label: 'Durum',
@@ -332,10 +336,7 @@ class _AccountScreenState extends State<AccountScreen>
               activeThumbColor: Colors.white,
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            child: Divider(height: 1),
-          ),
+          _sectionDivider(padding: const EdgeInsets.symmetric(vertical: 8)),
           _buildSettingsTile(
             icon: Icons.notifications_none_rounded,
             title: 'Bildirimler',
@@ -408,28 +409,19 @@ class _AccountScreenState extends State<AccountScreen>
             label: 'Uygulama',
             value: 'Vertex Edge v1.0.1',
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Divider(height: 1),
-          ),
+          _sectionDivider(),
           _buildInfoRow(
             icon: Icons.business_rounded,
             label: 'Şirket',
             value: 'Vertex Corporation',
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Divider(height: 1),
-          ),
+          _sectionDivider(),
           _buildInfoRow(
             icon: Icons.language_rounded,
             label: 'Website',
             value: 'vertexishere.com',
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Divider(height: 1),
-          ),
+          _sectionDivider(),
           InkWell(
             onTap: () {
               Navigator.push(

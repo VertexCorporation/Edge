@@ -55,18 +55,15 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     context.watch<ThemeProvider>();
-    
+    final themeColors = AppColors.getThemeColors(AppColors.currentTheme);
+    final isDarkUi = themeColors.statusBarIconBrightness == Brightness.light;
+
     return MaterialApp(
       title: 'Vertex Edge',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        scaffoldBackgroundColor: AppColors.background,
-        primaryColor: AppColors.primaryColor,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.senaryColor,
-          brightness: AppColors.getThemeColors(AppColors.currentTheme).statusBarIconBrightness == Brightness.light ? Brightness.dark : Brightness.light,
-        ),
-      ),
+      themeMode: isDarkUi ? ThemeMode.dark : ThemeMode.light,
+      theme: _buildTheme(Brightness.light),
+      darkTheme: _buildTheme(Brightness.dark),
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -113,6 +110,25 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
         },
       ), // Closes StreamBuilder
     ); // Closes MaterialApp
+  }
+
+  ThemeData _buildTheme(Brightness brightness) {
+    final themeColors = AppColors.getThemeColors(AppColors.currentTheme);
+    final isDarkUi = themeColors.statusBarIconBrightness == Brightness.light;
+    final surface = isDarkUi ? const Color(0xFF0D1B3E) : themeColors.secondaryColor;
+
+    return ThemeData(
+      brightness: brightness,
+      scaffoldBackgroundColor: themeColors.background,
+      canvasColor: themeColors.background,
+      cardColor: surface,
+      primaryColor: themeColors.primaryColor,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: themeColors.senaryColor,
+        brightness: isDarkUi ? Brightness.dark : Brightness.light,
+        surface: surface,
+      ),
+    );
   }
 }
 /// Splash screen shown during authentication check

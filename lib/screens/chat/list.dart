@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'dart:async';
+import 'package:provider/provider.dart';
 import '../../theme.dart';
 import '../../widgets/appbar.dart';
 
@@ -184,10 +185,12 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ThemeProvider>();
     final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: VertexAppBar(
         scrollController: _scrollController,
         leadingActions: [
