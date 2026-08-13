@@ -10,6 +10,20 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.3',
+      date: '13 Ağustos 2026',
+      highlights: [
+        'Girişten sonra siteden atılma sorunu düzeltildi',
+        'Mobilde mesaj şifre çözme / cihazlar arası anahtar yedekleme iyileştirildi',
+        'Mesaj yazarken kasma azaltıldı (yerel kuyruk + decrypt cache)',
+        'Sohbet loading spinner\'ları kaldırıldı',
+        'Karşı taraf yazarken "typing..." göstergesi eklendi',
+        'Kayıt ekranından telefon numarası alanı kaldırıldı',
+        'Ana ekran: Edge başlığı, arama ve + sağa yaklaştırıldı',
+        '"Suggest Contacts" → "Kişiler" olarak güncellendi',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.2',
       date: '13 Ağustos 2026',
       highlights: [
