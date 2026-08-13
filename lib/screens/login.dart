@@ -366,9 +366,10 @@ class _LoginScreenState extends State<LoginScreen>
                 // Password input
                 VertexInput(
                   label: AppLocalizations.of(context)!.password,
-                  hint: '••••••••',
+                  hint: '12345678',
                   controller: _passwordController,
                   obscureText: _obscurePassword,
+                  maskSecretInDom: true,
                   prefixIcon: Icon(
                     Icons.lock_outline_rounded,
                     size: 18,
