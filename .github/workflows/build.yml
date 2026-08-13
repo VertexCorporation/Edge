@@ -135,7 +135,7 @@ jobs:
           echo "    <string>$TEAM_ID</string>" >> ios/ExportOptions.plist
           echo "    <key>provisioningProfiles</key>" >> ios/ExportOptions.plist
           echo "    <dict>" >> ios/ExportOptions.plist
-          echo "        <key>com.example.edge</key>" >> ios/ExportOptions.plist
+          echo "        <key>com.vertex.ai</key>" >> ios/ExportOptions.plist
           echo "        <string>$PROFILE_NAME</string>" >> ios/ExportOptions.plist
           echo "    </dict>" >> ios/ExportOptions.plist
           echo "</dict>" >> ios/ExportOptions.plist

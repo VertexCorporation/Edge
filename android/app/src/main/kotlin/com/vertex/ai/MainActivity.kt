@@ -1,4 +1,4 @@
-package com.example.edge
+package com.vertex.ai
 
 import io.flutter.embedding.android.FlutterActivity
 
