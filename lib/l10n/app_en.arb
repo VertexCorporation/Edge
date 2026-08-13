@@ -26,7 +26,7 @@
   "appName": "Edge",
   "searchUser": "Search User...",
   "chats": "Chats",
-  "suggestContacts": "Suggest Contacts",
+  "suggestContacts": "Contacts",
   "noChatsYet": "You haven't talked to anyone yet, start a chat now.",
   "encryptedImageLink": "Encrypted Image (Link: {link}...)",
   "audioRecord": "Audio Record",

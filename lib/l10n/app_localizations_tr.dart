@@ -87,7 +87,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get chats => 'Sohbetler';
 
   @override
-  String get suggestContacts => 'Kişiler Öner';
+  String get suggestContacts => 'Kişiler';
 
   @override
   String get noChatsYet =>

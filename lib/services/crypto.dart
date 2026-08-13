@@ -12,7 +12,14 @@ class CryptoService {
   factory CryptoService() => _instance;
   CryptoService._internal();
 
-  final _storage = const FlutterSecureStorage();
+  static const _backupKeyPrefix = 'vertex-edge-e2ee-v1:';
+
+  final _storage = const FlutterSecureStorage(
+    webOptions: WebOptions(
+      dbName: 'vertex_edge_secure',
+      publicKey: 'vertex_edge_e2ee',
+    ),
+  );
   
   static const _privateKeyKey = 'e2ee_private_key';
   static const _publicKeyKey = 'e2ee_public_key';
@@ -43,6 +50,52 @@ class CryptoService {
   /// Get the stored public key PEM
   Future<String?> getPublicKey() async {
     return await _storage.read(key: _publicKeyKey);
+  }
+
+  /// Import an existing key pair into secure storage (e.g. after cloud restore).
+  Future<void> importKeys({
+    required String privateKeyPem,
+    required String publicKeyPem,
+  }) async {
+    await _storage.write(key: _privateKeyKey, value: privateKeyPem);
+    await _storage.write(key: _publicKeyKey, value: publicKeyPem);
+  }
+
+  /// Encrypt the private key for Firestore backup (scoped to user id).
+  Future<String?> createKeyBackup(String userId) async {
+    final privateKeyPem = await _storage.read(key: _privateKeyKey);
+    if (privateKeyPem == null) return null;
+
+    final key = enc.Key(_deriveBackupKeyBytes(userId));
+    final iv = enc.IV.fromSecureRandom(16);
+    final encrypter = enc.Encrypter(enc.AES(key, mode: enc.AESMode.cbc));
+    final encrypted = encrypter.encrypt(privateKeyPem, iv: iv);
+
+    return jsonEncode({
+      'iv': iv.base64,
+      'data': encrypted.base64,
+    });
+  }
+
+  /// Restore private key from Firestore backup and derive public key locally.
+  Future<bool> restoreFromKeyBackup(String userId, String backupJson) async {
+    try {
+      final payload = jsonDecode(backupJson) as Map<String, dynamic>;
+      final iv = enc.IV.fromBase64(payload['iv'] as String);
+      final key = enc.Key(_deriveBackupKeyBytes(userId));
+      final encrypter = enc.Encrypter(enc.AES(key, mode: enc.AESMode.cbc));
+      final privateKeyPem = encrypter.decrypt64(payload['data'] as String, iv: iv);
+
+      final privateKey = _parseRSAPrivateKeyFromPem(privateKeyPem);
+      final publicKeyPem = _encodeRSAPublicKeyToPem(
+        pc.RSAPublicKey(privateKey.modulus!, privateKey.publicExponent!),
+      );
+
+      await importKeys(privateKeyPem: privateKeyPem, publicKeyPem: publicKeyPem);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Encrypts a message for a specific user using their public key.
@@ -95,6 +148,11 @@ class CryptoService {
   }
 
   // --- Helpers ---
+
+  Uint8List _deriveBackupKeyBytes(String userId) {
+    final digest = pc.SHA256Digest();
+    return digest.process(Uint8List.fromList(utf8.encode('$_backupKeyPrefix$userId')));
+  }
 
   pc.AsymmetricKeyPair<pc.PublicKey, pc.PrivateKey> _generateRSAKeyPair() {
     final secureRandom = pc.SecureRandom('Fortuna')

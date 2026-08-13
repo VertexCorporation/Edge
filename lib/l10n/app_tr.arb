@@ -26,7 +26,7 @@
   "appName": "Edge",
   "searchUser": "Kullanıcı Ara...",
   "chats": "Sohbetler",
-  "suggestContacts": "Kişiler Öner",
+  "suggestContacts": "Kişiler",
   "noChatsYet": "Henüz kimseyle konuşmadınız, hemen sohbete başlayın.",
   "encryptedImageLink": "Şifreli Görsel (Link: {link}...)",
   "@encryptedImageLink": {

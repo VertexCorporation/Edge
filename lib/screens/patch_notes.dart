@@ -10,6 +10,16 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.2',
+      date: '13 Ağustos 2026',
+      highlights: [
+        'Mobil web\'de mesaj şifre çözme düzeltmesi (cihazlar arası anahtar yedekleme)',
+        'Kayıtta telefon numarası zorunluluğu kaldırıldı',
+        'Mesaj yazarken sayfa kasması / titreme düzeltmesi',
+        'Dark mode profil ve kart görünümü iyileştirmeleri',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.1',
       date: '13 Ağustos 2026',
       highlights: [

@@ -23,7 +23,6 @@ class _LoginScreenState extends State<LoginScreen>
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _phoneController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   final _authService = AuthService();
 
@@ -88,7 +87,6 @@ class _LoginScreenState extends State<LoginScreen>
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _phoneController.dispose();
     _fadeController.dispose();
     _shakeController.dispose();
     _fillController.dispose();
@@ -113,7 +111,7 @@ class _LoginScreenState extends State<LoginScreen>
             _emailController.text,
             _passwordController.text,
             _nameController.text.isEmpty ? AppLocalizations.of(context)!.user : _nameController.text,
-            _isLogin ? null : _phoneController.text,
+            null,
           );
 
     if (!mounted) return;
@@ -333,24 +331,6 @@ class _LoginScreenState extends State<LoginScreen>
                                 validator: (value) {
                                   if (!_isLogin && (value == null || value.isEmpty)) {
                                     return AppLocalizations.of(context)!.fullNameRequired;
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 20),
-                              VertexInput(
-                                label: 'Telefon Numarası',
-                                hint: '+90 5XX XXX XX XX',
-                                controller: _phoneController,
-                                keyboardType: TextInputType.phone,
-                                prefixIcon: Icon(
-                                  Icons.phone_outlined,
-                                  size: 18,
-                                  color: AppColors.tertiaryColor,
-                                ),
-                                validator: (value) {
-                                  if (!_isLogin && (value == null || value.isEmpty)) {
-                                    return 'Lütfen telefon numaranızı girin';
                                   }
                                   return null;
                                 },
