@@ -197,6 +197,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                 context,
                 SlideLeftRoute(
                   page: Scaffold(
+                    backgroundColor: AppColors.background,
                     appBar: const VertexAppBar(leadingMode: VertexLeadingMode.back),
                     body: AccountScreen(
                       userName: widget.userName,
@@ -207,15 +208,32 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                 ),
               );
             },
-            child: CircleAvatar(
-              backgroundColor: AppColors.senaryColor.withValues(alpha: 0.2),
-              child: Text(
-                widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : '?',
-                style: GoogleFonts.inter(
-                  color: AppColors.senaryColor,
-                  fontWeight: FontWeight.bold,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                CircleAvatar(
+                  backgroundColor: AppColors.currentTheme == 'dark'
+                      ? AppColors.senaryColor.withValues(alpha: 0.35)
+                      : AppColors.senaryColor.withValues(alpha: 0.2),
+                  child: Text(
+                    widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : '?',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              ),
+                if (widget.isVertex)
+                  Positioned(
+                    right: -2,
+                    bottom: -2,
+                    child: Icon(
+                      Icons.verified,
+                      size: 16,
+                      color: AppColors.senaryColor,
+                    ),
+                  ),
+              ],
             ),
           ),
         ],
