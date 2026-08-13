@@ -46,8 +46,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final ScrollController _scrollController = ScrollController();
   
   final AudioRecorder _record = AudioRecorder();
-  final AudioPlayer _audioPlayer = AudioPlayer();
-  
+
   bool _isRecording = false;
   bool _isSending = false;
 
@@ -64,7 +63,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _messageController.dispose();
     _scrollController.dispose();
     _record.dispose();
-    _audioPlayer.dispose();
     super.dispose();
   }
 

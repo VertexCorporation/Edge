@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../theme.dart';
 
 /// Primary button matching Vertex website's btn-primary style
@@ -39,17 +40,19 @@ class _VertexButtonState extends State<VertexButton> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    final isDark = brightness == Brightness.dark;
+    context.watch<ThemeProvider>();
+    final isDarkUi = AppColors.getThemeColors(AppColors.currentTheme)
+            .statusBarIconBrightness ==
+        Brightness.light;
 
     final bgColor = widget.isOutline
         ? Colors.transparent
-        : (isDark ? AppColors.senaryColor : AppColors.senaryColor);
+        : AppColors.senaryColor;
     final textColor = widget.isOutline
-        ? (isDark ? AppColors.primaryColor.inverted : AppColors.primaryColor.inverted)
-        : (isDark ? AppColors.primaryColor.inverted : AppColors.primaryColor.inverted);
+        ? (isDarkUi ? Colors.white : AppColors.primaryColor.inverted)
+        : (isDarkUi ? Colors.white : AppColors.primaryColor.inverted);
     final borderColor = widget.isOutline
-        ? AppColors.border
+        ? (isDarkUi ? AppColors.border : AppColors.border)
         : bgColor;
 
     return MouseRegion(
@@ -61,17 +64,15 @@ class _VertexButtonState extends State<VertexButton> {
         decoration: BoxDecoration(
           color: _isHovered
               ? (widget.isOutline
-                  ? (isDark
+                  ? (isDarkUi
                       ? Colors.white.withValues(alpha: 0.05)
                       : Colors.black.withValues(alpha: 0.05))
-                  : (isDark
-                      ? AppColors.senaryColor
-                      : AppColors.senaryColor))
+                  : AppColors.senaryColor)
               : bgColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: _isHovered && widget.isOutline
-                ? (isDark
+                ? (isDarkUi
                     ? Colors.white.withValues(alpha: 0.3)
                     : Colors.black.withValues(alpha: 0.2))
                 : borderColor,

@@ -114,9 +114,9 @@ class AppColors {
     ),
     'dark': ThemeColors(
       primaryColor: Colors.black,
-      secondaryColor: const Color(0xFF181818),
+      secondaryColor: const Color(0xFF0D1B3E),
       tertiaryColor: const Color(0xFF8F8F8F),
-      quaternaryColor: const Color(0xFF141414),
+      quaternaryColor: const Color(0xFF0A1630),
       quinaryColor: Colors.white70,
       senaryColor: const Color(0xFF0D31FE),
       septenaryColor: const Color(0xFF6E1E1E),

@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'dart:async';
+import 'package:provider/provider.dart';
 import '../../theme.dart';
 import '../../widgets/appbar.dart';
 
@@ -184,10 +185,12 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ThemeProvider>();
     final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: VertexAppBar(
         scrollController: _scrollController,
         leadingActions: [
@@ -197,6 +200,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                 context,
                 SlideLeftRoute(
                   page: Scaffold(
+                    backgroundColor: AppColors.background,
                     appBar: const VertexAppBar(leadingMode: VertexLeadingMode.back),
                     body: AccountScreen(
                       userName: widget.userName,
@@ -207,15 +211,32 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                 ),
               );
             },
-            child: CircleAvatar(
-              backgroundColor: AppColors.senaryColor.withValues(alpha: 0.2),
-              child: Text(
-                widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : '?',
-                style: GoogleFonts.inter(
-                  color: AppColors.senaryColor,
-                  fontWeight: FontWeight.bold,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                CircleAvatar(
+                  backgroundColor: AppColors.currentTheme == 'dark'
+                      ? AppColors.senaryColor.withValues(alpha: 0.35)
+                      : AppColors.senaryColor.withValues(alpha: 0.2),
+                  child: Text(
+                    widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : '?',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              ),
+                if (widget.isVertex)
+                  Positioned(
+                    right: -2,
+                    bottom: -2,
+                    child: Icon(
+                      Icons.verified,
+                      size: 16,
+                      color: AppColors.senaryColor,
+                    ),
+                  ),
+              ],
             ),
           ),
         ],

@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../theme.dart';
 
 /// Glassmorphic card widget matching Vertex website's card style.
@@ -51,8 +52,15 @@ class _VertexCardState extends State<VertexCard>
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ThemeProvider>();
     final brightness = Theme.of(context).brightness;
     final borderRadius = widget.borderRadius ?? BorderRadius.circular(12);
+    final isDarkUi = AppColors.getThemeColors(AppColors.currentTheme)
+            .statusBarIconBrightness ==
+        Brightness.light;
+    final cardColor = isDarkUi
+        ? const Color(0xFF0D2048)
+        : AppColors.secondaryColor;
 
     Widget card = AnimatedContainer(
       duration: const Duration(milliseconds: 200),
@@ -62,18 +70,20 @@ class _VertexCardState extends State<VertexCard>
           ? (Matrix4.identity()..setTranslationRaw(0.0, -2.0, 0.0))
           : Matrix4.identity(),
       decoration: BoxDecoration(
-        color: AppColors.secondaryColor,
+        color: cardColor,
         borderRadius: borderRadius,
         border: Border.all(
           color: _isHovered
-              ? AppColors.border.withValues(alpha: 0.3)
-              : AppColors.border,
+              ? AppColors.senaryColor.withValues(alpha: isDarkUi ? 0.5 : 0.3)
+              : (isDarkUi
+                  ? AppColors.senaryColor.withValues(alpha: 0.25)
+                  : AppColors.border),
           width: 1,
         ),
         boxShadow: _isHovered
             ? [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
+                  color: AppColors.senaryColor.withValues(alpha: isDarkUi ? 0.2 : 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -82,14 +92,18 @@ class _VertexCardState extends State<VertexCard>
       ),
       child: ClipRRect(
         borderRadius: borderRadius,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Padding(
-            padding: widget.padding ??
-                const EdgeInsets.all(24),
-            child: widget.child,
-          ),
-        ),
+        child: isDarkUi
+            ? Padding(
+                padding: widget.padding ?? const EdgeInsets.all(24),
+                child: widget.child,
+              )
+            : BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Padding(
+                  padding: widget.padding ?? const EdgeInsets.all(24),
+                  child: widget.child,
+                ),
+              ),
       ),
     );
 
