@@ -68,9 +68,6 @@ class AuthService {
         return AuthResult.error('Giriş başarısız. Lütfen tekrar deneyin.');
       }
 
-      final accessError = await _requireVertexAccess(user);
-      if (accessError != null) return accessError;
-
       // 2. Get user profile data
       final userData = await getUserData(user.uid);
 
@@ -121,9 +118,6 @@ class AuthService {
         'isOnline': true,
         'lastSeen': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
-
-      final accessError = await _requireVertexAccess(user);
-      if (accessError != null) return accessError;
 
       return AuthResult.success(
         user: user,
@@ -241,9 +235,6 @@ class AuthService {
 
     await _syncUsernameProfile(user, name: name, email: user.email ?? '', role: role, isOnline: true);
 
-    final accessError = await _requireVertexAccess(user);
-    if (accessError != null) return accessError;
-
     return AuthResult.success(
       user: user,
       name: name,
@@ -299,16 +290,6 @@ class AuthService {
     }
     
     return false;
-  }
-
-  Future<AuthResult?> _requireVertexAccess(User user) async {
-    final isVertex = await checkIsVertex(user.uid);
-    if (isVertex) return null;
-
-    await signOut();
-    return AuthResult.error(
-      'Bu uygulamaya erişim yetkiniz bulunmuyor. Vertex üyeliğiniz onaylandığında tekrar deneyin.',
-    );
   }
 
   String _usernameFromEmail(String email) {
