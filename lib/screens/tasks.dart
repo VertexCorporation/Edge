@@ -35,6 +35,14 @@ class _TasksScreenState extends State<TasksScreen>
   final ScrollController _scrollController = ScrollController();
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.canManageTasks) {
+      _taskService.listAssignees();
+    }
+  }
+
+  @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
@@ -162,7 +170,6 @@ class _TasksScreenState extends State<TasksScreen>
   Widget _buildWelcomeCard(bool isDark, List<VertexTask> tasks) {
     final open = tasks.where((t) => t.status != TaskStatus.done).length;
     return VertexCard(
-      animatedBorder: true,
       padding: const EdgeInsets.all(28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -630,17 +637,6 @@ class _TasksScreenState extends State<TasksScreen>
   }
 
   Future<void> _showCreateTaskSheet(BuildContext context) async {
-    final titleCtrl = TextEditingController();
-    final descCtrl = TextEditingController();
-    DateTime dueDate = DateTime.now().add(const Duration(days: 15));
-    TaskPriority priority = TaskPriority.medium;
-    String? selectedUserId;
-    String? selectedUserName;
-
-    final assignees = await _taskService.listAssignees();
-
-    if (!context.mounted) return;
-
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -648,153 +644,11 @@ class _TasksScreenState extends State<TasksScreen>
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setSheetState) {
-            return Padding(
-              padding: EdgeInsets.fromLTRB(
-                24,
-                20,
-                24,
-                24 + MediaQuery.of(ctx).viewInsets.bottom,
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Görev Ata',
-                      style: GoogleFonts.inter(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primaryColor.inverted,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: titleCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Başlık',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: descCtrl,
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: 'Açıklama',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      value: selectedUserId,
-                      decoration: const InputDecoration(
-                        labelText: 'Kişi',
-                        border: OutlineInputBorder(),
-                      ),
-                      hint: assignees.isEmpty
-                          ? const Text('Kişi bulunamadı')
-                          : const Text('Kişi seç'),
-                      items: assignees
-                          .map(
-                            (u) => DropdownMenuItem(
-                              value: u['userId'] as String,
-                              child: Text(u['name'] as String),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) {
-                        final user = assignees.firstWhere(
-                          (u) => u['userId'] == v,
-                        );
-                        setSheetState(() {
-                          selectedUserId = v;
-                          selectedUserName = user['name'] as String;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        'Bitiş: ${_formatDate(dueDate)}',
-                        style: GoogleFonts.inter(fontSize: 14),
-                      ),
-                      trailing: const Icon(Icons.calendar_today),
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: ctx,
-                          initialDate: dueDate,
-                          firstDate: DateTime.now(),
-                          lastDate: DateTime.now().add(const Duration(days: 365)),
-                        );
-                        if (picked != null) {
-                          setSheetState(() => dueDate = picked);
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<TaskPriority>(
-                      initialValue: priority,
-                      decoration: const InputDecoration(
-                        labelText: 'Öncelik',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: TaskPriority.low,
-                          child: Text('Düşük'),
-                        ),
-                        DropdownMenuItem(
-                          value: TaskPriority.medium,
-                          child: Text('Orta'),
-                        ),
-                        DropdownMenuItem(
-                          value: TaskPriority.high,
-                          child: Text('Yüksek'),
-                        ),
-                      ],
-                      onChanged: (v) {
-                        if (v != null) setSheetState(() => priority = v);
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: () async {
-                          if (titleCtrl.text.trim().isEmpty ||
-                              selectedUserId == null) {
-                            return;
-                          }
-                          await _taskService.createTask(
-                            title: titleCtrl.text,
-                            description: descCtrl.text,
-                            assigneeId: selectedUserId!,
-                            assigneeName: selectedUserName ?? '',
-                            createdByName: widget.userName,
-                            dueDate: dueDate,
-                            priority: priority,
-                          );
-                          if (ctx.mounted) Navigator.pop(ctx);
-                        },
-                        child: const Text('Görev Oluştur'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+      builder: (ctx) => _CreateTaskSheet(
+        taskService: _taskService,
+        createdByName: widget.userName,
+      ),
     );
-
-    titleCtrl.dispose();
-    descCtrl.dispose();
   }
 
   String _formatDate(DateTime date) {
@@ -803,5 +657,231 @@ class _TasksScreenState extends State<TasksScreen>
       'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara',
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+}
+
+class _CreateTaskSheet extends StatefulWidget {
+  final TaskService taskService;
+  final String createdByName;
+
+  const _CreateTaskSheet({
+    required this.taskService,
+    required this.createdByName,
+  });
+
+  @override
+  State<_CreateTaskSheet> createState() => _CreateTaskSheetState();
+}
+
+class _CreateTaskSheetState extends State<_CreateTaskSheet> {
+  final _titleCtrl = TextEditingController();
+  final _descCtrl = TextEditingController();
+  DateTime _dueDate = DateTime.now().add(const Duration(days: 15));
+  TaskPriority _priority = TaskPriority.medium;
+  String? _selectedUserId;
+  String? _selectedUserName;
+  late Future<List<Map<String, dynamic>>> _assigneesFuture;
+  bool _submitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _assigneesFuture = widget.taskService.listAssignees();
+  }
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _descCtrl.dispose();
+    super.dispose();
+  }
+
+  String _formatDate(DateTime date) {
+    const months = [
+      'Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz',
+      'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara',
+    ];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  Future<void> _submit() async {
+    if (_titleCtrl.text.trim().isEmpty || _selectedUserId == null) return;
+    setState(() => _submitting = true);
+    try {
+      await widget.taskService.createTask(
+        title: _titleCtrl.text,
+        description: _descCtrl.text,
+        assigneeId: _selectedUserId!,
+        assigneeName: _selectedUserName ?? '',
+        createdByName: widget.createdByName,
+        dueDate: _dueDate,
+        priority: _priority,
+      );
+      if (mounted) Navigator.pop(context);
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        24,
+        20,
+        24,
+        24 + MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Görev Ata',
+              style: GoogleFonts.inter(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primaryColor.inverted,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _titleCtrl,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(
+                labelText: 'Başlık',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _descCtrl,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Açıklama',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            FutureBuilder<List<Map<String, dynamic>>>(
+              future: _assigneesFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const InputDecorator(
+                    decoration: InputDecoration(
+                      labelText: 'Kişi',
+                      border: OutlineInputBorder(),
+                    ),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        SizedBox(width: 12),
+                        Text('Edge kullanıcıları yükleniyor…'),
+                      ],
+                    ),
+                  );
+                }
+
+                final assignees = snapshot.data ?? [];
+                return DropdownButtonFormField<String>(
+                  value: _selectedUserId,
+                  decoration: const InputDecoration(
+                    labelText: 'Kişi',
+                    border: OutlineInputBorder(),
+                  ),
+                  hint: assignees.isEmpty
+                      ? const Text('Oturum açmış kullanıcı yok')
+                      : const Text('Kişi seç'),
+                  items: assignees
+                      .map(
+                        (u) => DropdownMenuItem(
+                          value: u['userId'] as String,
+                          child: Text(u['name'] as String),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: assignees.isEmpty
+                      ? null
+                      : (v) {
+                          final user = assignees.firstWhere(
+                            (u) => u['userId'] == v,
+                          );
+                          setState(() {
+                            _selectedUserId = v;
+                            _selectedUserName = user['name'] as String;
+                          });
+                        },
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                'Bitiş: ${_formatDate(_dueDate)}',
+                style: GoogleFonts.inter(fontSize: 14),
+              ),
+              trailing: const Icon(Icons.calendar_today),
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _dueDate,
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                );
+                if (picked != null) setState(() => _dueDate = picked);
+              },
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<TaskPriority>(
+              initialValue: _priority,
+              decoration: const InputDecoration(
+                labelText: 'Öncelik',
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(
+                  value: TaskPriority.low,
+                  child: Text('Düşük'),
+                ),
+                DropdownMenuItem(
+                  value: TaskPriority.medium,
+                  child: Text('Orta'),
+                ),
+                DropdownMenuItem(
+                  value: TaskPriority.high,
+                  child: Text('Yüksek'),
+                ),
+              ],
+              onChanged: (v) {
+                if (v != null) setState(() => _priority = v);
+              },
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: _submitting ? null : _submit,
+                child: _submitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Görev Oluştur'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

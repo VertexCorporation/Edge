@@ -157,11 +157,31 @@ class TaskService {
     });
   }
 
-  Future<List<Map<String, dynamic>>> listAssignees() async {
+  List<Map<String, dynamic>>? _assigneesCache;
+  DateTime? _assigneesCachedAt;
+  static const _assigneesCacheTtl = Duration(minutes: 5);
+
+  Future<List<Map<String, dynamic>>> listAssignees({
+    bool forceRefresh = false,
+  }) async {
+    if (!forceRefresh &&
+        _assigneesCache != null &&
+        _assigneesCachedAt != null &&
+        DateTime.now().difference(_assigneesCachedAt!) < _assigneesCacheTtl) {
+      return _assigneesCache!;
+    }
+
     List<Map<String, dynamic>> assignees = [];
 
     try {
-      final snap = await _firestore.collection('usernames').get();
+      final snap = await _firestore
+          .collection('usernames')
+          .where(
+            'lastSeen',
+            isGreaterThan: Timestamp.fromDate(DateTime(2020, 1, 1)),
+          )
+          .limit(150)
+          .get();
       assignees = _mapAssigneeDocs(snap.docs);
     } catch (e) {
       debugPrint('TaskService: usernames list failed: $e');
@@ -169,17 +189,23 @@ class TaskService {
 
     if (assignees.isEmpty) {
       try {
-        final snap = await _firestore.collection('users').get();
-        assignees = snap.docs.map((doc) {
-          final data = doc.data();
-          return {
-            'userId': doc.id,
-            'name': data['name'] as String? ??
-                data['email'] as String? ??
-                doc.id,
-            'role': UserRole.normalize(data['role'] as String?),
-          };
-        }).toList();
+        final snap = await _firestore.collection('users').limit(150).get();
+        assignees = snap.docs
+            .map((doc) {
+              final data = doc.data();
+              if (data['lastSeen'] == null && data['createdAt'] == null) {
+                return null;
+              }
+              return {
+                'userId': doc.id,
+                'name': data['name'] as String? ??
+                    data['email'] as String? ??
+                    doc.id,
+                'role': UserRole.normalize(data['role'] as String?),
+              };
+            })
+            .whereType<Map<String, dynamic>>()
+            .toList();
       } catch (e) {
         debugPrint('TaskService: users list failed: $e');
       }
@@ -190,6 +216,9 @@ class TaskService {
           .toLowerCase()
           .compareTo((b['name'] as String).toLowerCase()),
     );
+
+    _assigneesCache = assignees;
+    _assigneesCachedAt = DateTime.now();
     return assignees;
   }
 
