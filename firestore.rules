@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Yönetici';
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    match /usernames/{username} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    match /tasks/{taskId} {
+      allow read: if isSignedIn()
+        && (resource.data.assigneeId == request.auth.uid || isAdmin());
+      allow create: if isAdmin();
+      allow update: if isSignedIn()
+        && (resource.data.assigneeId == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /chats/{chatId} {
+      allow read, write: if isSignedIn();
+      match /messages/{messageId} {
+        allow read, write: if isSignedIn();
+      }
+    }
+
+    match /communities/{communityId} {
+      allow read, write: if isSignedIn();
+    }
+  }
+}

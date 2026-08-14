@@ -381,11 +381,19 @@ class _TasksScreenState extends State<TasksScreen>
   }
 
   Widget _priorityBadge(TaskPriority priority) {
-    final (label, color) = switch (priority) {
-      TaskPriority.high => ('Yüksek', AppColors.septenaryColor),
-      TaskPriority.medium => ('Orta', Colors.orange),
-      TaskPriority.low => ('Düşük', Colors.blue),
-    };
+    late final String label;
+    late final Color color;
+    switch (priority) {
+      case TaskPriority.high:
+        label = 'Yüksek';
+        color = AppColors.septenaryColor;
+      case TaskPriority.medium:
+        label = 'Orta';
+        color = Colors.orange;
+      case TaskPriority.low:
+        label = 'Düşük';
+        color = Colors.blue;
+    }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -682,7 +690,7 @@ class _TasksScreenState extends State<TasksScreen>
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: selectedUserId,
+                      initialValue: selectedUserId,
                       decoration: const InputDecoration(
                         labelText: 'Kişi',
                         border: OutlineInputBorder(),
@@ -727,7 +735,7 @@ class _TasksScreenState extends State<TasksScreen>
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<TaskPriority>(
-                      value: priority,
+                      initialValue: priority,
                       decoration: const InputDecoration(
                         labelText: 'Öncelik',
                         border: OutlineInputBorder(),

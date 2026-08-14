@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -12,14 +13,13 @@ import 'services/notification.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  ).timeout(
-    const Duration(seconds: 15),
-    onTimeout: () {
-      throw Exception('Firebase başlatılamadı. İnternet bağlantınızı kontrol edin.');
-    },
-  );
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    ).timeout(const Duration(seconds: 15));
+  } on TimeoutException {
+    throw Exception('Firebase başlatılamadı. İnternet bağlantınızı kontrol edin.');
+  }
 
   await AuthService.configureWebPersistence();
 

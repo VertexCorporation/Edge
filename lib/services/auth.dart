@@ -70,12 +70,28 @@ class AuthService {
     const bootstrapEmails = {'egemen.topcuoglu6740@gmail.com'};
     final email = user.email?.trim().toLowerCase();
     if (email == null || !bootstrapEmails.contains(email)) return;
+
     try {
       await FirebaseFunctions.instance
           .httpsCallable('claimBootstrapAdmin')
           .call();
+      return;
     } catch (e) {
-      debugPrint('Bootstrap admin claim failed: $e');
+      debugPrint('Bootstrap admin CF failed, trying Firestore fallback: $e');
+    }
+
+    try {
+      await _firestore.collection('users').doc(user.uid).set(
+        {'role': UserRole.admin},
+        SetOptions(merge: true),
+      );
+      await _syncUsernameProfile(
+        user,
+        role: UserRole.admin,
+        email: email,
+      );
+    } catch (e) {
+      debugPrint('Bootstrap admin Firestore fallback failed: $e');
     }
   }
 
