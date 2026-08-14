@@ -257,7 +257,7 @@ abstract class AppLocalizations {
   /// No description provided for @suggestContacts.
   ///
   /// In tr, this message translates to:
-  /// **'Kişiler Öner'**
+  /// **'Kişiler'**
   String get suggestContacts;
 
   /// No description provided for @noChatsYet.
