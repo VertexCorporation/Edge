@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
@@ -64,6 +65,20 @@ class AuthService {
     }
   }
 
+  /// Bootstrap Yönetici claim for allowlisted emails (server-validated).
+  Future<void> tryClaimBootstrapAdmin(User user) async {
+    const bootstrapEmails = {'egemen.topcuoglu6740@gmail.com'};
+    final email = user.email?.trim().toLowerCase();
+    if (email == null || !bootstrapEmails.contains(email)) return;
+    try {
+      await FirebaseFunctions.instance
+          .httpsCallable('claimBootstrapAdmin')
+          .call();
+    } catch (e) {
+      debugPrint('Bootstrap admin claim failed: $e');
+    }
+  }
+
   /// Sign in with email and password, then verify isVertex
   /// Returns a result with user data or error message
   Future<AuthResult> signIn(String email, String password) async {
@@ -80,6 +95,7 @@ class AuthService {
       }
 
       // 2. Get user profile data
+      await tryClaimBootstrapAdmin(user);
       final userData = await getUserData(user.uid);
 
       return AuthResult.success(
@@ -130,6 +146,7 @@ class AuthService {
         'lastSeen': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
+      await tryClaimBootstrapAdmin(user);
       return AuthResult.success(
         user: user,
         name: name,
@@ -244,12 +261,14 @@ class AuthService {
       }
     }
 
+    await tryClaimBootstrapAdmin(user);
     await _syncUsernameProfile(user, name: name, email: user.email ?? '', role: role, isOnline: true);
 
+    final refreshed = await getUserData(user.uid);
     return AuthResult.success(
       user: user,
       name: name,
-      role: role,
+      role: UserRole.normalize(refreshed?['role'] as String? ?? role),
     );
   }
 

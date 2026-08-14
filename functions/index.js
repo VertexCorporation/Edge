@@ -114,3 +114,70 @@ exports.createUserProfile = functions.auth.user().onCreate(async (user) => {
 
   return null;
 });
+
+const ADMIN_ROLE = "Yönetici";
+
+async function setUserRole(uid, role) {
+  const db = admin.firestore();
+  await db.collection("users").doc(uid).set({role}, {merge: true});
+
+  const usernameSnap = await db.collection("usernames")
+      .where("userId", "==", uid)
+      .limit(1)
+      .get();
+
+  if (!usernameSnap.empty) {
+    await usernameSnap.docs[0].ref.set({role}, {merge: true});
+  }
+}
+
+async function setUserRoleByEmail(email, role) {
+  const normalized = email.trim().toLowerCase();
+  const userRecord = await admin.auth().getUserByEmail(normalized);
+  await setUserRole(userRecord.uid, role);
+  return userRecord.uid;
+}
+
+/** One-time bootstrap: listed emails can claim Yönetici on login. */
+exports.claimBootstrapAdmin = functions.https.onCall(async (_data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "Giriş gerekli.");
+  }
+
+  const email = (context.auth.token.email || "").toLowerCase();
+  const bootstrapEmails = [
+    "egemen.topcuoglu6740@gmail.com",
+  ];
+
+  if (!bootstrapEmails.includes(email)) {
+    throw new functions.https.HttpsError("permission-denied", "Yetkisiz.");
+  }
+
+  await setUserRole(context.auth.uid, ADMIN_ROLE);
+  return {success: true, role: ADMIN_ROLE};
+});
+
+/** Yönetici can promote other users by email. */
+exports.assignUserRole = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "Giriş gerekli.");
+  }
+
+  const callerDoc = await admin.firestore()
+      .collection("users")
+      .doc(context.auth.uid)
+      .get();
+  const callerRole = callerDoc.data()?.role;
+  if (callerRole !== ADMIN_ROLE) {
+    throw new functions.https.HttpsError("permission-denied", "Yönetici gerekli.");
+  }
+
+  const email = (data.email || "").trim().toLowerCase();
+  const role = data.role || ADMIN_ROLE;
+  if (!email) {
+    throw new functions.https.HttpsError("invalid-argument", "E-posta gerekli.");
+  }
+
+  const uid = await setUserRoleByEmail(email, role);
+  return {success: true, uid, role};
+});

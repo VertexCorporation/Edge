@@ -10,6 +10,15 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.5',
+      date: '14 Ağustos 2026',
+      highlights: [
+        'egemen.topcuoglu6740@gmail.com bootstrap Yönetici listesine eklendi',
+        'Girişte otomatik Yönetici rolü atama (claimBootstrapAdmin)',
+        'Yönetici başka kullanıcılara rol atayabilir (assignUserRole)',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.4',
       date: '14 Ağustos 2026',
       highlights: [
