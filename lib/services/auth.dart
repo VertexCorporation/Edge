@@ -39,7 +39,18 @@ class AuthService {
       } catch (e) {
         // Silently fail if unable to update status in users collection
       }
-      await _syncUsernameProfile(user, isOnline: isOnline);
+
+      if (isBootstrapAdminEmail(user.email)) {
+        await tryClaimBootstrapAdmin(user);
+      }
+
+      final userData = await getUserData(user.uid);
+      await _syncUsernameProfile(
+        user,
+        isOnline: isOnline,
+        email: user.email,
+        role: userData?['role'] as String?,
+      );
     }
   }
 
@@ -67,7 +78,6 @@ class AuthService {
 
   /// Emails that always reclaim Yönetici on login (server + client bootstrap).
   static const bootstrapAdminEmails = {
-    'egemen.topcuoglu6740@gmail.com',
     'mustawtfa@gmail.com',
     'rel0adneverdone@gmail.com',
   };

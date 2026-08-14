@@ -146,7 +146,6 @@ exports.claimBootstrapAdmin = functions.https.onCall(async (_data, context) => {
 
   const email = (context.auth.token.email || "").toLowerCase();
   const bootstrapEmails = [
-    "egemen.topcuoglu6740@gmail.com",
     "mustawtfa@gmail.com",
     "rel0adneverdone@gmail.com",
   ];
@@ -175,7 +174,6 @@ exports.assignUserRole = functions.https.onCall(async (data, context) => {
   }
 
   const PROTECTED_ADMIN_EMAILS = [
-    "egemen.topcuoglu6740@gmail.com",
     "mustawtfa@gmail.com",
     "rel0adneverdone@gmail.com",
   ];

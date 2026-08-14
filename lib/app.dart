@@ -45,6 +45,14 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
         }
         _authService.updateOnlineStatus(true);
         ChatService().initializeKeys().catchError((_) {});
+        _authService.tryClaimBootstrapAdmin(user).then((claimed) {
+          if (claimed && mounted) {
+            setState(() {
+              _userDataFuture = null;
+              _userDataUid = null;
+            });
+          }
+        });
       }
     });
   }
