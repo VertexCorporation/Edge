@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
@@ -499,14 +500,38 @@ class _MessageInputBar extends StatelessWidget {
               onPressed: onPickImage,
             ),
             Expanded(
-              child: TextField(
-                controller: controller,
-                style: GoogleFonts.inter(color: isDark ? Colors.white : Colors.black),
-                decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context)!.typeMessage,
-                  hintStyle: GoogleFonts.inter(color: AppColors.tertiaryColor),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Focus(
+                onKeyEvent: (node, event) {
+                  if (event is! KeyDownEvent) return KeyEventResult.ignored;
+                  if (event.logicalKey != LogicalKeyboardKey.enter) {
+                    return KeyEventResult.ignored;
+                  }
+                  if (HardwareKeyboard.instance.isShiftPressed) {
+                    return KeyEventResult.ignored;
+                  }
+                  if (controller.text.trim().isNotEmpty) {
+                    onSend();
+                  }
+                  return KeyEventResult.handled;
+                },
+                child: TextField(
+                  controller: controller,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (_) {
+                    if (controller.text.trim().isNotEmpty) onSend();
+                  },
+                  minLines: 1,
+                  maxLines: 5,
+                  style: GoogleFonts.inter(
+                      color: isDark ? Colors.white : Colors.black),
+                  decoration: InputDecoration(
+                    hintText: AppLocalizations.of(context)!.typeMessage,
+                    hintStyle:
+                        GoogleFonts.inter(color: AppColors.tertiaryColor),
+                    border: InputBorder.none,
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 16),
+                  ),
                 ),
               ),
             ),
