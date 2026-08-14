@@ -29,7 +29,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
     _isAdmin = admins.contains(_chatService.currentUserId);
   }
 
-  bool get _isDarkTheme => AppColors.currentTheme == 'dark';
+  bool get _isDarkTheme => AppColors.isDarkUi;
 
   Color get _primaryTextColor =>
       _isDarkTheme ? Colors.white : Colors.black;

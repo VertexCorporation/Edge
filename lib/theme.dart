@@ -114,9 +114,9 @@ class AppColors {
     ),
     'dark': ThemeColors(
       primaryColor: Colors.black,
-      secondaryColor: const Color(0xFF0D1B3E),
+      secondaryColor: const Color(0xFF181818),
       tertiaryColor: const Color(0xFF8F8F8F),
-      quaternaryColor: const Color(0xFF0A1630),
+      quaternaryColor: const Color(0xFF141414),
       quinaryColor: Colors.white70,
       senaryColor: const Color(0xFF0D31FE),
       septenaryColor: const Color(0xFF6E1E1E),
@@ -292,6 +292,26 @@ class AppColors {
   };
 
   static Map<String, ThemeColors> get themeDefinitions => _themeDefinitions;
+
+  static const Map<String, String> themeDisplayNames = {
+    'light': 'Açık',
+    'dark': 'Koyu',
+    'love': 'Aşk',
+    'nature': 'Doğa',
+    'behindTheSlaughter': 'Mor',
+    'grayscale': 'Gri',
+    'ocean': 'Okyanus',
+    'scarletSnow': 'Scarlet',
+    'cyberpunk': 'Cyberpunk',
+    'sunset': 'Gün Batımı',
+    'coffee': 'Kahve',
+    'deepSpace': 'Uzay',
+  };
+
+  static String themeDisplayName(String theme) =>
+      themeDisplayNames[theme] ?? theme;
+
+  static bool get isDarkUi => background.computeLuminance() < 0.5;
 
   static ThemeColors _cachedColors = _themeDefinitions['light']!;
 

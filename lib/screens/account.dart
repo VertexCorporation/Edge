@@ -36,14 +36,12 @@ class _AccountScreenState extends State<AccountScreen>
   final _authService = AuthService();
   final ScrollController _scrollController = ScrollController();
 
-  bool get _isDarkTheme => AppColors.currentTheme == 'dark';
+  bool get _isDarkTheme => AppColors.isDarkUi;
 
   Color get _primaryText =>
       _isDarkTheme ? Colors.white : AppColors.primaryColor.inverted;
 
-  Color get _profileCardColor => _isDarkTheme
-      ? const Color(0xFF0D2048)
-      : AppColors.secondaryColor;
+  Color get _profileCardColor => AppColors.secondaryColor;
 
   Color get _profileCardBorder => _isDarkTheme
       ? AppColors.senaryColor.withValues(alpha: 0.35)
@@ -323,19 +321,7 @@ class _AccountScreenState extends State<AccountScreen>
             ),
           ),
           const SizedBox(height: 16),
-          _buildSettingsTile(
-            icon: Icons.dark_mode_outlined,
-            title: AppLocalizations.of(context)!.darkTheme,
-            subtitle: _isDarkTheme ? 'Aktif' : 'Pasif',
-            trailing: Switch.adaptive(
-              value: _isDarkTheme,
-              onChanged: (value) {
-                context.read<ThemeProvider>().changeTheme(value ? 'dark' : 'light');
-              },
-              activeTrackColor: AppColors.senaryColor,
-              activeThumbColor: Colors.white,
-            ),
-          ),
+          _buildThemePicker(),
           _sectionDivider(padding: const EdgeInsets.symmetric(vertical: 8)),
           _buildSettingsTile(
             icon: Icons.notifications_none_rounded,
@@ -349,6 +335,70 @@ class _AccountScreenState extends State<AccountScreen>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildThemePicker() {
+    final currentTheme = context.watch<ThemeProvider>().currentTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.palette_outlined, size: 20, color: AppColors.senaryColor),
+            const SizedBox(width: 14),
+            Text(
+              'Tema',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: _primaryText,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: AppColors.themeDefinitions.keys.map((themeKey) {
+            final themeColors = AppColors.getThemeColors(themeKey);
+            final selected = themeKey == currentTheme;
+            final labelColor = themeColors.background.computeLuminance() < 0.5
+                ? Colors.white
+                : Colors.black87;
+
+            return GestureDetector(
+              onTap: () =>
+                  context.read<ThemeProvider>().changeTheme(themeKey),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: themeColors.background,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: selected
+                        ? AppColors.senaryColor
+                        : themeColors.border,
+                    width: selected ? 2 : 1,
+                  ),
+                ),
+                child: Text(
+                  AppColors.themeDisplayName(themeKey),
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                    color: labelColor,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 

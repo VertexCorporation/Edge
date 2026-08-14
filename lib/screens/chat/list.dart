@@ -213,7 +213,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
               clipBehavior: Clip.none,
               children: [
                 CircleAvatar(
-                  backgroundColor: AppColors.currentTheme == 'dark'
+                  backgroundColor: AppColors.isDarkUi
                       ? AppColors.senaryColor.withValues(alpha: 0.35)
                       : AppColors.senaryColor.withValues(alpha: 0.2),
                   child: Text(

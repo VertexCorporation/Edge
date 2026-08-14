@@ -87,7 +87,7 @@ class PatchNotesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkTheme = AppColors.currentTheme == 'dark';
+    final isDarkTheme = AppColors.isDarkUi;
     final textColor = isDarkTheme ? Colors.white : Colors.black;
 
     return Scaffold(
