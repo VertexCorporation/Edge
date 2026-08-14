@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -16,6 +16,7 @@ import '../../theme.dart';
 import '../../services/chat.dart';
 import '../../widgets/appbar.dart';
 import '../../widgets/fog.dart';
+import '../../utils/file_bytes.dart';
 import 'package:edge/l10n/app_localizations.dart';
 
 class ChatDetailScreen extends StatefulWidget {
@@ -144,14 +145,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 
   Future<void> _pickAndSendFile() async {
-    final FilePickerResult? result = await FilePicker.platform.pickFiles(withData: true);
-    if (result != null) {
-      if (result.files.single.bytes != null) {
-        _sendFile(result.files.single.bytes!, 'file');
-      } else if (result.files.single.path != null) {
-        final bytes = await File(result.files.single.path!).readAsBytes();
-        _sendFile(bytes, 'file');
-      }
+    final FilePickerResult? result =
+        await FilePicker.platform.pickFiles(withData: true);
+    if (result != null && result.files.single.bytes != null) {
+      _sendFile(result.files.single.bytes!, 'file');
     }
   }
 
@@ -172,10 +169,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 
   Future<void> _startRecording() async {
+    if (kIsWeb) return;
     try {
       if (await _record.hasPermission()) {
         final dir = await getApplicationDocumentsDirectory();
-        final path = '${dir.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+        final path =
+            '${dir.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
         await _record.start(const RecordConfig(), path: path);
         setState(() {
           _isRecording = true;
@@ -187,12 +186,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 
   Future<void> _stopRecording() async {
+    if (kIsWeb) return;
     try {
       final path = await _record.stop();
       setState(() => _isRecording = false);
       if (path != null) {
-        final bytes = await File(path).readAsBytes();
-        _sendFile(bytes, 'audio');
+        final bytes = await readFileBytes(path);
+        if (bytes != null) _sendFile(bytes, 'audio');
       }
     } catch (e) {
       debugPrint('Kayıt durdurma hatası: $e');

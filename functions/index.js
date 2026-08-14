@@ -79,7 +79,7 @@ exports.createUserProfile = functions.auth.user().onCreate(async (user) => {
   await db.collection("users").doc(uid).set({
     name,
     email: email || "",
-    role: "geliştirici",
+    role: "Geliştirici",
     isVertex: false,
     isOnline: true,
     photoURL: photoURL || "",
@@ -107,7 +107,7 @@ exports.createUserProfile = functions.auth.user().onCreate(async (user) => {
     userId: uid,
     name,
     email: email || "",
-    role: "geliştirici",
+    role: "Geliştirici",
     isOnline: true,
     lastSeen: admin.firestore.FieldValue.serverTimestamp(),
   }, {merge: true});

@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shimmer/shimmer.dart';
 import 'theme.dart';
 import 'screens/login.dart';
-import 'screens/chat/list.dart';
+import 'screens/home_shell.dart';
+import 'models/role.dart';
 import 'services/auth.dart';
+import 'services/chat.dart';
 import 'services/notification.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:edge/l10n/app_localizations.dart';
@@ -35,8 +38,13 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _authSubscription = _authService.authStateChanges.listen((user) {
       if (user != null) {
-        NotificationService().saveDeviceToken();
+        if (kIsWeb) {
+          NotificationService().initialize().catchError((_) {});
+        } else {
+          NotificationService().saveDeviceToken();
+        }
         _authService.updateOnlineStatus(true);
+        ChatService().initializeKeys().catchError((_) {});
       }
     });
   }
@@ -63,7 +71,9 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
       return _userDataFuture!;
     }
     _userDataUid = uid;
-    _userDataFuture = _authService.getUserData(uid);
+    _userDataFuture = _authService
+        .getUserData(uid)
+        .timeout(const Duration(seconds: 8), onTimeout: () => null);
     return _userDataFuture!;
   }
 
@@ -125,11 +135,15 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
         }
 
         final userData = userDataSnapshot.data;
-        return ChatListScreen(
+        final role = UserRole.normalize(
+          userData?['role'] as String? ??
+              AppLocalizations.of(context)!.member,
+        );
+        return HomeShell(
           userName: userData?['name'] ??
               user.displayName ??
               AppLocalizations.of(context)!.vertexMember,
-          userRole: userData?['role'] ?? AppLocalizations.of(context)!.member,
+          userRole: role,
           userEmail: user.email ?? '',
           isVertex: userData?['isVertex'] == true,
         );

@@ -407,7 +407,7 @@ class _AccountScreenState extends State<AccountScreen>
           _buildInfoRow(
             icon: Icons.info_outline_rounded,
             label: 'Uygulama',
-            value: 'Vertex Edge v1.0.3',
+            value: 'Vertex Edge v1.0.4',
           ),
           _sectionDivider(),
           _buildInfoRow(

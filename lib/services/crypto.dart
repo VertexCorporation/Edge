@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:encrypt/encrypt.dart' as enc;
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pointycastle/export.dart' as pc;
 
@@ -15,6 +16,11 @@ class CryptoService {
   static const _backupKeyPrefix = 'vertex-edge-e2ee-v1:';
 
   final _storage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    iOptions: IOSOptions(
+      accessibility: KeychainAccessibility.first_unlock_this_device,
+      accountName: 'vertex_edge_e2ee',
+    ),
     webOptions: WebOptions(
       dbName: 'vertex_edge_secure',
       publicKey: 'vertex_edge_e2ee',
@@ -43,8 +49,13 @@ class CryptoService {
 
   /// Check if keys exist in secure storage
   Future<bool> hasKeys() async {
-    final priv = await _storage.read(key: _privateKeyKey);
-    return priv != null;
+    try {
+      final priv = await _storage.read(key: _privateKeyKey);
+      return priv != null && priv.isNotEmpty;
+    } catch (e) {
+      debugPrint('E2EE: hasKeys check failed: $e');
+      return false;
+    }
   }
 
   /// Get the stored public key PEM
@@ -93,7 +104,8 @@ class CryptoService {
 
       await importKeys(privateKeyPem: privateKeyPem, publicKeyPem: publicKeyPem);
       return await hasKeys();
-    } catch (_) {
+    } catch (e) {
+      debugPrint('E2EE: restoreFromKeyBackup failed: $e');
       return false;
     }
   }

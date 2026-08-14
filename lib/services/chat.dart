@@ -39,6 +39,7 @@ class ChatService {
       if (publicKey != null) {
         await _syncPublicKey(publicKey);
       }
+      await _ensureKeyBackup();
       return;
     }
 
@@ -154,7 +155,7 @@ class ChatService {
 
   Future<void> _ensureKeysForDecryption() async {
     if (await _cryptoService.hasKeys()) return;
-    await _tryRestoreKeysFromFirestore();
+    await initializeKeys();
   }
 
   Future<String> _decryptChatMessage(Map<String, dynamic> data) async {
@@ -178,6 +179,12 @@ class ChatService {
     } catch (firstError) {
       debugPrint('E2EE: Decrypt failed, attempting key restore: $firstError');
       if (await _tryRestoreKeysFromFirestore()) {
+        _decryptionCache.clear();
+        return await _cryptoService.decryptMessage(encryptedMessage, encryptedKey);
+      }
+      await initializeKeys();
+      if (await _cryptoService.hasKeys()) {
+        _decryptionCache.clear();
         return await _cryptoService.decryptMessage(encryptedMessage, encryptedKey);
       }
       rethrow;
@@ -551,6 +558,7 @@ class ChatService {
     } else {
       // 1-to-1 E2EE Logic
       if (receiverId == null) throw Exception('Alıcı ID gerekli.');
+      await initializeKeys();
       
       final receiverQuery = await _firestore.collection('usernames').where('userId', isEqualTo: receiverId).limit(1).get();
       if (receiverQuery.docs.isEmpty) throw Exception('Alıcı bulunamadı.');

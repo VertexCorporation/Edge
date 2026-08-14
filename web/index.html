@@ -109,11 +109,22 @@
   </div>
 
   <script>
-    // Remove loading screen when Flutter is ready
     window.addEventListener('flutter-first-frame', function () {
       var loading = document.getElementById('loading');
       if (loading) loading.remove();
     });
+
+    // Fallback if Flutter fails to boot on slow mobile networks
+    setTimeout(function () {
+      var loading = document.getElementById('loading');
+      if (!loading) return;
+      loading.innerHTML =
+        '<div style="color:#aaa;font-family:sans-serif;text-align:center;padding:24px;">' +
+        '<p style="font-size:16px;margin-bottom:12px;">Yüklenemedi</p>' +
+        '<button onclick="location.reload()" style="padding:10px 24px;border-radius:8px;' +
+        'border:none;background:#0072FF;color:#fff;font-size:14px;cursor:pointer;">Yeniden Dene</button>' +
+        '</div>';
+    }, 25000);
   </script>
 
   <script src="flutter_bootstrap.js" async></script>

@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import '../models/role.dart';
 
 /// Authentication service for Vertex Edge
 class AuthService {
@@ -84,7 +85,7 @@ class AuthService {
       return AuthResult.success(
         user: user,
         name: userData?['name'] ?? user.displayName ?? 'Vertex Üyesi',
-        role: userData?['role'] ?? 'Üye',
+        role: UserRole.normalize(userData?['role'] as String?),
       );
     } on FirebaseAuthException catch (e) {
       return AuthResult.error(_getAuthErrorMessage(e.code));
@@ -312,7 +313,13 @@ class AuthService {
   Future<Map<String, dynamic>?> getUserData(String uid) async {
     try {
       final doc = await _firestore.collection('users').doc(uid).get();
-      return doc.data();
+      final data = doc.data();
+      if (data == null) return null;
+      final normalized = Map<String, dynamic>.from(data);
+      if (normalized['role'] != null) {
+        normalized['role'] = UserRole.normalize(normalized['role'] as String?);
+      }
+      return normalized;
     } catch (e) {
       return null;
     }

@@ -10,6 +10,17 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.4',
+      date: '14 Ağustos 2026',
+      highlights: [
+        'Mobil web yükleme takılması düzeltildi (bildirim init ertelendi, timeout)',
+        'iOS mesaj şifre çözme iyileştirildi (erken anahtar init, Keychain)',
+        'Görevler sekmesi eklendi (atama, kalan süre paneli)',
+        'Roller eklendi: Geliştirici, Yönetici',
+        'Yönetici görev atayabilir',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.3',
       date: '13 Ağustos 2026',
       highlights: [
