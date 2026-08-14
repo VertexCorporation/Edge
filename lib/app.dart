@@ -60,10 +60,24 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _authService.updateOnlineStatus(true);
+      _refreshBootstrapAdminIfNeeded();
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
       _authService.updateOnlineStatus(false);
     }
+  }
+
+  void _refreshBootstrapAdminIfNeeded() {
+    final user = _authService.currentUser;
+    if (user == null) return;
+    _authService.tryClaimBootstrapAdmin(user).then((claimed) {
+      if (claimed && mounted) {
+        setState(() {
+          _userDataFuture = null;
+          _userDataUid = null;
+        });
+      }
+    });
   }
 
   Future<Map<String, dynamic>?> _userDataFor(User user) {

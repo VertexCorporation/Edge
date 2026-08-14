@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../models/role.dart';
 import '../services/admin.dart';
+import '../services/auth.dart';
 import '../theme.dart';
 import '../widgets/card.dart';
 import '../widgets/fog.dart';
@@ -215,7 +216,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
   }
 
   Widget _buildUserTile(AdminUser user) {
-    final isAdmin = user.role == UserRole.admin;
+    final isProtected = AuthService.isBootstrapAdminEmail(user.email);
+    final isAdmin = user.role == UserRole.admin || isProtected;
     final isBusy = _busyEmails.contains(user.email.trim().toLowerCase());
 
     return Padding(
@@ -259,7 +261,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                     ),
                   ],
                   const SizedBox(height: 8),
-                  _roleBadge(user.role),
+                  _roleBadge(isProtected ? UserRole.admin : user.role),
                 ],
               ),
             ),

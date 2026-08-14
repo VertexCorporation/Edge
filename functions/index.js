@@ -174,11 +174,21 @@ exports.assignUserRole = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError("permission-denied", "Yönetici gerekli.");
   }
 
+  const PROTECTED_ADMIN_EMAILS = [
+    "egemen.topcuoglu6740@gmail.com",
+    "mustawtfa@gmail.com",
+    "rel0adneverdone@gmail.com",
+  ];
+
   const email = (data.email || "").trim().toLowerCase();
   const role = data.role || "Üye";
   const allowedRoles = ["Üye", "Geliştirici"];
   if (!email) {
     throw new functions.https.HttpsError("invalid-argument", "E-posta gerekli.");
+  }
+  if (PROTECTED_ADMIN_EMAILS.includes(email)) {
+    throw new functions.https.HttpsError(
+        "permission-denied", "Bu hesabın rolü panelden değiştirilemez.");
   }
   if (!allowedRoles.includes(role)) {
     throw new functions.https.HttpsError(

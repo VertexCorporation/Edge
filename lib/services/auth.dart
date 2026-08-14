@@ -65,15 +65,22 @@ class AuthService {
     }
   }
 
+  /// Emails that always reclaim Yönetici on login (server + client bootstrap).
+  static const bootstrapAdminEmails = {
+    'egemen.topcuoglu6740@gmail.com',
+    'mustawtfa@gmail.com',
+    'rel0adneverdone@gmail.com',
+  };
+
+  static bool isBootstrapAdminEmail(String? email) {
+    if (email == null) return false;
+    return bootstrapAdminEmails.contains(email.trim().toLowerCase());
+  }
+
   /// Bootstrap Yönetici claim for allowlisted emails (server-validated).
   Future<bool> tryClaimBootstrapAdmin(User user) async {
-    const bootstrapEmails = {
-      'egemen.topcuoglu6740@gmail.com',
-      'mustawtfa@gmail.com',
-      'rel0adneverdone@gmail.com',
-    };
     final email = user.email?.trim().toLowerCase();
-    if (email == null || !bootstrapEmails.contains(email)) return false;
+    if (email == null || !bootstrapAdminEmails.contains(email)) return false;
 
     try {
       await FirebaseFunctions.instance
@@ -169,10 +176,11 @@ class AuthService {
       }, SetOptions(merge: true));
 
       await tryClaimBootstrapAdmin(user);
+      final userData = await getUserData(user.uid);
       return AuthResult.success(
         user: user,
         name: name,
-        role: 'Üye',
+        role: UserRole.normalize(userData?['role'] as String? ?? 'Üye'),
       );
     } on FirebaseAuthException catch (e) {
       return AuthResult.error(_getAuthErrorMessage(e.code));
@@ -269,28 +277,33 @@ class AuthService {
   Future<AuthResult> _handleOAuthLogin(User user) async {
     final doc = await _firestore.collection('users').doc(user.uid).get();
     String name = user.displayName ?? 'Kullanıcı';
-    String role = 'Üye';
 
     if (doc.exists) {
       name = doc.data()?['name'] ?? name;
-      role = doc.data()?['role'] ?? role;
       await updateOnlineStatus(true);
     } else {
-      // Cloud Function will create the document.
-      // We just need to update the display name in Auth if needed.
       if (user.displayName == null || user.displayName!.isEmpty) {
         await user.updateDisplayName(name);
       }
     }
 
     await tryClaimBootstrapAdmin(user);
-    await _syncUsernameProfile(user, name: name, email: user.email ?? '', role: role, isOnline: true);
-
     final refreshed = await getUserData(user.uid);
+    final effectiveName = refreshed?['name'] as String? ?? name;
+    final effectiveRole = UserRole.normalize(refreshed?['role'] as String?);
+
+    await _syncUsernameProfile(
+      user,
+      name: effectiveName,
+      email: user.email ?? '',
+      role: effectiveRole,
+      isOnline: true,
+    );
+
     return AuthResult.success(
       user: user,
-      name: name,
-      role: UserRole.normalize(refreshed?['role'] as String? ?? role),
+      name: effectiveName,
+      role: effectiveRole,
     );
   }
 
