@@ -87,9 +87,26 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
     );
   }
 
-  Widget _buildAnnouncementTile(AppLocalizations l10n) {
-    final groupId = _announcementGroupId;
+  bool _isAnnouncementGroup(Map<String, dynamic> group) {
+    if (group['isAnnouncementGroup'] == true) return true;
+    final groupId = group['chatId'] as String?;
+    return groupId != null && groupId == _announcementGroupId;
+  }
+
+  Widget _buildAnnouncementTile(
+    AppLocalizations l10n,
+    List<Map<String, dynamic>> groups,
+  ) {
+    String? groupId = _announcementGroupId;
+    groupId ??= groups
+        .cast<Map<String, dynamic>>()
+        .where((g) => g['isAnnouncementGroup'] == true)
+        .map((g) => g['chatId'] as String?)
+        .whereType<String>()
+        .firstOrNull;
+
     if (groupId == null) return const SizedBox.shrink();
+    final announcementId = groupId!;
 
     return ListTile(
       leading: CircleAvatar(
@@ -108,7 +125,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
         style: TextStyle(color: AppColors.tertiaryColor, fontSize: 12),
       ),
       onTap: () => _openChat(
-        chatId: groupId,
+        chatId: announcementId,
         title: l10n.announcements,
         isAnnouncementGroup: true,
       ),
@@ -145,18 +162,40 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
           }
 
           final groups = snapshot.data ?? [];
-          final filteredGroups = groups
-              .where((group) => group['chatId'] != _announcementGroupId)
-              .toList();
+          final filteredGroups =
+              groups.where((group) => !_isAnnouncementGroup(group)).toList();
 
-          if (filteredGroups.isEmpty) {
-            return Center(child: Text(l10n.noGroupsInCommunity));
-          }
-
-          return ListView.builder(
-            itemCount: filteredGroups.length,
-            itemBuilder: (context, index) =>
-                _buildGroupTile(filteredGroups[index]),
+          return Column(
+            children: [
+              _buildAnnouncementTile(l10n, groups),
+              if (_announcementGroupId != null ||
+                  groups.any((g) => g['isAnnouncementGroup'] == true))
+                const Divider(),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text(
+                  'Gruplar',
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.senaryColor,
+                  ),
+                ),
+              ),
+              if (filteredGroups.isEmpty)
+                Expanded(
+                  child: Center(child: Text(l10n.noGroupsInCommunity)),
+                )
+              else
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: filteredGroups.length,
+                    itemBuilder: (context, index) =>
+                        _buildGroupTile(filteredGroups[index]),
+                  ),
+                ),
+            ],
           );
         },
       ),
@@ -192,20 +231,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildDescriptionBanner(),
-          _buildAnnouncementTile(l10n),
-          const Divider(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text(
-              'Gruplar',
-              style: GoogleFonts.inter(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.senaryColor,
-              ),
-            ),
-          ),
-          _buildGroupsSection(l10n),
+          Expanded(child: _buildGroupsSection(l10n)),
         ],
       ),
     );
