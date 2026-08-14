@@ -10,6 +10,8 @@ import '../services/auth.dart';
 import '../widgets/fog.dart';
 import '../routes.dart';
 import 'patch_notes.dart';
+import 'admin_panel.dart';
+import '../models/role.dart';
 
 /// Account screen - profile, settings, and logout
 class AccountScreen extends StatefulWidget {
@@ -101,6 +103,10 @@ class _AccountScreenState extends State<AccountScreen>
                 _buildInfoSection(),
                 const SizedBox(height: 20),
                 _buildSettingsSection(),
+                if (UserRole.canManageRoles(widget.userRole)) ...[
+                  const SizedBox(height: 20),
+                  _buildAdminSection(),
+                ],
                 const SizedBox(height: 20),
                 _buildAboutSection(),
                 const SizedBox(height: 28),
@@ -436,6 +442,56 @@ class _AccountScreenState extends State<AccountScreen>
         ),
         trailing,
       ],
+    );
+  }
+
+  Widget _buildAdminSection() {
+    return VertexCard(
+      padding: const EdgeInsets.all(20),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            SlideRightRoute(page: const AdminPanelScreen()),
+          );
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Row(
+          children: [
+            Icon(Icons.admin_panel_settings_outlined,
+                size: 22, color: AppColors.premium),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Yönetici Paneli',
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: _primaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Geliştirici rolü ata',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: AppColors.tertiaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 14,
+              color: AppColors.tertiaryColor,
+            ),
+          ],
+        ),
+      ),
     );
   }
 

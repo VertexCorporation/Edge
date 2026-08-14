@@ -175,9 +175,14 @@ exports.assignUserRole = functions.https.onCall(async (data, context) => {
   }
 
   const email = (data.email || "").trim().toLowerCase();
-  const role = data.role || ADMIN_ROLE;
+  const role = data.role || "Üye";
+  const allowedRoles = ["Üye", "Geliştirici"];
   if (!email) {
     throw new functions.https.HttpsError("invalid-argument", "E-posta gerekli.");
+  }
+  if (!allowedRoles.includes(role)) {
+    throw new functions.https.HttpsError(
+        "invalid-argument", "Sadece Üye veya Geliştirici atanabilir.");
   }
 
   const uid = await setUserRoleByEmail(email, role);

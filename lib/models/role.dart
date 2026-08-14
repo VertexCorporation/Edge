@@ -34,6 +34,11 @@ class UserRole {
   static bool canManageTasks(String? role) =>
       normalize(role) == admin;
 
+  /// Yönetici can assign roles from [assignableByAdmin].
+  static bool canManageRoles(String? role) => normalize(role) == admin;
+
+  static const assignableByAdmin = [member, developer];
+
   /// Geliştirici behaves like Üye — no extra permissions.
   static bool isDeveloper(String? role) =>
       normalize(role) == developer;
