@@ -430,8 +430,14 @@ class ChatService {
           'isGroup': data['isGroup'] ?? false,
           'groupName': data['groupName'] ?? '',
           'lastMessageTimestamp': data['lastMessageTimestamp'],
+          'isAnnouncementGroup': data['isAnnouncementGroup'] ?? false,
+          'communityId': data['communityId'],
         };
-      }).where((chat) => chat['isGroup'] == true || chat['otherUserId'].isNotEmpty).toList();
+      }).where((chat) {
+        if (chat['isAnnouncementGroup'] == true) return false;
+        if (chat['communityId'] != null) return false;
+        return chat['isGroup'] == true || chat['otherUserId'].isNotEmpty;
+      }).toList();
       
       chats.sort((a, b) {
         final tA = a['lastMessageTimestamp'] as Timestamp?;
