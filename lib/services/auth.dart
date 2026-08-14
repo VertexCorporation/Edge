@@ -32,10 +32,10 @@ class AuthService {
     final user = _auth.currentUser;
     if (user != null) {
       try {
-        await _firestore.collection('users').doc(user.uid).update({
+        await _firestore.collection('users').doc(user.uid).set({
           'isOnline': isOnline,
           'lastSeen': FieldValue.serverTimestamp(),
-        });
+        }, SetOptions(merge: true));
       } catch (e) {
         // Silently fail if unable to update status in users collection
       }

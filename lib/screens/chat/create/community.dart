@@ -29,11 +29,9 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
   }
 
   Future<void> _fetchUsers() async {
-    final result = await _chatService.getUsersPaginated(limit: 50);
+    final users = await _chatService.listGroupEligibleUsers();
     if (mounted) {
-      setState(() {
-        _suggestedUsers = List<Map<String, dynamic>>.from(result['users']);
-      });
+      setState(() => _suggestedUsers = users);
     }
   }
 

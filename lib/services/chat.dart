@@ -227,8 +227,85 @@ class ChatService {
     });
   }
 
+  /// Edge users eligible for group invites (logged in at least once).
+  Future<List<Map<String, dynamic>>> listGroupEligibleUsers() async {
+    List<Map<String, dynamic>> users = [];
+
+    try {
+      final snap = await _firestore
+          .collection('usernames')
+          .where(
+            'lastSeen',
+            isGreaterThan: Timestamp.fromDate(DateTime(2020, 1, 1)),
+          )
+          .limit(150)
+          .get();
+      users = _mapGroupUserDocs(snap.docs);
+    } catch (e) {
+      debugPrint('ChatService: group users query failed: $e');
+    }
+
+    if (users.isEmpty) {
+      try {
+        final snap = await _firestore.collection('usernames').limit(150).get();
+        users = _mapGroupUserDocs(snap.docs);
+      } catch (e) {
+        debugPrint('ChatService: group users fallback failed: $e');
+      }
+    }
+
+    users.sort(
+      (a, b) => (a['name'] as String)
+          .toLowerCase()
+          .compareTo((b['name'] as String).toLowerCase()),
+    );
+    return users;
+  }
+
+  List<Map<String, dynamic>> _mapGroupUserDocs(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) {
+    return docs
+        .map((doc) {
+          final data = doc.data();
+          final userId = data['userId'] as String? ?? '';
+          if (userId.isEmpty || userId == currentUserId) return null;
+          final name = (data['name'] as String? ?? doc.id).trim();
+          return {
+            'id': userId,
+            'userId': userId,
+            'username': doc.id,
+            'name': name.isEmpty ? doc.id : name,
+            'email': data['email'] ?? '',
+          };
+        })
+        .whereType<Map<String, dynamic>>()
+        .toList();
+  }
+
   /// Get a paginated list of users, filtering out those without a public key
   Future<Map<String, dynamic>> getUsersPaginated({
+    DocumentSnapshot? lastDocument,
+    int limit = 20,
+    String? searchQuery,
+  }) async {
+    try {
+      return await _getUsersPaginatedIndexed(
+        lastDocument: lastDocument,
+        limit: limit,
+        searchQuery: searchQuery,
+      );
+    } catch (e) {
+      debugPrint('ChatService: indexed user query failed, using fallback: $e');
+      return _getUsersPaginatedSimple(
+        lastDocument: lastDocument,
+        limit: limit,
+        searchQuery: searchQuery,
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> _getUsersPaginatedIndexed({
     DocumentSnapshot? lastDocument,
     int limit = 20,
     String? searchQuery,
@@ -236,15 +313,12 @@ class ChatService {
     Query query = _firestore.collection('usernames');
 
     if (searchQuery != null && searchQuery.isNotEmpty) {
-      // If searching, we range-filter on document ID (username)
       final searchLower = searchQuery.toLowerCase();
       query = query
           .where(FieldPath.documentId, isGreaterThanOrEqualTo: searchLower)
           .where(FieldPath.documentId, isLessThanOrEqualTo: '$searchLower\uf8ff')
           .orderBy(FieldPath.documentId);
     } else {
-      // If not searching, orderBy publicKey filters out docs where it is null/missing
-      // We also order by documentId as a secondary tie-breaker for stable pagination
       query = query.orderBy('publicKey').orderBy(FieldPath.documentId);
     }
 
@@ -255,26 +329,49 @@ class ChatService {
     query = query.limit(limit);
 
     final snapshot = await query.get();
+    return _mapPaginatedUsers(snapshot.docs, limit);
+  }
 
-    List<Map<String, dynamic>> users = [];
-    for (var doc in snapshot.docs) {
+  Future<Map<String, dynamic>> _getUsersPaginatedSimple({
+    DocumentSnapshot? lastDocument,
+    int limit = 20,
+    String? searchQuery,
+  }) async {
+    Query query = _firestore.collection('usernames');
+    if (lastDocument != null) {
+      query = query.startAfterDocument(lastDocument);
+    }
+    query = query.limit(limit);
+    final snapshot = await query.get();
+    return _mapPaginatedUsers(snapshot.docs, limit, searchQuery: searchQuery);
+  }
+
+  Map<String, dynamic> _mapPaginatedUsers(
+    List<QueryDocumentSnapshot<Object?>> docs,
+    int limit, {
+    String? searchQuery,
+  }) {
+    final users = <Map<String, dynamic>>[];
+    for (var doc in docs) {
       final data = doc.data() as Map<String, dynamic>;
-      
-      // Client-side filters
-      if (data['userId'] == currentUserId) continue; // Skip self
-      if (data['publicKey'] == null) continue; // Skip users without keys (useful for search query)
-      
+      if (data['userId'] == currentUserId) continue;
+      if (data['publicKey'] == null) continue;
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        final q = searchQuery.toLowerCase();
+        final name = (data['name'] ?? '').toString().toLowerCase();
+        final username = doc.id.toLowerCase();
+        if (!name.contains(q) && !username.contains(q)) continue;
+      }
       users.add({
         'id': data['userId'],
         'username': doc.id,
         ...data,
       });
     }
-
     return {
       'users': users,
-      'lastDocument': snapshot.docs.isNotEmpty ? snapshot.docs.last : null,
-      'hasMore': snapshot.docs.length == limit,
+      'lastDocument': docs.isNotEmpty ? docs.last : null,
+      'hasMore': docs.length == limit,
     };
   }
 
@@ -316,21 +413,26 @@ class ChatService {
     String? communityId,
     bool isAnnouncementGroup = false,
   }) async {
-    final chatId = const Uuid().v4(); // Unique ID for the group
-    
-    // Ensure current user is in the group
-    if (!memberIds.contains(currentUserId)) {
-      memberIds.add(currentUserId);
+    final chatId = const Uuid().v4();
+
+    final participants = memberIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+    participants.add(currentUserId);
+
+    if (participants.length < 2) {
+      throw StateError('Grup için en az bir kişi seçilmeli.');
     }
 
     await _firestore.collection('chats').doc(chatId).set({
       'isGroup': true,
-      'groupName': groupName,
-      'participants': memberIds,
+      'groupName': groupName.trim(),
+      'participants': participants,
       'lastMessageTimestamp': FieldValue.serverTimestamp(),
       'createdBy': currentUserId,
       'createdAt': FieldValue.serverTimestamp(),
-      // ignore: use_null_aware_elements
       if (communityId != null) 'communityId': communityId,
       if (isAnnouncementGroup) 'isAnnouncementGroup': true,
     });

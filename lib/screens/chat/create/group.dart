@@ -33,10 +33,8 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
   Future<void> _loadUsers() async {
     setState(() => _isLoading = true);
     try {
-      final res = await _chatService.getUsersPaginated(limit: 100);
-      setState(() {
-        _users = List<Map<String, dynamic>>.from(res['users']);
-      });
+      final users = await _chatService.listGroupEligibleUsers();
+      setState(() => _users = users);
     } catch (e) {
       debugPrint("Kullanıcılar yüklenemedi: $e");
     } finally {
@@ -168,7 +166,10 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                     itemCount: filteredUsers.length,
                     itemBuilder: (context, index) {
                       final user = filteredUsers[index];
-                      final uid = user['id'] ?? user['userId'];
+                      final uid = (user['id'] ?? user['userId'])?.toString();
+                      if (uid == null || uid.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
                       final isSelected = _selectedUserIds.contains(uid);
 
                       String displayName = (user['name'] ?? '').toString().trim();
