@@ -10,6 +10,21 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.6',
+      date: '14 Ağustos 2026',
+      highlights: [
+        'Yönetici Paneli: Hesap ekranından kullanıcı listesi, arama ve Geliştirici / Üye rol atama',
+        'Bootstrap Yönetici koruması: sabit admin hesapları panelden düşürülemez, girişte rol geri yüklenir',
+        'Temalar: 12 tema seçici (Açık, Koyu, Aşk, Doğa, Okyanus, Cyberpunk vb.) Hesap → Ayarlar',
+        'Tema renkleri kart, alt menü ve yüzeylerde tutarlı; sabit mavi tonlar kaldırıldı',
+        'Edge başlığı: Koyu temada mavi gradient, diğer temalarda siyah metin',
+        'Görev atama: kişi listesi düzeltildi (usernames + users yedek sorgu)',
+        'Görev süreleri: bitiş tarihine göre "X gün kaldı", "Bugün", "Süre doldu" gösterimi',
+        'Görev detay paneli: Yapılacak → Devam ediyor → Tamamlandı durum güncelleme',
+        'Yönetici tüm görevleri görür; atanan kişi yalnızca kendi görevlerini görür',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.5',
       date: '14 Ağustos 2026',
       highlights: [
