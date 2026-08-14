@@ -158,23 +158,56 @@ class TaskService {
   }
 
   Future<List<Map<String, dynamic>>> listAssignees() async {
+    List<Map<String, dynamic>> assignees = [];
+
     try {
-      final snap = await _firestore
-          .collection('usernames')
-          .orderBy('name')
-          .limit(100)
-          .get();
-      return snap.docs.map((doc) {
-        final data = doc.data();
-        return {
-          'userId': data['userId'] as String? ?? '',
-          'name': data['name'] as String? ?? doc.id,
-          'role': UserRole.normalize(data['role'] as String?),
-        };
-      }).where((u) => u['userId'] != '').toList();
+      final snap = await _firestore.collection('usernames').get();
+      assignees = _mapAssigneeDocs(snap.docs);
     } catch (e) {
-      debugPrint('TaskService: failed to list assignees: $e');
-      return [];
+      debugPrint('TaskService: usernames list failed: $e');
     }
+
+    if (assignees.isEmpty) {
+      try {
+        final snap = await _firestore.collection('users').get();
+        assignees = snap.docs.map((doc) {
+          final data = doc.data();
+          return {
+            'userId': doc.id,
+            'name': data['name'] as String? ??
+                data['email'] as String? ??
+                doc.id,
+            'role': UserRole.normalize(data['role'] as String?),
+          };
+        }).toList();
+      } catch (e) {
+        debugPrint('TaskService: users list failed: $e');
+      }
+    }
+
+    assignees.sort(
+      (a, b) => (a['name'] as String)
+          .toLowerCase()
+          .compareTo((b['name'] as String).toLowerCase()),
+    );
+    return assignees;
+  }
+
+  List<Map<String, dynamic>> _mapAssigneeDocs(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) {
+    return docs
+        .map((doc) {
+          final data = doc.data();
+          final userId = data['userId'] as String? ?? '';
+          if (userId.isEmpty) return null;
+          return {
+            'userId': userId,
+            'name': data['name'] as String? ?? doc.id,
+            'role': UserRole.normalize(data['role'] as String?),
+          };
+        })
+        .whereType<Map<String, dynamic>>()
+        .toList();
   }
 }

@@ -690,11 +690,14 @@ class _TasksScreenState extends State<TasksScreen>
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      initialValue: selectedUserId,
+                      value: selectedUserId,
                       decoration: const InputDecoration(
                         labelText: 'Kişi',
                         border: OutlineInputBorder(),
                       ),
+                      hint: assignees.isEmpty
+                          ? const Text('Kişi bulunamadı')
+                          : const Text('Kişi seç'),
                       items: assignees
                           .map(
                             (u) => DropdownMenuItem(

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../theme.dart';
 import '../models/role.dart';
 import 'tasks.dart';
 import 'chat/list.dart' show ChatListScreen;
 import 'package:edge/l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
 
 /// Authenticated home with bottom navigation: Görevler | Sohbetler
 class HomeShell extends StatefulWidget {
@@ -30,7 +30,7 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    context.watch<ThemeProvider>();
     final role = UserRole.normalize(widget.userRole);
     final canManageTasks = UserRole.canManageTasks(role);
 
@@ -55,7 +55,7 @@ class _HomeShellState extends State<HomeShell> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
-        backgroundColor: isDark ? const Color(0xFF0D1B3E) : AppColors.secondaryColor,
+        backgroundColor: AppColors.secondaryColor,
         indicatorColor: AppColors.senaryColor.withValues(alpha: 0.2),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         destinations: [

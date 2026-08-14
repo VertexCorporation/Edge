@@ -84,8 +84,7 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     context.watch<ThemeProvider>();
-    final themeColors = AppColors.getThemeColors(AppColors.currentTheme);
-    final isDarkUi = themeColors.statusBarIconBrightness == Brightness.light;
+    final isDarkUi = AppColors.isDarkUi;
 
     return MaterialApp(
       title: 'Vertex Edge',
@@ -158,8 +157,7 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
   ThemeData _buildTheme(Brightness brightness) {
     final themeColors = AppColors.getThemeColors(AppColors.currentTheme);
     final isDarkUi = themeColors.statusBarIconBrightness == Brightness.light;
-    final surface =
-        isDarkUi ? const Color(0xFF0D1B3E) : themeColors.secondaryColor;
+    final surface = themeColors.secondaryColor;
 
     return ThemeData(
       brightness: brightness,

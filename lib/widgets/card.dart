@@ -55,12 +55,9 @@ class _VertexCardState extends State<VertexCard>
     context.watch<ThemeProvider>();
     final brightness = Theme.of(context).brightness;
     final borderRadius = widget.borderRadius ?? BorderRadius.circular(12);
-    final isDarkUi = AppColors.getThemeColors(AppColors.currentTheme)
-            .statusBarIconBrightness ==
-        Brightness.light;
-    final cardColor = isDarkUi
-        ? const Color(0xFF0D2048)
-        : AppColors.secondaryColor;
+    final isDarkUi = AppColors.isDarkUi;
+    final cardColor =
+        isDarkUi ? AppColors.quaternaryColor : AppColors.secondaryColor;
 
     Widget card = AnimatedContainer(
       duration: const Duration(milliseconds: 200),
