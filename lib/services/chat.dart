@@ -436,6 +436,10 @@ class ChatService {
       }).where((chat) {
         if (chat['isAnnouncementGroup'] == true) return false;
         if (chat['communityId'] != null) return false;
+        if (chat['isGroup'] == true &&
+            (chat['groupName'] as String).trim() == 'Duyurular') {
+          return false;
+        }
         return chat['isGroup'] == true || chat['otherUserId'].isNotEmpty;
       }).toList();
       
