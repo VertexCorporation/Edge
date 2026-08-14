@@ -313,6 +313,18 @@ class AppColors {
 
   static bool get isDarkUi => background.computeLuminance() < 0.5;
 
+  /// True only for the built-in black "Koyu" theme key.
+  static bool get isBlackTheme => _currentTheme == 'dark';
+
+  static Color get edgeTitleColor =>
+      isBlackTheme ? Colors.white : Colors.black;
+
+  static const LinearGradient edgeTitleGradient = LinearGradient(
+    colors: [Color(0xFF00C6FF), Color(0xFF0072FF)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
   static ThemeColors _cachedColors = _themeDefinitions['light']!;
 
   static ThemeColors getThemeColors(String theme) {

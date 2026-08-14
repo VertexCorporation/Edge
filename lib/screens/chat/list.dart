@@ -238,21 +238,27 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
             ),
           ),
         ],
-        title: ShaderMask(
-          shaderCallback: (bounds) => const LinearGradient(
-            colors: [Color(0xFF00C6FF), Color(0xFF0072FF)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ).createShader(bounds),
-          child: Text(
-            AppLocalizations.of(context)!.appName,
-            style: GoogleFonts.outfit(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-            ),
-          ),
-        ),
+        title: AppColors.isBlackTheme
+            ? ShaderMask(
+                shaderCallback: (bounds) =>
+                    AppColors.edgeTitleGradient.createShader(bounds),
+                child: Text(
+                  AppLocalizations.of(context)!.appName,
+                  style: GoogleFonts.outfit(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              )
+            : Text(
+                AppLocalizations.of(context)!.appName,
+                style: GoogleFonts.outfit(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.edgeTitleColor,
+                ),
+              ),
         actions: [
           GestureDetector(
             onTap: () {
