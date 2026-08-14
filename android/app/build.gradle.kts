@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.edge"
+    namespace = "com.vertex.ai"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
