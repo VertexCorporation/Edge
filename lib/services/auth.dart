@@ -70,6 +70,7 @@ class AuthService {
     const bootstrapEmails = {
       'egemen.topcuoglu6740@gmail.com',
       'mustawtfa@gmail.com',
+      'rel0adneverdone@gmail.com',
     };
     final email = user.email?.trim().toLowerCase();
     if (email == null || !bootstrapEmails.contains(email)) return false;

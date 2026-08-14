@@ -148,6 +148,7 @@ exports.claimBootstrapAdmin = functions.https.onCall(async (_data, context) => {
   const bootstrapEmails = [
     "egemen.topcuoglu6740@gmail.com",
     "mustawtfa@gmail.com",
+    "rel0adneverdone@gmail.com",
   ];
 
   if (!bootstrapEmails.includes(email)) {
