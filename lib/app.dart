@@ -45,7 +45,6 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
         }
         _authService.updateOnlineStatus(true);
         ChatService().initializeKeys().catchError((_) {});
-        _authService.tryClaimBootstrapAdmin(user).catchError((_) {});
       }
     });
   }
@@ -67,14 +66,18 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
     }
   }
 
-  Future<Map<String, dynamic>?> _userDataFor(String uid) {
+  Future<Map<String, dynamic>?> _userDataFor(User user) {
+    final uid = user.uid;
     if (_userDataUid == uid && _userDataFuture != null) {
       return _userDataFuture!;
     }
     _userDataUid = uid;
-    _userDataFuture = _authService
-        .getUserData(uid)
-        .timeout(const Duration(seconds: 8), onTimeout: () => null);
+    _userDataFuture = () async {
+      await _authService.tryClaimBootstrapAdmin(user);
+      return _authService
+          .getUserData(uid)
+          .timeout(const Duration(seconds: 8), onTimeout: () => null);
+    }();
     return _userDataFuture!;
   }
 
@@ -128,7 +131,7 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
 
   Widget _buildHome(User user) {
     return FutureBuilder<Map<String, dynamic>?>(
-      future: _userDataFor(user.uid),
+      future: _userDataFor(user),
       builder: (context, userDataSnapshot) {
         if (userDataSnapshot.connectionState == ConnectionState.waiting &&
             !userDataSnapshot.hasData) {

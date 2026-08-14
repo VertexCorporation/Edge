@@ -66,16 +66,19 @@ class AuthService {
   }
 
   /// Bootstrap Yönetici claim for allowlisted emails (server-validated).
-  Future<void> tryClaimBootstrapAdmin(User user) async {
-    const bootstrapEmails = {'egemen.topcuoglu6740@gmail.com'};
+  Future<bool> tryClaimBootstrapAdmin(User user) async {
+    const bootstrapEmails = {
+      'egemen.topcuoglu6740@gmail.com',
+      'mustawtfa@gmail.com',
+    };
     final email = user.email?.trim().toLowerCase();
-    if (email == null || !bootstrapEmails.contains(email)) return;
+    if (email == null || !bootstrapEmails.contains(email)) return false;
 
     try {
       await FirebaseFunctions.instance
           .httpsCallable('claimBootstrapAdmin')
           .call();
-      return;
+      return true;
     } catch (e) {
       debugPrint('Bootstrap admin CF failed, trying Firestore fallback: $e');
     }
@@ -90,8 +93,10 @@ class AuthService {
         role: UserRole.admin,
         email: email,
       );
+      return true;
     } catch (e) {
       debugPrint('Bootstrap admin Firestore fallback failed: $e');
+      return false;
     }
   }
 
