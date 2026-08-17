@@ -162,7 +162,7 @@ class VertexAppBar extends StatelessWidget implements PreferredSizeWidget {
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w500,
                   fontSize: 18,
-                  color: AppColors.primaryColor.inverted.inverted,
+                  color: AppColors.isDarkUi ? Colors.white : const Color(0xFF111827),
                 ),
                 maxLines: 1,
               )

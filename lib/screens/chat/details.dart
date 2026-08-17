@@ -257,7 +257,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         actions: widget.isGroup && widget.canDeleteGroup
             ? [
                 IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.white),
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    color: AppColors.isDarkUi ? Colors.white : const Color(0xFF111827),
+                  ),
                   tooltip: 'Grubu sil',
                   onPressed: _confirmDeleteGroup,
                 ),
