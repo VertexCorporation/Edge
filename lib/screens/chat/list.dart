@@ -87,6 +87,47 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
     _searchController.addListener(_onSearchChanged);
   }
 
+  Future<void> _confirmDeleteGroupFromList(String chatId, String name) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Grubu sil'),
+          content: Text(
+            '"$name" grubunu silmek istediğine emin misin? Bu işlem geri alınamaz.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Vazgeç'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(
+                'Sil',
+                style: TextStyle(color: AppColors.septenaryColor),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await _chatService.deleteGroupChat(chatId);
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Grup silindi.')),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Grup silinemedi: $e')),
+      );
+    }
+  }
+
   @override
   void didUpdateWidget(ChatListScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -690,11 +731,24 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                   ),
                 )
               : null,
-          trailing: Icon(
-            Icons.chevron_right,
-            color: AppColors.tertiaryColor,
-            size: 16,
-          ),
+          trailing: isGroup && _canDeleteGroups
+              ? IconButton(
+                  tooltip: 'Grubu sil',
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    color: AppColors.septenaryColor,
+                  ),
+                  onPressed: () {
+                    final id = chatId?.toString() ?? '';
+                    if (id.isEmpty) return;
+                    _confirmDeleteGroupFromList(id, displayName);
+                  },
+                )
+              : Icon(
+                  Icons.chevron_right,
+                  color: AppColors.tertiaryColor,
+                  size: 16,
+                ),
             onTap: () {
               if (isGroup && !_canOpenGroups) {
                 ScaffoldMessenger.of(context).showSnackBar(

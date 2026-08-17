@@ -256,13 +256,24 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         leadingMode: VertexLeadingMode.back,
         actions: widget.isGroup && widget.canDeleteGroup
             ? [
-                IconButton(
-                  icon: Icon(
-                    Icons.delete_outline_rounded,
-                    color: AppColors.isDarkUi ? Colors.white : const Color(0xFF111827),
+                SizedBox(
+                  width: 108,
+                  child: TextButton(
+                    onPressed: _confirmDeleteGroup,
+                    style: TextButton.styleFrom(
+                      minimumSize: Size.zero,
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      foregroundColor: AppColors.septenaryColor,
+                    ),
+                    child: Text(
+                      'Grubu sil',
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
                   ),
-                  tooltip: 'Grubu sil',
-                  onPressed: _confirmDeleteGroup,
                 ),
               ]
             : null,
@@ -270,6 +281,34 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            if (widget.isGroup && widget.canDeleteGroup)
+              Material(
+                color: AppColors.septenaryColor.withValues(alpha: 0.12),
+                child: InkWell(
+                  onTap: _confirmDeleteGroup,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.delete_outline_rounded,
+                          size: 18,
+                          color: AppColors.septenaryColor,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Grubu sil',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            color: AppColors.septenaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             Expanded(
               child: _ChatMessagesList(
                 chatService: _chatService,
