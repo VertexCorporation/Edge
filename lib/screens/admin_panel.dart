@@ -7,6 +7,7 @@ import '../services/auth.dart';
 import '../theme.dart';
 import '../widgets/card.dart';
 import '../widgets/fog.dart';
+import '../widgets/avatar.dart';
 
 /// Yönetici-only panel for assigning Geliştirici / Üye roles.
 class AdminPanelScreen extends StatefulWidget {
@@ -231,15 +232,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              backgroundColor: AppColors.senaryColor.withValues(alpha: 0.25),
-              child: Text(
-                user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+            ThemeAvatar(
+              name: user.name,
+              radius: 20,
             ),
             const SizedBox(width: 12),
             Expanded(

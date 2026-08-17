@@ -8,6 +8,7 @@ import '../../services/auth.dart';
 import '../../services/chat.dart';
 import '../../theme.dart';
 import '../../widgets/appbar.dart';
+import '../../widgets/avatar.dart';
 import 'create/group.dart';
 import 'details.dart';
 
@@ -142,9 +143,10 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
     final announcementId = groupId!;
 
     return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: AppColors.senaryColor.withValues(alpha: 0.2),
-        child: Icon(Icons.campaign, color: AppColors.senaryColor),
+      leading: ThemeAvatar(
+        name: l10n.announcements,
+        radius: 20,
+        icon: Icons.campaign_rounded,
       ),
       title: Text(
         l10n.announcements,
@@ -170,9 +172,10 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
     final chatId = group['chatId'] as String;
 
     return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: AppColors.secondaryColor.withValues(alpha: 0.2),
-        child: Icon(Icons.group, color: AppColors.senaryColor),
+      leading: ThemeAvatar(
+        name: groupName,
+        radius: 20,
+        icon: Icons.group_rounded,
       ),
       title: Text(
         groupName,

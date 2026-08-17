@@ -10,6 +10,7 @@ import '../widgets/text.dart';
 import '../services/auth.dart';
 import '../services/cortex_profile.dart';
 import '../widgets/fog.dart';
+import '../widgets/avatar.dart';
 import '../routes.dart';
 import 'patch_notes.dart';
 import 'admin_panel.dart';
@@ -162,42 +163,9 @@ class _AccountScreenState extends State<AccountScreen>
       padding: const EdgeInsets.all(28),
       child: Row(
         children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                colors: [Color(0xFF2F6BF5), Color(0xFF00E5FF)],
-              ),
-              border: Border.all(
-                color: _isDarkTheme
-                    ? Colors.white.withValues(alpha: 0.25)
-                    : Colors.transparent,
-                width: 2,
-              ),
-              boxShadow: _isDarkTheme
-                  ? [
-                      BoxShadow(
-                        color: AppColors.senaryColor.withValues(alpha: 0.35),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Center(
-              child: Text(
-                _liveName.isNotEmpty
-                    ? _liveName[0].toUpperCase()
-                    : 'V',
-                style: GoogleFonts.inter(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
-              ),
-            ),
+          ThemeAvatar(
+            name: _liveName.isNotEmpty ? _liveName : 'V',
+            radius: 32,
           ),
           const SizedBox(width: 20),
           Expanded(

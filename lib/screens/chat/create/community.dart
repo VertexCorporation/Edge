@@ -3,6 +3,7 @@ import 'package:edge/l10n/app_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../theme.dart';
 import '../../../widgets/appbar.dart';
+import '../../../widgets/avatar.dart';
 import '../../../widgets/button.dart';
 import '../../../services/chat.dart';
 
@@ -130,9 +131,10 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                           final isSelected = _selectedUserIds.contains(uid);
 
                           return ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: isSelected ? AppColors.senaryColor : (isDark ? Colors.white24 : Colors.black12),
-                              child: isSelected ? const Icon(Icons.check, color: Colors.white) : const Icon(Icons.person, color: Colors.white),
+                            leading: ThemeAvatar(
+                              name: (user['name'] ?? user['username'] ?? '?').toString(),
+                              radius: 18,
+                              icon: isSelected ? Icons.check_rounded : null,
                             ),
                             title: Text(
                               user['name'] ?? user['username'] ?? '',

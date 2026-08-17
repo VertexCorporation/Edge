@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../theme.dart';
 import '../../../services/chat.dart';
 import '../../../widgets/appbar.dart';
+import '../../../widgets/avatar.dart';
 
 class CreateGroupScreen extends StatefulWidget {
   final String? communityId;
@@ -216,15 +217,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                       }
 
                       return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: AppColors.senaryColor.withValues(alpha: 0.2),
-                          child: Text(
-                            displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
-                            style: GoogleFonts.inter(
-                              color: AppColors.senaryColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                        leading: ThemeAvatar(
+                          name: displayName,
+                          radius: 20,
                         ),
                         title: Text(
                           displayName,
