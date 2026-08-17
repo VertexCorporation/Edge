@@ -419,6 +419,10 @@ class AuthService {
         normalized['role'] = UserRole.normalize(normalized['role'] as String?);
       }
       return normalized;
+    }).distinct((prev, next) {
+      return prev?['role'] == next?['role'] &&
+          prev?['name'] == next?['name'] &&
+          prev?['isVertex'] == next?['isVertex'];
     });
   }
 

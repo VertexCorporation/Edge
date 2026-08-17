@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../models/role.dart';
@@ -36,24 +37,36 @@ class _HomeShellState extends State<HomeShell> {
     final canManageTasks = UserRole.canManageTasks(role) ||
         AuthService.isBootstrapAdminEmail(widget.userEmail);
 
+    final tasksTab = TasksScreen(
+      userName: widget.userName,
+      userRole: role,
+      canManageTasks: canManageTasks,
+      isEmbedded: true,
+    );
+    final chatsTab = ChatListScreen(
+      userName: widget.userName,
+      userRole: role,
+      userEmail: widget.userEmail,
+      isVertex: widget.isVertex,
+    );
+
     return Scaffold(
-      body: IndexedStack(
-        index: _index,
-        children: [
-          TasksScreen(
-            userName: widget.userName,
-            userRole: role,
-            canManageTasks: canManageTasks,
-            isEmbedded: true,
-          ),
-          ChatListScreen(
-            userName: widget.userName,
-            userRole: role,
-            userEmail: widget.userEmail,
-            isVertex: widget.isVertex,
-          ),
-        ],
-      ),
+      body: kIsWeb
+          ? (_index == 0 ? tasksTab : chatsTab)
+          : IndexedStack(
+              index: _index,
+              sizing: StackFit.expand,
+              children: [
+                IgnorePointer(
+                  ignoring: _index != 0,
+                  child: TickerMode(enabled: _index == 0, child: tasksTab),
+                ),
+                IgnorePointer(
+                  ignoring: _index != 1,
+                  child: TickerMode(enabled: _index == 1, child: chatsTab),
+                ),
+              ],
+            ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),

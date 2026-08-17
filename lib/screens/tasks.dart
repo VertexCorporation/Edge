@@ -33,10 +33,12 @@ class _TasksScreenState extends State<TasksScreen>
 
   final TaskService _taskService = TaskService();
   final ScrollController _scrollController = ScrollController();
+  late Stream<List<VertexTask>> _tasksStream;
 
   @override
   void initState() {
     super.initState();
+    _tasksStream = _taskService.watchTasks(isAdmin: widget.canManageTasks);
     if (widget.canManageTasks) {
       _taskService.listAssignees();
     }
@@ -45,6 +47,9 @@ class _TasksScreenState extends State<TasksScreen>
   @override
   void didUpdateWidget(TasksScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.canManageTasks != oldWidget.canManageTasks) {
+      _tasksStream = _taskService.watchTasks(isAdmin: widget.canManageTasks);
+    }
     if (widget.canManageTasks && !oldWidget.canManageTasks) {
       _taskService.listAssignees();
     }
@@ -63,7 +68,7 @@ class _TasksScreenState extends State<TasksScreen>
     final isDark = brightness == Brightness.dark;
 
     return StreamBuilder<List<VertexTask>>(
-      stream: _taskService.watchTasks(isAdmin: widget.canManageTasks),
+      stream: _tasksStream,
       builder: (context, snapshot) {
         final tasks = snapshot.data ?? [];
 
@@ -72,10 +77,7 @@ class _TasksScreenState extends State<TasksScreen>
           color: AppColors.background,
           child: CustomScrollView(
             controller: _scrollController,
-            shrinkWrap: widget.isEmbedded,
-            physics: widget.isEmbedded
-                ? const AlwaysScrollableScrollPhysics()
-                : null,
+            physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
@@ -88,14 +90,15 @@ class _TasksScreenState extends State<TasksScreen>
                       _buildStatsRow(tasks),
                       const SizedBox(height: 28),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            AppLocalizations.of(context)!.activeTasks,
-                            style: GoogleFonts.inter(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primaryColor.inverted,
+                          Expanded(
+                            child: Text(
+                              AppLocalizations.of(context)!.activeTasks,
+                              style: GoogleFonts.inter(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primaryColor.inverted,
+                              ),
                             ),
                           ),
                           if (widget.canManageTasks)
@@ -170,7 +173,9 @@ class _TasksScreenState extends State<TasksScreen>
           ),
         );
 
-        return widget.isEmbedded ? content : SafeArea(child: content);
+        return SizedBox.expand(
+          child: widget.isEmbedded ? content : SafeArea(child: content),
+        );
       },
     );
   }
