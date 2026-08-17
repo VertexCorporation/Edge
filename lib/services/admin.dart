@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import '../models/role.dart';
+import 'cortex_profile.dart';
 
 class AdminUser {
   final String userId;
@@ -29,9 +30,10 @@ class AdminService {
         final data = doc.data();
         byUid[doc.id] = AdminUser(
           userId: doc.id,
-          name: data['name'] as String? ??
-              data['email'] as String? ??
-              doc.id,
+          name: CortexProfile.displayName(
+            data,
+            fallback: data['email'] as String? ?? doc.id,
+          ),
           email: data['email'] as String? ?? '',
           role: UserRole.normalize(data['role'] as String?),
         );
@@ -50,9 +52,10 @@ class AdminService {
         final usernameRole = UserRole.normalize(data['role'] as String?);
         byUid[userId] = AdminUser(
           userId: userId,
-          name: (data['name'] as String?)?.isNotEmpty == true
-              ? data['name'] as String
-              : (existing?.name ?? doc.id),
+          name: CortexProfile.displayName(
+            data,
+            fallback: existing?.name ?? doc.id,
+          ),
           email: (data['email'] as String?)?.isNotEmpty == true
               ? data['email'] as String
               : (existing?.email ?? ''),

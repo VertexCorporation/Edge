@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../models/role.dart';
+import 'cortex_profile.dart';
 
 enum TaskStatus { todo, inProgress, done }
 
@@ -198,9 +199,10 @@ class TaskService {
               }
               return {
                 'userId': doc.id,
-                'name': data['name'] as String? ??
-                    data['email'] as String? ??
-                    doc.id,
+                'name': CortexProfile.displayName(
+                  data,
+                  fallback: data['email'] as String? ?? doc.id,
+                ),
                 'role': UserRole.normalize(data['role'] as String?),
               };
             })
@@ -232,7 +234,7 @@ class TaskService {
           if (userId.isEmpty) return null;
           return {
             'userId': userId,
-            'name': data['name'] as String? ?? doc.id,
+            'name': CortexProfile.displayName(data, fallback: doc.id),
             'role': UserRole.normalize(data['role'] as String?),
           };
         })

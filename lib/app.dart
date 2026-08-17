@@ -9,6 +9,7 @@ import 'screens/home_shell.dart';
 import 'models/role.dart';
 import 'services/auth.dart';
 import 'services/chat.dart';
+import 'services/cortex_profile.dart';
 import 'services/notification.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:edge/l10n/app_localizations.dart';
@@ -129,12 +130,14 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
               AppLocalizations.of(context)!.member,
         );
         return HomeShell(
-          userName: userData?['name'] ??
-              user.displayName ??
-              AppLocalizations.of(context)!.vertexMember,
+          userName: CortexProfile.displayName(
+            userData,
+            fallback: user.displayName ??
+                AppLocalizations.of(context)!.vertexMember,
+          ),
           userRole: role,
           userEmail: user.email ?? '',
-          isVertex: userData?['isVertex'] == true,
+          isVertex: CortexProfile.isVertexMember(userData),
         );
       },
     );

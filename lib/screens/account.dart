@@ -8,6 +8,7 @@ import '../widgets/card.dart';
 import '../widgets/button.dart';
 import '../widgets/text.dart';
 import '../services/auth.dart';
+import '../services/cortex_profile.dart';
 import '../widgets/fog.dart';
 import '../routes.dart';
 import 'patch_notes.dart';
@@ -52,9 +53,10 @@ class _AccountScreenState extends State<AccountScreen>
       _profileSub = _authService.watchUserData(uid).listen((data) {
         if (!mounted || data == null) return;
         setState(() {
-          _liveName = (data['name'] as String?)?.isNotEmpty == true
-              ? data['name'] as String
-              : widget.userName;
+          _liveName = CortexProfile.displayName(
+            data,
+            fallback: widget.userName,
+          );
           _liveRole = UserRole.normalize(
             data['role'] as String? ?? widget.userRole,
           );
@@ -511,7 +513,7 @@ class _AccountScreenState extends State<AccountScreen>
           _buildInfoRow(
             icon: Icons.info_outline_rounded,
             label: 'Uygulama',
-            value: 'Vertex Edge v1.0.8',
+            value: 'Vertex Edge v1.0.9',
           ),
           _sectionDivider(),
           _buildInfoRow(

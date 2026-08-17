@@ -7,6 +7,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../models/role.dart';
 import '../utils/ios.dart';
+import 'cortex_profile.dart';
 
 /// Authentication service for Vertex Edge
 class AuthService {
@@ -60,13 +61,24 @@ class AuthService {
         await tryClaimBootstrapAdmin(user);
       }
 
-      final userData = await getUserData(user.uid);
-      await _syncUsernameProfile(
-        user,
-        isOnline: isOnline,
-        email: user.email,
-        role: userData?['role'] as String?,
-      );
+      if (isOnline) {
+        final linked = await _linkCortexProfile(user);
+        if (linked == null) {
+          await _syncUsernameProfile(
+            user,
+            isOnline: true,
+            email: user.email,
+          );
+        }
+      } else {
+        final userData = await getUserData(user.uid);
+        await _syncUsernameProfile(
+          user,
+          isOnline: false,
+          email: user.email,
+          role: userData?['role'] as String?,
+        );
+      }
     }
   }
 
@@ -150,11 +162,15 @@ class AuthService {
 
       // 2. Get user profile data
       await tryClaimBootstrapAdmin(user);
-      final userData = await getUserData(user.uid);
+      final userData =
+          await _linkCortexProfile(user) ?? await getUserData(user.uid);
 
       return AuthResult.success(
         user: user,
-        name: userData?['name'] ?? user.displayName ?? 'Vertex Üyesi',
+        name: CortexProfile.displayName(
+          userData,
+          fallback: user.displayName ?? 'Vertex Üyesi',
+        ),
         role: UserRole.normalize(userData?['role'] as String?),
       );
     } on FirebaseAuthException catch (e) {
@@ -201,10 +217,11 @@ class AuthService {
       }, SetOptions(merge: true));
 
       await tryClaimBootstrapAdmin(user);
-      final userData = await getUserData(user.uid);
+      final userData =
+          await _linkCortexProfile(user) ?? await getUserData(user.uid);
       return AuthResult.success(
         user: user,
-        name: name,
+        name: CortexProfile.displayName(userData, fallback: name),
         role: UserRole.normalize(userData?['role'] as String? ?? 'Üye'),
       );
     } on FirebaseAuthException catch (e) {
@@ -322,30 +339,19 @@ class AuthService {
   }
 
   Future<AuthResult> _handleOAuthLogin(User user) async {
-    final doc = await _firestore.collection('users').doc(user.uid).get();
-    String name = user.displayName ?? 'Kullanıcı';
-
-    if (doc.exists) {
-      name = doc.data()?['name'] ?? name;
-      await updateOnlineStatus(true);
-    } else {
-      if (user.displayName == null || user.displayName!.isEmpty) {
-        await user.updateDisplayName(name);
-      }
-    }
-
     await tryClaimBootstrapAdmin(user);
-    final refreshed = await getUserData(user.uid);
-    final effectiveName = refreshed?['name'] as String? ?? name;
+    final linked = await _linkCortexProfile(user);
+    final refreshed = linked ?? await getUserData(user.uid);
+    final effectiveName = CortexProfile.displayName(
+      refreshed,
+      fallback: user.displayName ?? 'Kullanıcı',
+    );
     final effectiveRole = UserRole.normalize(refreshed?['role'] as String?);
 
-    await _syncUsernameProfile(
-      user,
-      name: effectiveName,
-      email: user.email ?? '',
-      role: effectiveRole,
-      isOnline: true,
-    );
+    if ((user.displayName == null || user.displayName!.isEmpty) &&
+        effectiveName.isNotEmpty) {
+      await user.updateDisplayName(effectiveName);
+    }
 
     return AuthResult.success(
       user: user,
@@ -378,11 +384,12 @@ class AuthService {
         final doc = await _firestore.collection('users').doc(uid).get();
         if (doc.exists) {
           final data = doc.data();
-          if (data != null && data['isVertex'] == true) {
+          if (CortexProfile.isVertexMember(data)) {
             return true;
           }
-          // If document exists but isVertex is not true, we can definitively return false
-          if (data != null && data.containsKey('isVertex')) {
+          if (data != null &&
+              data.containsKey('isVertex') &&
+              !CortexProfile.isRegistered(data)) {
             return false;
           }
         }
@@ -404,10 +411,120 @@ class AuthService {
     return false;
   }
 
-  String _usernameFromEmail(String email) {
-    final localPart = email.split('@').first.toLowerCase();
-    final sanitized = localPart.replaceAll(RegExp(r'[^a-z0-9_]'), '');
+  String _sanitizeUsername(String raw) {
+    final sanitized = raw.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '');
     return sanitized.isNotEmpty ? sanitized : 'user';
+  }
+
+  String _usernameFromEmail(String email) {
+    return _sanitizeUsername(email.split('@').first);
+  }
+
+  /// Pull Cortex `users/{uid}` into Edge without touching Cortex-owned fields.
+  Future<Map<String, dynamic>?> _linkCortexProfile(User user) async {
+    try {
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      final data = doc.data();
+      if (data == null) return null;
+      if (CortexProfile.isAnonymousAccount(data)) return data;
+
+      final displayName = CortexProfile.displayName(
+        data,
+        fallback: user.displayName,
+      );
+      final edgeFields = <String, dynamic>{
+        'isOnline': true,
+        'lastSeen': FieldValue.serverTimestamp(),
+      };
+      if ((data['name'] as String?)?.trim().isEmpty ?? true) {
+        edgeFields['name'] = displayName;
+      }
+      if (CortexProfile.isRegistered(data) && data['isVertex'] != true) {
+        edgeFields['isVertex'] = true;
+      }
+      if (data['role'] == null) {
+        edgeFields['role'] = UserRole.member;
+      }
+
+      await _firestore.collection('users').doc(user.uid).set(
+            edgeFields,
+            SetOptions(merge: true),
+          );
+
+      await _ensureUsernameDoc(
+        user,
+        name: displayName,
+        email: user.email ?? (data['email'] as String? ?? ''),
+        role: UserRole.normalize(data['role'] as String?),
+        preferredUsername: CortexProfile.usernameOf(data),
+      );
+
+      final merged = Map<String, dynamic>.from(data)..addAll(edgeFields);
+      merged['name'] = displayName;
+      if (CortexProfile.isRegistered(data)) {
+        merged['isVertex'] = true;
+      }
+      if (merged['role'] != null) {
+        merged['role'] = UserRole.normalize(merged['role'] as String?);
+      }
+      return merged;
+    } catch (e) {
+      debugPrint('Cortex profile link failed: $e');
+      return null;
+    }
+  }
+
+  Future<void> _ensureUsernameDoc(
+    User user, {
+    required String name,
+    required String email,
+    String? role,
+    String? preferredUsername,
+  }) async {
+    try {
+      final query = await _firestore
+          .collection('usernames')
+          .where('userId', isEqualTo: user.uid)
+          .limit(1)
+          .get();
+      if (query.docs.isNotEmpty) {
+        await _syncUsernameProfile(
+          user,
+          name: name,
+          email: email,
+          role: role,
+          isOnline: true,
+        );
+        return;
+      }
+
+      final base = _sanitizeUsername(
+        (preferredUsername != null && preferredUsername.isNotEmpty)
+            ? preferredUsername
+            : _usernameFromEmail(email),
+      );
+      var docId = base;
+      var suffix = 1;
+      while (true) {
+        final ref = _firestore.collection('usernames').doc(docId);
+        final existing = await ref.get();
+        if (!existing.exists || existing.data()?['userId'] == user.uid) {
+          await ref.set({
+            'userId': user.uid,
+            'name': name,
+            if (email.isNotEmpty) 'email': email,
+            if (role != null) 'role': role,
+            'isOnline': true,
+            'lastSeen': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+          return;
+        }
+        docId = '$base$suffix';
+        suffix++;
+      }
+    } catch (e) {
+      debugPrint('Username profile ensure failed: $e');
+    }
   }
 
   /// Live profile so role changes show without re-login.
@@ -432,8 +549,8 @@ class AuthService {
       merged['role'] = UserRole.normalize(
         usernameData?['role'] as String? ?? userData?['role'] as String?,
       );
-      if (userData?['name'] != null) merged['name'] = userData!['name'];
-      if (userData?['isVertex'] != null) merged['isVertex'] = userData!['isVertex'];
+      merged['name'] = CortexProfile.displayName(merged);
+      merged['isVertex'] = CortexProfile.isVertexMember(userData ?? merged);
       controller.add(merged);
     }
 
@@ -473,6 +590,10 @@ class AuthService {
       final normalized = Map<String, dynamic>.from(data);
       if (normalized['role'] != null) {
         normalized['role'] = UserRole.normalize(normalized['role'] as String?);
+      }
+      normalized['name'] = CortexProfile.displayName(normalized);
+      if (CortexProfile.isRegistered(normalized)) {
+        normalized['isVertex'] = true;
       }
       return normalized;
     } catch (e) {

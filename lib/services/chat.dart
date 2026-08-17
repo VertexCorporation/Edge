@@ -9,6 +9,7 @@ import 'package:encrypt/encrypt.dart' as enc;
 import 'package:uuid/uuid.dart';
 import '../models/role.dart';
 import 'auth.dart';
+import 'cortex_profile.dart';
 import 'crypto.dart';
 
 class ChatService {
@@ -235,23 +236,47 @@ class ChatService {
     });
   }
 
-  /// Edge users eligible for group invites (logged in at least once).
+  /// Edge users eligible for group invites, including Cortex-registered people.
   Future<List<Map<String, dynamic>>> listGroupEligibleUsers() async {
-    List<Map<String, dynamic>> users = [];
+    final byUid = <String, Map<String, dynamic>>{};
     final uid = _auth.currentUser?.uid;
 
     try {
       final snap = await _firestore.collection('usernames').limit(150).get();
-      users = _mapGroupUserDocs(snap.docs, uid);
+      for (final mapped in _mapGroupUserDocs(snap.docs, uid)) {
+        byUid[mapped['userId'] as String] = mapped;
+      }
     } catch (e) {
       debugPrint('ChatService: group users query failed: $e');
     }
 
-    users.sort(
-      (a, b) => (a['name'] as String)
-          .toLowerCase()
-          .compareTo((b['name'] as String).toLowerCase()),
-    );
+    try {
+      final snap = await _firestore.collection('users').limit(150).get();
+      for (final doc in snap.docs) {
+        if (doc.id == uid) continue;
+        final data = doc.data();
+        if (CortexProfile.isAnonymousAccount(data)) continue;
+        final name = CortexProfile.displayName(data, fallback: doc.id);
+        byUid.putIfAbsent(doc.id, () {
+          return {
+            'id': doc.id,
+            'userId': doc.id,
+            'username': CortexProfile.usernameOf(data) ?? doc.id,
+            'name': name,
+            'email': data['email']?.toString() ?? '',
+          };
+        });
+      }
+    } catch (e) {
+      debugPrint('ChatService: cortex users query failed: $e');
+    }
+
+    final users = byUid.values.toList()
+      ..sort(
+        (a, b) => (a['name'] as String)
+            .toLowerCase()
+            .compareTo((b['name'] as String).toLowerCase()),
+      );
     return users;
   }
 
@@ -264,12 +289,11 @@ class ChatService {
           final data = doc.data();
           final userId = data['userId']?.toString() ?? '';
           if (userId.isEmpty || userId == currentUid) return null;
-          final rawName = data['name']?.toString().trim() ?? '';
           return {
             'id': userId,
             'userId': userId,
-            'username': doc.id,
-            'name': rawName.isEmpty ? doc.id : rawName,
+            'username': CortexProfile.usernameOf(data) ?? doc.id,
+            'name': CortexProfile.displayName(data, fallback: doc.id),
             'email': data['email']?.toString() ?? '',
           };
         })

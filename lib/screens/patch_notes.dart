@@ -10,6 +10,16 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.9',
+      date: '17 Ağustos 2026',
+      highlights: [
+        'Cortex kayıtlı kullanıcı profili Edge girişine bağlandı',
+        'Cortex kullanıcı adı (username) hesap ve sohbet isimlerinde görünür',
+        'Cortex üyeleri Vertex üyesi olarak işaretlenir',
+        'Grup ve görev kişi listeleri Cortex kayıtlı kişileri de çeker',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.8',
       date: '17 Ağustos 2026',
       highlights: [

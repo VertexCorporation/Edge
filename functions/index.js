@@ -73,26 +73,42 @@ exports.sendNotificationOnMessage = functions.firestore
 
 exports.createUserProfile = functions.auth.user().onCreate(async (user) => {
   const {uid, email, displayName, photoURL} = user;
-  const name = displayName || "Kullanıcı";
   const db = admin.firestore();
+  const existingSnap = await db.collection("users").doc(uid).get();
+  const existing = existingSnap.data() || {};
+  const cortexUsername = typeof existing.username === "string" ?
+    existing.username.trim() : "";
+  const isCortex = cortexUsername.length > 0 ||
+    existing.hasCortexSubscription != null ||
+    (typeof existing.accountType === "string" &&
+      existing.accountType.length > 0 &&
+      existing.accountType !== "anonymous");
+  const name = existing.name || cortexUsername || displayName || "Kullanıcı";
 
-  await db.collection("users").doc(uid).set({
-    name,
-    email: email || "",
-    isVertex: false,
+  const edgeFields = {
+    email: email || existing.email || "",
     isOnline: true,
-    photoURL: photoURL || "",
+    photoURL: photoURL || existing.photoURL || "",
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
-  }, {merge: true});
+  };
+  if (!existing.name) {
+    edgeFields.name = name;
+  }
+  if (existing.isVertex !== true) {
+    edgeFields.isVertex = isCortex;
+  }
+  await db.collection("users").doc(uid).set(edgeFields, {merge: true});
 
   const userSnap = await db.collection("users").doc(uid).get();
   if (!userSnap.exists || !userSnap.data().role) {
     await db.collection("users").doc(uid).set({role: "Üye"}, {merge: true});
   }
 
-  let username = email ?
-    email.split("@")[0].toLowerCase().replace(/[^a-z0-9_]/g, "") :
-    uid.slice(0, 8);
+  let username = cortexUsername ?
+    cortexUsername.toLowerCase().replace(/[^a-z0-9_]/g, "") :
+    (email ?
+      email.split("@")[0].toLowerCase().replace(/[^a-z0-9_]/g, "") :
+      uid.slice(0, 8));
   if (!username) {
     username = uid.slice(0, 8);
   }
