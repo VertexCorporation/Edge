@@ -27,11 +27,15 @@ class AuthService {
     }
   }
 
-  /// Completes Google/Apple sign-in after a mobile-web redirect.
+  /// Completes Google/Apple sign-in after a full-page redirect to accounts.google.com.
   static Future<void> completeWebRedirectSignIn() async {
     if (!kIsWeb) return;
     try {
-      await FirebaseAuth.instance.getRedirectResult();
+      final result = await FirebaseAuth.instance.getRedirectResult();
+      final user = result.user;
+      if (user != null) {
+        await AuthService()._handleOAuthLogin(user);
+      }
     } catch (e) {
       debugPrint('OAuth redirect result failed: $e');
     }
@@ -208,7 +212,7 @@ class AuthService {
     }
   }
 
-  /// Sign in with Google — always opens the Google account picker.
+  /// Sign in with Google — on web, redirects this tab to Google accounts.
   Future<AuthResult> signInWithGoogle() async {
     try {
       User? user;
@@ -217,12 +221,12 @@ class AuthService {
         final authProvider = GoogleAuthProvider()
           ..addScope('email')
           ..addScope('profile')
-          ..setCustomParameters({'prompt': 'select_account'});
-        user = await _webOAuthSignIn(authProvider);
-        if (user == null && _auth.currentUser == null) {
-          return AuthResult.error('Google girişi iptal edildi.');
-        }
-        user ??= _auth.currentUser;
+          ..setCustomParameters({
+            'prompt': 'select_account',
+            'access_type': 'online',
+          });
+        await _auth.signInWithRedirect(authProvider);
+        return AuthResult.redirecting();
       } else {
         final googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
         try {
@@ -497,6 +501,10 @@ class AuthResult {
     this.name,
     this.role,
   });
+
+  factory AuthResult.redirecting() {
+    return AuthResult._(isSuccess: true);
+  }
 
   factory AuthResult.success({
     required User user,
