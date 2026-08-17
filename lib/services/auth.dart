@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../models/role.dart';
+import '../utils/ios.dart';
 
 /// Authentication service for Vertex Edge
 class AuthService {
@@ -27,7 +28,7 @@ class AuthService {
     }
   }
 
-  /// Completes Google/Apple sign-in after a full-page redirect to accounts.google.com.
+  /// Completes Google/Apple sign-in after a full-page OAuth redirect.
   static Future<void> completeWebRedirectSignIn() async {
     if (!kIsWeb) return;
     try {
@@ -260,8 +261,12 @@ class AuthService {
     }
   }
 
-  /// Sign in with Apple — opens Apple ID authentication.
+  /// Sign in with Apple — iOS only. Web iOS redirects to Apple's account page.
   Future<AuthResult> signInWithApple() async {
+    if (!isIosDevice()) {
+      return AuthResult.error('CIHAZ IOS DEĞIL');
+    }
+
     try {
       User? user;
 
@@ -270,11 +275,8 @@ class AuthService {
           ..addScope('email')
           ..addScope('name')
           ..setCustomParameters({'locale': 'tr_TR'});
-        user = await _webOAuthSignIn(authProvider);
-        if (user == null && _auth.currentUser == null) {
-          return AuthResult.error('Apple girişi iptal edildi.');
-        }
-        user ??= _auth.currentUser;
+        await _auth.signInWithRedirect(authProvider);
+        return AuthResult.redirecting();
       } else {
         final appleCredential = await SignInWithApple.getAppleIDCredential(
           scopes: [
@@ -315,25 +317,6 @@ class AuthService {
       return AuthResult.error(_getAuthErrorMessage(e.code));
     } catch (e) {
       return AuthResult.error('Beklenmeyen bir hata oluştu: $e');
-    }
-  }
-
-  /// Popup first; if the browser blocks it (common on mobile web), redirect.
-  Future<User?> _webOAuthSignIn(AuthProvider provider) async {
-    try {
-      final credential = await _auth.signInWithPopup(provider);
-      return credential.user;
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'popup-closed-by-user' ||
-          e.code == 'cancelled-popup-request') {
-        return null;
-      }
-      if (e.code == 'popup-blocked' ||
-          e.code == 'operation-not-supported-in-this-environment') {
-        await _auth.signInWithRedirect(provider);
-        return null;
-      }
-      rethrow;
     }
   }
 

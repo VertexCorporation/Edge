@@ -7,6 +7,7 @@ import '../theme.dart';
 import '../widgets/button.dart';
 import '../widgets/input.dart';
 import '../services/auth.dart';
+import '../utils/ios.dart';
 import 'package:edge/l10n/app_localizations.dart';
 
 /// Login screen with Vertex branding
@@ -605,6 +606,12 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _handleAppleSignIn() async {
+    if (!isIosDevice()) {
+      setState(() => _errorMessage = 'CIHAZ IOS DEĞIL');
+      _shakeController.forward(from: 0);
+      return;
+    }
+
     setState(() {
       _isLoadingApple = true;
       _isLoading = true;
