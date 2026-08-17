@@ -27,6 +27,7 @@ class ChatDetailScreen extends StatefulWidget {
   final bool isGroup;
   final bool isAnnouncementGroup;
   final bool isAdmin;
+  final bool canDeleteGroup;
 
   const ChatDetailScreen({
     super.key,
@@ -36,6 +37,7 @@ class ChatDetailScreen extends StatefulWidget {
     this.isGroup = false,
     this.isAnnouncementGroup = false,
     this.isAdmin = false,
+    this.canDeleteGroup = false,
   });
 
   @override
@@ -200,6 +202,48 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     }
   }
 
+  Future<void> _confirmDeleteGroup() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Grubu sil'),
+          content: Text(
+            '"${widget.title}" grubunu silmek istediğine emin misin? Bu işlem geri alınamaz.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Vazgeç'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(
+                'Sil',
+                style: TextStyle(color: AppColors.septenaryColor),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await _chatService.deleteGroupChat(_resolvedChatId);
+      if (!mounted) return;
+      Navigator.pop(context);
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Grup silindi.')),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Grup silinemedi: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
@@ -210,6 +254,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         scrollController: _scrollController,
         titleText: widget.title,
         leadingMode: VertexLeadingMode.back,
+        actions: widget.isGroup && widget.canDeleteGroup
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.white),
+                  tooltip: 'Grubu sil',
+                  onPressed: _confirmDeleteGroup,
+                ),
+              ]
+            : null,
       ),
       body: SafeArea(
         child: Column(

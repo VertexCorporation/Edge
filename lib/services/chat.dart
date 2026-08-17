@@ -7,6 +7,8 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:encrypt/encrypt.dart' as enc;
 import 'package:uuid/uuid.dart';
+import '../models/role.dart';
+import 'auth.dart';
 import 'crypto.dart';
 
 class ChatService {
@@ -398,6 +400,19 @@ class ChatService {
     });
   }
 
+  Future<String> _currentUserRole() async {
+    final doc = await _firestore.collection('users').doc(currentUserId).get();
+    return UserRole.normalize(doc.data()?['role'] as String?);
+  }
+
+  bool get _isBootstrapAdmin =>
+      AuthService.isBootstrapAdminEmail(_auth.currentUser?.email);
+
+  Future<bool> get currentUserCanCreateGroups async {
+    final role = await _currentUserRole();
+    return UserRole.canCreateGroups(role) || _isBootstrapAdmin;
+  }
+
   /// Create a new group chat
   Future<String> createGroupChat(
     String groupName, 
@@ -405,6 +420,11 @@ class ChatService {
     String? communityId,
     bool isAnnouncementGroup = false,
   }) async {
+    final role = await _currentUserRole();
+    if (!UserRole.canCreateGroups(role) && !_isBootstrapAdmin) {
+      throw StateError('Grup oluşturmak için Yönetici veya Mod olmalısın.');
+    }
+
     final chatId = const Uuid().v4();
 
     final participants = {
@@ -430,8 +450,39 @@ class ChatService {
     return chatId;
   }
 
+  /// Deletes a group chat and its messages. Yönetici only.
+  Future<void> deleteGroupChat(String chatId) async {
+    final role = await _currentUserRole();
+    if (!UserRole.canDeleteGroups(role) && !_isBootstrapAdmin) {
+      throw StateError('Grubu yalnızca Yönetici silebilir.');
+    }
+
+    final chatRef = _firestore.collection('chats').doc(chatId);
+    final snap = await chatRef.get();
+    if (!snap.exists || snap.data()?['isGroup'] != true) {
+      throw StateError('Grup bulunamadı.');
+    }
+
+    while (true) {
+      final messages = await chatRef.collection('messages').limit(400).get();
+      if (messages.docs.isEmpty) break;
+      final batch = _firestore.batch();
+      for (final doc in messages.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    }
+
+    await chatRef.delete();
+  }
+
   /// Create a new Community
   Future<String> createCommunity(String name, String description, List<String> memberIds) async {
+    final role = await _currentUserRole();
+    if (!UserRole.canCreateGroups(role) && !_isBootstrapAdmin) {
+      throw StateError('Topluluk oluşturmak için Yönetici veya Mod olmalısın.');
+    }
+
     final communityId = const Uuid().v4();
     
     if (!memberIds.contains(currentUserId)) {

@@ -2,7 +2,9 @@ import 'package:edge/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../models/role.dart';
 import '../../routes.dart';
+import '../../services/auth.dart';
 import '../../services/chat.dart';
 import '../../theme.dart';
 import '../../widgets/appbar.dart';
@@ -11,8 +13,15 @@ import 'details.dart';
 
 class CommunityDetailScreen extends StatefulWidget {
   final Map<String, dynamic> community;
+  final String userRole;
+  final String userEmail;
 
-  const CommunityDetailScreen({super.key, required this.community});
+  const CommunityDetailScreen({
+    super.key,
+    required this.community,
+    required this.userRole,
+    required this.userEmail,
+  });
 
   @override
   State<CommunityDetailScreen> createState() => _CommunityDetailScreenState();
@@ -21,12 +30,19 @@ class CommunityDetailScreen extends StatefulWidget {
 class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
   final ChatService _chatService = ChatService();
   late final bool _isAdmin;
+  late final bool _canOpenGroups;
+  late final bool _canCreateGroups;
+  late final bool _canDeleteGroups;
 
   @override
   void initState() {
     super.initState();
     final admins = List<String>.from(widget.community['admins'] ?? []);
     _isAdmin = admins.contains(_chatService.currentUserId);
+    final isBootstrap = AuthService.isBootstrapAdminEmail(widget.userEmail);
+    _canOpenGroups = UserRole.canOpenGroups(widget.userRole) || isBootstrap;
+    _canCreateGroups = UserRole.canCreateGroups(widget.userRole) || isBootstrap;
+    _canDeleteGroups = UserRole.canDeleteGroups(widget.userRole) || isBootstrap;
   }
 
   bool get _isDarkTheme => AppColors.isDarkUi;
@@ -52,6 +68,14 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
     required String title,
     bool isAnnouncementGroup = false,
   }) {
+    if (!_canOpenGroups) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bu grubu yalnızca Yönetici ve Mod açabilir.'),
+        ),
+      );
+      return;
+    }
     Navigator.push(
       context,
       SlideRightRoute(
@@ -61,12 +85,21 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
           title: title,
           isAnnouncementGroup: isAnnouncementGroup,
           isAdmin: _isAdmin,
+          canDeleteGroup: _canDeleteGroups,
         ),
       ),
     );
   }
 
   void _openCreateGroup() {
+    if (!_canCreateGroups) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Grup oluşturmak için Yönetici veya Mod olmalısın.'),
+        ),
+      );
+      return;
+    }
     Navigator.push(
       context,
       SlideRightRoute(
@@ -217,7 +250,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
             color: Colors.white,
           ),
         ),
-        actions: _isAdmin
+        actions: _canCreateGroups
             ? [
                 IconButton(
                   icon: const Icon(Icons.group_add, color: Colors.white),

@@ -51,6 +51,18 @@ class UserRole {
   static bool canSeeAllGroups(String? role) =>
       normalize(role) == support;
 
+  /// Yönetici and Mod can open group chats.
+  static bool canOpenGroups(String? role) {
+    final normalized = normalize(role);
+    return normalized == admin || normalized == mod;
+  }
+
+  /// Yönetici and Mod can create group chats.
+  static bool canCreateGroups(String? role) => canOpenGroups(role);
+
+  /// Only Yönetici can delete group chats.
+  static bool canDeleteGroups(String? role) => normalize(role) == admin;
+
   static bool isMod(String? role) => normalize(role) == mod;
 
   static const assignableByAdmin = [

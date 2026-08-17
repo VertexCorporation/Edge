@@ -11,6 +11,7 @@ import '../../widgets/appbar.dart';
 
 import '../account.dart';
 import '../../services/chat.dart';
+import '../../services/auth.dart';
 import 'details.dart';
 import 'create/group.dart';
 import 'create/community.dart';
@@ -61,6 +62,18 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
   
   // Phone contacts cache
   List<Contact> _phoneContacts = [];
+
+  bool get _canOpenGroups =>
+      UserRole.canOpenGroups(widget.userRole) ||
+      AuthService.isBootstrapAdminEmail(widget.userEmail);
+
+  bool get _canCreateGroups =>
+      UserRole.canCreateGroups(widget.userRole) ||
+      AuthService.isBootstrapAdminEmail(widget.userEmail);
+
+  bool get _canDeleteGroups =>
+      UserRole.canDeleteGroups(widget.userRole) ||
+      AuthService.isBootstrapAdminEmail(widget.userEmail);
 
   @override
   void initState() {
@@ -285,26 +298,27 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
             ),
           ),
           const SizedBox(width: 4),
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                SlideRightRoute(page: const CreateGroupScreen()),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.senaryColor,
-              ),
-              child: Icon(
-                Icons.add,
-                color: Colors.white,
-                size: 22,
+          if (_canCreateGroups)
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  SlideRightRoute(page: const CreateGroupScreen()),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.senaryColor,
+                ),
+                child: Icon(
+                  Icons.add,
+                  color: Colors.white,
+                  size: 22,
+                ),
               ),
             ),
-          ),
         ],
       ),
       body: SafeArea(
@@ -463,7 +477,8 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
       children: [
         Padding(
           padding: const EdgeInsets.all(16.0),
-          child: ElevatedButton.icon(
+          child: _canCreateGroups
+              ? ElevatedButton.icon(
             onPressed: () {
               Navigator.push(
                 context,
@@ -477,7 +492,8 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               minimumSize: const Size(double.infinity, 50),
             ),
-          ),
+          )
+              : const SizedBox.shrink(),
         ),
         Expanded(
           child: StreamBuilder<List<Map<String, dynamic>>>(
@@ -514,7 +530,11 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                         Navigator.push(
                           context,
                           SlideRightRoute(
-                            page: CommunityDetailScreen(community: comm),
+                            page: CommunityDetailScreen(
+                              community: comm,
+                              userRole: widget.userRole,
+                              userEmail: widget.userEmail,
+                            ),
                           ),
                         );
                       },
@@ -663,20 +683,29 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
             color: AppColors.tertiaryColor,
             size: 16,
           ),
-          onTap: () {
-            if (!isGroup && uid.isEmpty) return;
-            Navigator.push(
-              context,
-              SlideRightRoute(
-                page: ChatDetailScreen(
-                  title: displayName,
-                  receiverId: isGroup ? null : uid,
-                  chatId: isGroup ? chatId : null,
-                  isGroup: isGroup,
+            onTap: () {
+              if (isGroup && !_canOpenGroups) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Bu grubu yalnızca Yönetici ve Mod açabilir.'),
+                  ),
+                );
+                return;
+              }
+              if (!isGroup && uid.isEmpty) return;
+              Navigator.push(
+                context,
+                SlideRightRoute(
+                  page: ChatDetailScreen(
+                    title: displayName,
+                    receiverId: isGroup ? null : uid,
+                    chatId: isGroup ? chatId : null,
+                    isGroup: isGroup,
+                    canDeleteGroup: isGroup && _canDeleteGroups,
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
         ),
       ),
     );

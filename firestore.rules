@@ -5,9 +5,16 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function userRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
     function isAdmin() {
-      return isSignedIn()
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Yönetici';
+      return isSignedIn() && userRole() == 'Yönetici';
+    }
+
+    function isMod() {
+      return isSignedIn() && userRole() == 'Mod';
     }
 
     match /users/{userId} {
@@ -30,7 +37,14 @@ service cloud.firestore {
     }
 
     match /chats/{chatId} {
-      allow read, write: if isSignedIn();
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && (
+        request.resource.data.isGroup != true || isAdmin() || isMod()
+      );
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn() && (
+        resource.data.isGroup != true || isAdmin()
+      );
       match /messages/{messageId} {
         allow read, write: if isSignedIn();
       }

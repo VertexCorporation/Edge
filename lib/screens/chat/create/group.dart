@@ -28,6 +28,22 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
   void initState() {
     super.initState();
     _isLoading = true;
+    _ensureCanCreate();
+  }
+
+  Future<void> _ensureCanCreate() async {
+    final allowed = await _chatService.currentUserCanCreateGroups;
+    if (!mounted) return;
+    if (!allowed) {
+      final messenger = ScaffoldMessenger.of(context);
+      Navigator.pop(context);
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Grup oluşturmak için Yönetici veya Mod olmalısın.'),
+        ),
+      );
+      return;
+    }
     _loadUsers();
   }
 
