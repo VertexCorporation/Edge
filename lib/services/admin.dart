@@ -21,57 +21,53 @@ class AdminService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<List<AdminUser>> listUsers() async {
-    List<AdminUser> users = [];
+    final byUid = <String, AdminUser>{};
+
+    try {
+      final snap = await _firestore.collection('users').get();
+      for (final doc in snap.docs) {
+        final data = doc.data();
+        byUid[doc.id] = AdminUser(
+          userId: doc.id,
+          name: data['name'] as String? ??
+              data['email'] as String? ??
+              doc.id,
+          email: data['email'] as String? ?? '',
+          role: UserRole.normalize(data['role'] as String?),
+        );
+      }
+    } catch (e) {
+      debugPrint('AdminService: users list failed: $e');
+    }
 
     try {
       final snap = await _firestore.collection('usernames').get();
-      users = _mapUserDocs(snap.docs);
+      for (final doc in snap.docs) {
+        final data = doc.data();
+        final userId = data['userId'] as String? ?? '';
+        if (userId.isEmpty) continue;
+        final existing = byUid[userId];
+        final usernameRole = UserRole.normalize(data['role'] as String?);
+        byUid[userId] = AdminUser(
+          userId: userId,
+          name: (data['name'] as String?)?.isNotEmpty == true
+              ? data['name'] as String
+              : (existing?.name ?? doc.id),
+          email: (data['email'] as String?)?.isNotEmpty == true
+              ? data['email'] as String
+              : (existing?.email ?? ''),
+          role: data.containsKey('role')
+              ? usernameRole
+              : (existing?.role ?? usernameRole),
+        );
+      }
     } catch (e) {
       debugPrint('AdminService: usernames list failed: $e');
     }
 
-    if (users.isEmpty) {
-      try {
-        final snap = await _firestore.collection('users').get();
-        users = snap.docs.map((doc) {
-          final data = doc.data();
-          return AdminUser(
-            userId: doc.id,
-            name: data['name'] as String? ??
-                data['email'] as String? ??
-                doc.id,
-            email: data['email'] as String? ?? '',
-            role: UserRole.normalize(data['role'] as String?),
-          );
-        }).toList();
-      } catch (e) {
-        debugPrint('AdminService: users list failed: $e');
-      }
-    }
-
-    users.sort(
-      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-    );
+    final users = byUid.values.toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     return users;
-  }
-
-  List<AdminUser> _mapUserDocs(
-    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
-  ) {
-    return docs
-        .map((doc) {
-          final data = doc.data();
-          final userId = data['userId'] as String? ?? '';
-          if (userId.isEmpty) return null;
-          return AdminUser(
-            userId: userId,
-            name: data['name'] as String? ?? doc.id,
-            email: data['email'] as String? ?? '',
-            role: UserRole.normalize(data['role'] as String?),
-          );
-        })
-        .whereType<AdminUser>()
-        .toList();
   }
 
   Future<void> assignRole({
@@ -123,6 +119,13 @@ class AdminService {
   }) async {
     String? uid = (userId != null && userId.isNotEmpty) ? userId : null;
 
+    if (uid != null) {
+      final existing = await _firestore.collection('users').doc(uid).get();
+      if (!existing.exists && email.isNotEmpty) {
+        uid = null;
+      }
+    }
+
     if (uid == null && email.isNotEmpty) {
       final byUser = await _firestore
           .collection('users')
@@ -131,6 +134,22 @@ class AdminService {
           .get();
       if (byUser.docs.isNotEmpty) {
         uid = byUser.docs.first.id;
+      }
+    }
+
+    if (uid == null) {
+      try {
+        final usersSnap = await _firestore.collection('users').get();
+        for (final doc in usersSnap.docs) {
+          final docEmail =
+              (doc.data()['email'] as String? ?? '').trim().toLowerCase();
+          if (email.isNotEmpty && docEmail == email) {
+            uid = doc.id;
+            break;
+          }
+        }
+      } catch (e) {
+        debugPrint('AdminService: users scan failed: $e');
       }
     }
 
@@ -146,24 +165,34 @@ class AdminService {
     }
 
     if (uid == null || uid.isEmpty) {
+      uid = userId;
+    }
+    if (uid == null || uid.isEmpty) {
       throw StateError('Kullanıcı bulunamadı.');
     }
 
-    await _firestore.collection('users').doc(uid).set(
-      {'role': role},
-      SetOptions(merge: true),
-    );
-
-    final usernameSnap = await _firestore
-        .collection('usernames')
-        .where('userId', isEqualTo: uid)
-        .limit(1)
-        .get();
-    if (usernameSnap.docs.isNotEmpty) {
-      await usernameSnap.docs.first.reference.set(
+    try {
+      await _firestore.collection('users').doc(uid).set(
         {'role': role},
         SetOptions(merge: true),
       );
+    } catch (e) {
+      debugPrint('AdminService: users role write failed: $e');
+    }
+
+    try {
+      final usernameSnap = await _firestore.collection('usernames').get();
+      for (final doc in usernameSnap.docs) {
+        final data = doc.data();
+        final docUid = data['userId'] as String? ?? '';
+        final docEmail =
+            (data['email'] as String? ?? '').trim().toLowerCase();
+        if (docUid == uid || (email.isNotEmpty && docEmail == email)) {
+          await doc.reference.set({'role': role}, SetOptions(merge: true));
+        }
+      }
+    } catch (e) {
+      debugPrint('AdminService: usernames role write failed: $e');
     }
   }
 }

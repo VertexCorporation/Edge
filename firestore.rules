@@ -32,9 +32,9 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == userId;
+      allow create: if canManageTasks();
       allow update: if isSignedIn() && request.auth.uid == userId;
-      allow update: if canManageTasks()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role']);
+      allow update: if canManageTasks();
     }
 
     match /usernames/{username} {

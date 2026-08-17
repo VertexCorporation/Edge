@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -410,16 +411,53 @@ class AuthService {
   }
 
   /// Live profile so role changes show without re-login.
+  /// Merges `users` and `usernames` because role is often written to usernames first.
   Stream<Map<String, dynamic>?> watchUserData(String uid) {
-    return _firestore.collection('users').doc(uid).snapshots().map((doc) {
-      final data = doc.data();
-      if (data == null) return null;
-      final normalized = Map<String, dynamic>.from(data);
-      if (normalized['role'] != null) {
-        normalized['role'] = UserRole.normalize(normalized['role'] as String?);
+    final controller = StreamController<Map<String, dynamic>?>.broadcast();
+    Map<String, dynamic>? userData;
+    Map<String, dynamic>? usernameData;
+    var userReady = false;
+    var usernameReady = false;
+
+    void emit() {
+      if (controller.isClosed || !userReady || !usernameReady) return;
+      if (userData == null && usernameData == null) {
+        controller.add(null);
+        return;
       }
-      return normalized;
-    }).distinct((prev, next) {
+      final merged = <String, dynamic>{
+        ...?usernameData,
+        ...?userData,
+      };
+      merged['role'] = UserRole.normalize(
+        usernameData?['role'] as String? ?? userData?['role'] as String?,
+      );
+      if (userData?['name'] != null) merged['name'] = userData!['name'];
+      if (userData?['isVertex'] != null) merged['isVertex'] = userData!['isVertex'];
+      controller.add(merged);
+    }
+
+    final userSub = _firestore.collection('users').doc(uid).snapshots().listen((doc) {
+      userData = doc.data();
+      userReady = true;
+      emit();
+    });
+    final usernameSub = _firestore
+        .collection('usernames')
+        .where('userId', isEqualTo: uid)
+        .limit(1)
+        .snapshots()
+        .listen((snap) {
+      usernameData = snap.docs.isEmpty ? null : snap.docs.first.data();
+      usernameReady = true;
+      emit();
+    });
+
+    controller.onCancel = () {
+      userSub.cancel();
+      usernameSub.cancel();
+    };
+    return controller.stream.distinct((prev, next) {
       return prev?['role'] == next?['role'] &&
           prev?['name'] == next?['name'] &&
           prev?['isVertex'] == next?['isVertex'];

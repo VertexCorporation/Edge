@@ -79,12 +79,16 @@ exports.createUserProfile = functions.auth.user().onCreate(async (user) => {
   await db.collection("users").doc(uid).set({
     name,
     email: email || "",
-    role: "Geliştirici",
     isVertex: false,
     isOnline: true,
     photoURL: photoURL || "",
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
-  });
+  }, {merge: true});
+
+  const userSnap = await db.collection("users").doc(uid).get();
+  if (!userSnap.exists || !userSnap.data().role) {
+    await db.collection("users").doc(uid).set({role: "Üye"}, {merge: true});
+  }
 
   let username = email ?
     email.split("@")[0].toLowerCase().replace(/[^a-z0-9_]/g, "") :
@@ -103,14 +107,17 @@ exports.createUserProfile = functions.auth.user().onCreate(async (user) => {
     usernameDoc = await usernameRef.get();
   }
 
-  await usernameRef.set({
+  const usernamePayload = {
     userId: uid,
     name,
     email: email || "",
-    role: "Geliştirici",
     isOnline: true,
     lastSeen: admin.firestore.FieldValue.serverTimestamp(),
-  }, {merge: true});
+  };
+  if (!usernameDoc.exists || !usernameDoc.data()?.role) {
+    usernamePayload.role = "Üye";
+  }
+  await usernameRef.set(usernamePayload, {merge: true});
 
   return null;
 });

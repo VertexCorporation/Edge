@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:edge/l10n/app_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -37,6 +38,30 @@ class _AccountScreenState extends State<AccountScreen>
 
   final _authService = AuthService();
   final ScrollController _scrollController = ScrollController();
+  StreamSubscription<Map<String, dynamic>?>? _profileSub;
+  late String _liveName;
+  late String _liveRole;
+
+  @override
+  void initState() {
+    super.initState();
+    _liveName = widget.userName;
+    _liveRole = widget.userRole;
+    final uid = _authService.currentUser?.uid;
+    if (uid != null) {
+      _profileSub = _authService.watchUserData(uid).listen((data) {
+        if (!mounted || data == null) return;
+        setState(() {
+          _liveName = (data['name'] as String?)?.isNotEmpty == true
+              ? data['name'] as String
+              : widget.userName;
+          _liveRole = UserRole.normalize(
+            data['role'] as String? ?? widget.userRole,
+          );
+        });
+      });
+    }
+  }
 
   bool get _isDarkTheme => AppColors.isDarkUi;
 
@@ -50,7 +75,7 @@ class _AccountScreenState extends State<AccountScreen>
       : AppColors.border;
 
   bool get _showAdminPanel =>
-      UserRole.canManageRoles(widget.userRole) ||
+      UserRole.canManageRoles(_liveRole) ||
       AuthService.isBootstrapAdminEmail(widget.userEmail);
 
   Widget _sectionDivider({EdgeInsetsGeometry padding = const EdgeInsets.symmetric(vertical: 12)}) {
@@ -65,6 +90,7 @@ class _AccountScreenState extends State<AccountScreen>
 
   @override
   void dispose() {
+    _profileSub?.cancel();
     _scrollController.dispose();
     super.dispose();
   }
@@ -160,8 +186,8 @@ class _AccountScreenState extends State<AccountScreen>
             ),
             child: Center(
               child: Text(
-                widget.userName.isNotEmpty
-                    ? widget.userName[0].toUpperCase()
+                _liveName.isNotEmpty
+                    ? _liveName[0].toUpperCase()
                     : 'V',
                 style: GoogleFonts.inter(
                   fontSize: 24,
@@ -177,7 +203,7 @@ class _AccountScreenState extends State<AccountScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.userName,
+                  _liveName,
                   style: GoogleFonts.inter(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -194,7 +220,7 @@ class _AccountScreenState extends State<AccountScreen>
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    widget.userRole,
+                    _liveRole,
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -262,7 +288,7 @@ class _AccountScreenState extends State<AccountScreen>
           _buildInfoRow(
             icon: Icons.badge_outlined,
             label: 'Rol',
-            value: widget.userRole,
+            value: _liveRole,
           ),
           _sectionDivider(),
           _buildInfoRow(
