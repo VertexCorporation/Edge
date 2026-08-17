@@ -10,6 +10,18 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.8',
+      date: '17 Ağustos 2026',
+      highlights: [
+        'Temalar yenilendi: kart, yazı ve tuşlar artık birbirinden ayrılıyor',
+        'Yeni temalar: Adaçayı, Aurora, Nord, Kor, Porselen',
+        'Koyu temalarda başlık ve silme tuşu görünürlüğü düzeltildi',
+        'Grup oluşturma: yalnızca Yönetici ve Mod Yeni Grup açabilir',
+        'Grup açma: yalnızca Yönetici ve Mod grup sohbetine girebilir',
+        'Grup silme: Yönetici sohbet listesinden veya grup içinden silebilir',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.7',
       date: '17 Ağustos 2026',
       highlights: [
