@@ -19,7 +19,13 @@ class ChatService {
   final Queue<_OutboundMessage> _outboundQueue = Queue();
   bool _processingOutboundQueue = false;
 
-  String get currentUserId => _auth.currentUser!.uid;
+  String get currentUserId {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null || uid.isEmpty) {
+      throw StateError('Oturum bulunamadı. Tekrar giriş yap.');
+    }
+    return uid;
+  }
 
   /// Ensure the current user has keys generated and public key is in Firestore
   Future<void> initializeKeys() async {
@@ -230,28 +236,13 @@ class ChatService {
   /// Edge users eligible for group invites (logged in at least once).
   Future<List<Map<String, dynamic>>> listGroupEligibleUsers() async {
     List<Map<String, dynamic>> users = [];
+    final uid = _auth.currentUser?.uid;
 
     try {
-      final snap = await _firestore
-          .collection('usernames')
-          .where(
-            'lastSeen',
-            isGreaterThan: Timestamp.fromDate(DateTime(2020, 1, 1)),
-          )
-          .limit(150)
-          .get();
-      users = _mapGroupUserDocs(snap.docs);
+      final snap = await _firestore.collection('usernames').limit(150).get();
+      users = _mapGroupUserDocs(snap.docs, uid);
     } catch (e) {
       debugPrint('ChatService: group users query failed: $e');
-    }
-
-    if (users.isEmpty) {
-      try {
-        final snap = await _firestore.collection('usernames').limit(150).get();
-        users = _mapGroupUserDocs(snap.docs);
-      } catch (e) {
-        debugPrint('ChatService: group users fallback failed: $e');
-      }
     }
 
     users.sort(
@@ -264,19 +255,20 @@ class ChatService {
 
   List<Map<String, dynamic>> _mapGroupUserDocs(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+    String? currentUid,
   ) {
     return docs
         .map((doc) {
           final data = doc.data();
-          final userId = data['userId'] as String? ?? '';
-          if (userId.isEmpty || userId == currentUserId) return null;
-          final name = (data['name'] as String? ?? doc.id).trim();
+          final userId = data['userId']?.toString() ?? '';
+          if (userId.isEmpty || userId == currentUid) return null;
+          final rawName = data['name']?.toString().trim() ?? '';
           return {
             'id': userId,
             'userId': userId,
             'username': doc.id,
-            'name': name.isEmpty ? doc.id : name,
-            'email': data['email'] ?? '',
+            'name': rawName.isEmpty ? doc.id : rawName,
+            'email': data['email']?.toString() ?? '',
           };
         })
         .whereType<Map<String, dynamic>>()
@@ -415,12 +407,10 @@ class ChatService {
   }) async {
     final chatId = const Uuid().v4();
 
-    final participants = memberIds
-        .map((id) => id.trim())
-        .where((id) => id.isNotEmpty)
-        .toSet()
-        .toList();
-    participants.add(currentUserId);
+    final participants = {
+      ...memberIds.map((id) => id.trim()).where((id) => id.isNotEmpty),
+      currentUserId,
+    }.toList();
 
     if (participants.length < 2) {
       throw StateError('Grup için en az bir kişi seçilmeli.');

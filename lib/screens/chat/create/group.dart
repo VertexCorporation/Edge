@@ -27,18 +27,22 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
   @override
   void initState() {
     super.initState();
+    _isLoading = true;
     _loadUsers();
   }
 
   Future<void> _loadUsers() async {
-    setState(() => _isLoading = true);
     try {
       final users = await _chatService.listGroupEligibleUsers();
-      setState(() => _users = users);
+      if (!mounted) return;
+      setState(() {
+        _users = users;
+        _isLoading = false;
+      });
     } catch (e) {
-      debugPrint("Kullanıcılar yüklenemedi: $e");
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      debugPrint('Kullanıcılar yüklenemedi: $e');
+      if (!mounted) return;
+      setState(() => _isLoading = false);
     }
   }
 
@@ -71,7 +75,11 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${AppLocalizations.of(context)!.groupCreationError}: $e')),
+          SnackBar(
+            content: Text(
+              '${AppLocalizations.of(context)!.groupCreationError}. Tekrar dene.',
+            ),
+          ),
         );
       }
     } finally {
@@ -98,6 +106,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     }).toList();
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: VertexAppBar(
         leadingMode: VertexLeadingMode.back,
         titleText: 'Yeni Grup',
@@ -114,11 +123,17 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
           else
             TextButton(
               onPressed: _createGroup,
+              style: TextButton.styleFrom(
+                minimumSize: Size.zero,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
               child: Text(
                 'Oluştur',
                 style: GoogleFonts.inter(
                   color: AppColors.senaryColor,
                   fontWeight: FontWeight.bold,
+                  fontSize: 14,
                 ),
               ),
             ),
@@ -162,7 +177,14 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
+                : filteredUsers.isEmpty
+                    ? Center(
+                        child: Text(
+                          'Davet edilecek kullanıcı bulunamadı',
+                          style: GoogleFonts.inter(color: AppColors.tertiaryColor),
+                        ),
+                      )
+                    : ListView.builder(
                     itemCount: filteredUsers.length,
                     itemBuilder: (context, index) {
                       final user = filteredUsers[index];
