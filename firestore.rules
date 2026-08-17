@@ -17,9 +17,16 @@ service cloud.firestore {
       return isSignedIn() && userRole() == 'Mod';
     }
 
+    function canManageTasks() {
+      return isAdmin() || isMod();
+    }
+
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && request.auth.uid == userId;
+      allow update: if canManageTasks()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role']);
     }
 
     match /usernames/{username} {
@@ -29,11 +36,11 @@ service cloud.firestore {
 
     match /tasks/{taskId} {
       allow read: if isSignedIn()
-        && (resource.data.assigneeId == request.auth.uid || isAdmin());
-      allow create: if isAdmin();
+        && (resource.data.assigneeId == request.auth.uid || canManageTasks());
+      allow create: if canManageTasks();
       allow update: if isSignedIn()
-        && (resource.data.assigneeId == request.auth.uid || isAdmin());
-      allow delete: if isAdmin();
+        && (resource.data.assigneeId == request.auth.uid || canManageTasks());
+      allow delete: if canManageTasks();
     }
 
     match /chats/{chatId} {

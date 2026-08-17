@@ -29,8 +29,6 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
 
   /// Prevents login-screen flash when auth stream briefly resets on rebuild.
   User? _stableUser;
-  Future<Map<String, dynamic>?>? _userDataFuture;
-  String? _userDataUid;
 
   @override
   void initState() {
@@ -45,14 +43,7 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
         }
         _authService.updateOnlineStatus(true);
         ChatService().initializeKeys().catchError((_) {});
-        _authService.tryClaimBootstrapAdmin(user).then((claimed) {
-          if (claimed && mounted) {
-            setState(() {
-              _userDataFuture = null;
-              _userDataUid = null;
-            });
-          }
-        });
+        _authService.tryClaimBootstrapAdmin(user);
       }
     });
   }
@@ -68,39 +59,14 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _authService.updateOnlineStatus(true);
-      _refreshBootstrapAdminIfNeeded();
+      final user = _authService.currentUser;
+      if (user != null) {
+        _authService.tryClaimBootstrapAdmin(user);
+      }
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
       _authService.updateOnlineStatus(false);
     }
-  }
-
-  void _refreshBootstrapAdminIfNeeded() {
-    final user = _authService.currentUser;
-    if (user == null) return;
-    _authService.tryClaimBootstrapAdmin(user).then((claimed) {
-      if (claimed && mounted) {
-        setState(() {
-          _userDataFuture = null;
-          _userDataUid = null;
-        });
-      }
-    });
-  }
-
-  Future<Map<String, dynamic>?> _userDataFor(User user) {
-    final uid = user.uid;
-    if (_userDataUid == uid && _userDataFuture != null) {
-      return _userDataFuture!;
-    }
-    _userDataUid = uid;
-    _userDataFuture = () async {
-      await _authService.tryClaimBootstrapAdmin(user);
-      return _authService
-          .getUserData(uid)
-          .timeout(const Duration(seconds: 8), onTimeout: () => null);
-    }();
-    return _userDataFuture!;
   }
 
   @override
@@ -138,8 +104,6 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
           final user = snapshot.data;
           if (user == null) {
             _stableUser = null;
-            _userDataFuture = null;
-            _userDataUid = null;
             return const LoginScreen();
           }
 
@@ -151,8 +115,8 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
   }
 
   Widget _buildHome(User user) {
-    return FutureBuilder<Map<String, dynamic>?>(
-      future: _userDataFor(user),
+    return StreamBuilder<Map<String, dynamic>?>(
+      stream: _authService.watchUserData(user.uid),
       builder: (context, userDataSnapshot) {
         if (userDataSnapshot.connectionState == ConnectionState.waiting &&
             !userDataSnapshot.hasData) {

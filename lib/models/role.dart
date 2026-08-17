@@ -37,9 +37,11 @@ class UserRole {
     return role;
   }
 
-  /// Yönetici can assign tasks to other users.
-  static bool canManageTasks(String? role) =>
-      normalize(role) == admin;
+  /// Yönetici and Mod can assign tasks to other users.
+  static bool canManageTasks(String? role) {
+    final normalized = normalize(role);
+    return normalized == admin || normalized == mod;
+  }
 
   /// Yönetici and Mod can assign roles from [assignableByAdmin].
   static bool canManageRoles(String? role) {

@@ -409,6 +409,19 @@ class AuthService {
     return sanitized.isNotEmpty ? sanitized : 'user';
   }
 
+  /// Live profile so role changes show without re-login.
+  Stream<Map<String, dynamic>?> watchUserData(String uid) {
+    return _firestore.collection('users').doc(uid).snapshots().map((doc) {
+      final data = doc.data();
+      if (data == null) return null;
+      final normalized = Map<String, dynamic>.from(data);
+      if (normalized['role'] != null) {
+        normalized['role'] = UserRole.normalize(normalized['role'] as String?);
+      }
+      return normalized;
+    });
+  }
+
   /// Get user profile data from Firestore
   Future<Map<String, dynamic>?> getUserData(String uid) async {
     try {

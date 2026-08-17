@@ -87,6 +87,18 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
     _searchController.addListener(_onSearchChanged);
   }
 
+  @override
+  void didUpdateWidget(ChatListScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.userRole != widget.userRole) {
+      final seeAllGroups = UserRole.canSeeAllGroups(widget.userRole);
+      setState(() {
+        _recentChatsStream = _chatService.getRecentChats(seeAllGroups: seeAllGroups);
+        _communitiesStream = _chatService.getCommunities(seeAllGroups: seeAllGroups);
+      });
+    }
+  }
+
   Future<void> _initKeys() async {
     try {
       await _chatService.initializeKeys();

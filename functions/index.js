@@ -133,9 +133,21 @@ async function setUserRole(uid, role) {
 
 async function setUserRoleByEmail(email, role) {
   const normalized = email.trim().toLowerCase();
-  const userRecord = await admin.auth().getUserByEmail(normalized);
-  await setUserRole(userRecord.uid, role);
-  return userRecord.uid;
+  try {
+    const userRecord = await admin.auth().getUserByEmail(normalized);
+    await setUserRole(userRecord.uid, role);
+    return userRecord.uid;
+  } catch (authError) {
+    const snap = await admin.firestore().collection("users")
+        .where("email", "==", normalized)
+        .limit(1)
+        .get();
+    if (snap.empty) {
+      throw new functions.https.HttpsError("not-found", "Kullanıcı bulunamadı.");
+    }
+    await setUserRole(snap.docs[0].id, role);
+    return snap.docs[0].id;
+  }
 }
 
 /** One-time bootstrap: listed emails can claim Yönetici on login. */
@@ -180,13 +192,14 @@ exports.assignUserRole = functions.https.onCall(async (data, context) => {
     "mustawtfa@gmail.com",
   ];
 
+  const uid = data.uid;
   const email = (data.email || "").trim().toLowerCase();
   const role = data.role || "Üye";
   const allowedRoles = ["Üye", "Geliştirici", "Test", "Mod", "Support"];
-  if (!email) {
+  if (!email && !uid) {
     throw new functions.https.HttpsError("invalid-argument", "E-posta gerekli.");
   }
-  if (PROTECTED_ADMIN_EMAILS.includes(email)) {
+  if (email && PROTECTED_ADMIN_EMAILS.includes(email)) {
     throw new functions.https.HttpsError(
         "permission-denied", "Bu hesabın rolü panelden değiştirilemez.");
   }
@@ -195,6 +208,17 @@ exports.assignUserRole = functions.https.onCall(async (data, context) => {
         "invalid-argument", "Bu rol atanamaz.");
   }
 
-  const uid = await setUserRoleByEmail(email, role);
-  return {success: true, uid, role};
+  let assignedUid = uid;
+  if (assignedUid) {
+    const target = await admin.auth().getUser(assignedUid).catch(() => null);
+    const targetEmail = (target?.email || email || "").toLowerCase();
+    if (PROTECTED_ADMIN_EMAILS.includes(targetEmail)) {
+      throw new functions.https.HttpsError(
+          "permission-denied", "Bu hesabın rolü panelden değiştirilemez.");
+    }
+    await setUserRole(assignedUid, role);
+  } else {
+    assignedUid = await setUserRoleByEmail(email, role);
+  }
+  return {success: true, uid: assignedUid, role};
 });

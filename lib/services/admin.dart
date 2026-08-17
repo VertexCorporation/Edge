@@ -77,6 +77,7 @@ class AdminService {
   Future<void> assignRole({
     required String email,
     required String role,
+    String? userId,
   }) async {
     final normalizedRole = UserRole.normalize(role);
     if (!UserRole.assignableByAdmin.contains(normalizedRole)) {
@@ -84,13 +85,85 @@ class AdminService {
     }
 
     final normalizedEmail = email.trim().toLowerCase();
-    if (normalizedEmail.isEmpty) {
+    if (normalizedEmail.isEmpty && (userId == null || userId.isEmpty)) {
       throw ArgumentError('E-posta gerekli.');
     }
 
-    await FirebaseFunctions.instance.httpsCallable('assignUserRole').call({
-      'email': normalizedEmail,
-      'role': normalizedRole,
-    });
+    try {
+      await FirebaseFunctions.instance.httpsCallable('assignUserRole').call({
+        if (normalizedEmail.isNotEmpty) 'email': normalizedEmail,
+        'role': normalizedRole,
+        if (userId != null && userId.isNotEmpty) 'uid': userId,
+      });
+      try {
+        await _writeRoleToFirestore(
+          email: normalizedEmail,
+          role: normalizedRole,
+          userId: userId,
+        );
+      } catch (e) {
+        debugPrint('Role Firestore sync after CF: $e');
+      }
+      return;
+    } catch (e) {
+      debugPrint('assignUserRole CF failed, using Firestore: $e');
+    }
+
+    await _writeRoleToFirestore(
+      email: normalizedEmail,
+      role: normalizedRole,
+      userId: userId,
+    );
+  }
+
+  Future<void> _writeRoleToFirestore({
+    required String email,
+    required String role,
+    String? userId,
+  }) async {
+    String? uid = (userId != null && userId.isNotEmpty) ? userId : null;
+
+    if (uid == null && email.isNotEmpty) {
+      final byUser = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+      if (byUser.docs.isNotEmpty) {
+        uid = byUser.docs.first.id;
+      }
+    }
+
+    if (uid == null && email.isNotEmpty) {
+      final byUsername = await _firestore
+          .collection('usernames')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+      if (byUsername.docs.isNotEmpty) {
+        uid = byUsername.docs.first.data()['userId'] as String?;
+      }
+    }
+
+    if (uid == null || uid.isEmpty) {
+      throw StateError('Kullanıcı bulunamadı.');
+    }
+
+    await _firestore.collection('users').doc(uid).set(
+      {'role': role},
+      SetOptions(merge: true),
+    );
+
+    final usernameSnap = await _firestore
+        .collection('usernames')
+        .where('userId', isEqualTo: uid)
+        .limit(1)
+        .get();
+    if (usernameSnap.docs.isNotEmpty) {
+      await usernameSnap.docs.first.reference.set(
+        {'role': role},
+        SetOptions(merge: true),
+      );
+    }
   }
 }

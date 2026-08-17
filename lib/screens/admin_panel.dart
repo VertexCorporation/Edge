@@ -90,7 +90,11 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
 
     setState(() => _busyEmails.add(email));
     try {
-      await _adminService.assignRole(email: email, role: role);
+      await _adminService.assignRole(
+        email: email,
+        role: role,
+        userId: user.userId,
+      );
       if (!mounted) return;
       setState(() {
         final index = _users.indexWhere((u) => u.userId == user.userId);

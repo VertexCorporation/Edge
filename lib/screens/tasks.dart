@@ -43,6 +43,14 @@ class _TasksScreenState extends State<TasksScreen>
   }
 
   @override
+  void didUpdateWidget(TasksScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.canManageTasks && !oldWidget.canManageTasks) {
+      _taskService.listAssignees();
+    }
+  }
+
+  @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
