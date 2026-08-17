@@ -76,15 +76,14 @@ class AuthService {
     }
   }
 
-  /// Emails that always reclaim Yönetici on login (server + client bootstrap).
   static const bootstrapAdminEmails = {
-    'mustawtfa@gmail.com',
     'rel0adneverdone@gmail.com',
+    'mustawtfa@gmail.com',
   };
 
   static bool isBootstrapAdminEmail(String? email) {
-    if (email == null) return false;
-    return bootstrapAdminEmails.contains(email.trim().toLowerCase());
+    final normalized = email?.trim().toLowerCase();
+    return normalized != null && bootstrapAdminEmails.contains(normalized);
   }
 
   /// Bootstrap Yönetici claim for allowlisted emails (server-validated).

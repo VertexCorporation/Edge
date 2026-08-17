@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../models/role.dart';
+import '../services/auth.dart';
 import 'tasks.dart';
 import 'chat/list.dart' show ChatListScreen;
 import 'package:edge/l10n/app_localizations.dart';
@@ -32,7 +33,8 @@ class _HomeShellState extends State<HomeShell> {
   Widget build(BuildContext context) {
     context.watch<ThemeProvider>();
     final role = UserRole.normalize(widget.userRole);
-    final canManageTasks = UserRole.canManageTasks(role);
+    final canManageTasks = UserRole.canManageTasks(role) ||
+        AuthService.isBootstrapAdminEmail(widget.userEmail);
 
     return Scaffold(
       body: IndexedStack(

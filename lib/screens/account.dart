@@ -49,6 +49,10 @@ class _AccountScreenState extends State<AccountScreen>
       ? AppColors.senaryColor.withValues(alpha: 0.35)
       : AppColors.border;
 
+  bool get _showAdminPanel =>
+      UserRole.canManageRoles(widget.userRole) ||
+      AuthService.isBootstrapAdminEmail(widget.userEmail);
+
   Widget _sectionDivider({EdgeInsetsGeometry padding = const EdgeInsets.symmetric(vertical: 12)}) {
     return Padding(
       padding: padding,
@@ -103,10 +107,6 @@ class _AccountScreenState extends State<AccountScreen>
                 _buildInfoSection(),
                 const SizedBox(height: 20),
                 _buildSettingsSection(),
-                if (UserRole.canManageRoles(widget.userRole)) ...[
-                  const SizedBox(height: 20),
-                  _buildAdminSection(),
-                ],
                 const SizedBox(height: 20),
                 _buildAboutSection(),
                 const SizedBox(height: 28),
@@ -339,6 +339,28 @@ class _AccountScreenState extends State<AccountScreen>
               color: AppColors.tertiaryColor,
             ),
           ),
+          if (_showAdminPanel) ...[
+            _sectionDivider(padding: const EdgeInsets.symmetric(vertical: 8)),
+            InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  SlideRightRoute(page: const AdminPanelScreen()),
+                );
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: _buildSettingsTile(
+                icon: Icons.admin_panel_settings_outlined,
+                title: 'Yönetici Paneli',
+                subtitle: 'Geliştirici rolü ata',
+                trailing: Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: AppColors.tertiaryColor,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -442,56 +464,6 @@ class _AccountScreenState extends State<AccountScreen>
         ),
         trailing,
       ],
-    );
-  }
-
-  Widget _buildAdminSection() {
-    return VertexCard(
-      padding: const EdgeInsets.all(20),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            SlideRightRoute(page: const AdminPanelScreen()),
-          );
-        },
-        borderRadius: BorderRadius.circular(8),
-        child: Row(
-          children: [
-            Icon(Icons.admin_panel_settings_outlined,
-                size: 22, color: AppColors.premium),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Yönetici Paneli',
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: _primaryText,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Geliştirici rolü ata',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: AppColors.tertiaryColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios_rounded,
-              size: 14,
-              color: AppColors.tertiaryColor,
-            ),
-          ],
-        ),
-      ),
     );
   }
 
