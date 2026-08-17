@@ -451,7 +451,12 @@ class ChatService {
   }
 
   /// Deletes a group chat and its messages. Yönetici only.
+  /// If Firestore blocks hard-delete, the group is hidden with a deleted flag.
   Future<void> deleteGroupChat(String chatId) async {
+    if (chatId.trim().isEmpty) {
+      throw StateError('Grup bulunamadı.');
+    }
+
     final role = await _currentUserRole();
     if (!UserRole.canDeleteGroups(role) && !_isBootstrapAdmin) {
       throw StateError('Grubu yalnızca Yönetici silebilir.');
@@ -459,21 +464,37 @@ class ChatService {
 
     final chatRef = _firestore.collection('chats').doc(chatId);
     final snap = await chatRef.get();
-    if (!snap.exists || snap.data()?['isGroup'] != true) {
+    if (!snap.exists) {
       throw StateError('Grup bulunamadı.');
     }
 
-    while (true) {
-      final messages = await chatRef.collection('messages').limit(400).get();
-      if (messages.docs.isEmpty) break;
-      final batch = _firestore.batch();
-      for (final doc in messages.docs) {
-        batch.delete(doc.reference);
-      }
-      await batch.commit();
+    final data = snap.data() ?? {};
+    if (data['isGroup'] != true) {
+      throw StateError('Grup bulunamadı.');
     }
 
-    await chatRef.delete();
+    try {
+      while (true) {
+        final messages = await chatRef.collection('messages').limit(400).get();
+        if (messages.docs.isEmpty) break;
+        final batch = _firestore.batch();
+        for (final doc in messages.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+      }
+      await chatRef.delete();
+    } catch (hardDeleteError) {
+      try {
+        await chatRef.set({
+          'deleted': true,
+          'deletedAt': FieldValue.serverTimestamp(),
+          'deletedBy': currentUserId,
+        }, SetOptions(merge: true));
+      } catch (_) {
+        throw StateError('Grup silinemedi. $hardDeleteError');
+      }
+    }
   }
 
   /// Create a new Community
@@ -552,7 +573,7 @@ class ChatService {
         final data = doc.data();
         data['chatId'] = doc.id;
         return data;
-      }).toList();
+      }).where((data) => data['deleted'] != true).toList();
     });
   }
 
@@ -583,8 +604,10 @@ class ChatService {
           'isAnnouncementGroup': data['isAnnouncementGroup'] ?? false,
           'communityId': data['communityId'],
           'isParticipant': isParticipant,
+          'deleted': data['deleted'] == true,
         };
       }).where((chat) {
+        if (chat['deleted'] == true) return false;
         final isGroup = chat['isGroup'] == true;
         if (seeAllGroups && isGroup) return true;
         if (chat['isAnnouncementGroup'] == true) return false;

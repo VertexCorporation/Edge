@@ -6,7 +6,9 @@ service cloud.firestore {
     }
 
     function userRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+        : '';
     }
 
     function isAdmin() {
@@ -19,6 +21,12 @@ service cloud.firestore {
 
     function canManageTasks() {
       return isAdmin() || isMod();
+    }
+
+    function canDeleteGroup() {
+      return isAdmin()
+        || isMod()
+        || resource.data.createdBy == request.auth.uid;
     }
 
     match /users/{userId} {
@@ -50,10 +58,11 @@ service cloud.firestore {
       );
       allow update: if isSignedIn();
       allow delete: if isSignedIn() && (
-        resource.data.isGroup != true || isAdmin()
+        resource.data.isGroup != true || canDeleteGroup()
       );
       match /messages/{messageId} {
         allow read, write: if isSignedIn();
+        allow delete: if isSignedIn();
       }
     }
 
