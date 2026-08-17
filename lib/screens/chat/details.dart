@@ -16,6 +16,7 @@ import 'package:encrypt/encrypt.dart' as enc;
 import '../../theme.dart';
 import '../../services/chat.dart';
 import '../../widgets/appbar.dart';
+import '../../widgets/avatar.dart';
 import '../../widgets/fog.dart';
 import '../../utils/file_bytes.dart';
 import 'package:edge/l10n/app_localizations.dart';
@@ -28,6 +29,8 @@ class ChatDetailScreen extends StatefulWidget {
   final bool isAnnouncementGroup;
   final bool isAdmin;
   final bool canDeleteGroup;
+  final bool embedded;
+  final VoidCallback? onClose;
 
   const ChatDetailScreen({
     super.key,
@@ -38,6 +41,8 @@ class ChatDetailScreen extends StatefulWidget {
     this.isAnnouncementGroup = false,
     this.isAdmin = false,
     this.canDeleteGroup = false,
+    this.embedded = false,
+    this.onClose,
   });
 
   @override
@@ -237,7 +242,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     try {
       await _chatService.deleteGroupChat(_resolvedChatId);
       if (!mounted) return;
-      Navigator.pop(context);
+      if (widget.embedded) {
+        widget.onClose?.call();
+      } else if (Navigator.of(context).canPop()) {
+        Navigator.pop(context);
+      }
       messenger.showSnackBar(
         const SnackBar(content: Text('Grup silindi.')),
       );
@@ -256,8 +265,17 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     return Scaffold(
       appBar: VertexAppBar(
         scrollController: _scrollController,
+        leadingMode: widget.embedded
+            ? VertexLeadingMode.none
+            : VertexLeadingMode.back,
+        leadingActions: [
+          ThemeAvatar(
+            name: widget.title,
+            radius: 16,
+            icon: widget.isGroup ? Icons.groups_rounded : null,
+          ),
+        ],
         titleText: widget.title,
-        leadingMode: VertexLeadingMode.back,
         actions: widget.isGroup && widget.canDeleteGroup
             ? [
                 SizedBox(
