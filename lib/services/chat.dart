@@ -470,11 +470,15 @@ class ChatService {
     return communityId;
   }
 
-  /// Get Communities for the current user
-  Stream<List<Map<String, dynamic>>> getCommunities() {
-    return _firestore
-        .collection('communities')
-        .where('members', arrayContains: currentUserId)
+  /// Get Communities for the current user, or all communities for Support.
+  Stream<List<Map<String, dynamic>>> getCommunities({
+    bool seeAllGroups = false,
+  }) {
+    Query<Map<String, dynamic>> query = _firestore.collection('communities');
+    if (!seeAllGroups) {
+      query = query.where('members', arrayContains: currentUserId);
+    }
+    return query
         .snapshots()
         .map((snapshot) {
       final comms = snapshot.docs.map((doc) {
@@ -511,17 +515,20 @@ class ChatService {
     });
   }
 
-  /// Get recent chats for the current user
-  Stream<List<Map<String, dynamic>>> getRecentChats() {
-    return _firestore
-        .collection('chats')
-        .where('participants', arrayContains: currentUserId)
-        .snapshots()
-        .map((snapshot) {
+  /// Get recent chats for the current user.
+  /// Support ([seeAllGroups]) also sees every group, not only joined ones.
+  Stream<List<Map<String, dynamic>>> getRecentChats({
+    bool seeAllGroups = false,
+  }) {
+    Query<Map<String, dynamic>> query = _firestore.collection('chats');
+    if (!seeAllGroups) {
+      query = query.where('participants', arrayContains: currentUserId);
+    }
+    return query.snapshots().map((snapshot) {
       final chats = snapshot.docs.map((doc) {
         final data = doc.data();
         final participants = List<String>.from(data['participants'] ?? []);
-        // Find the other user's ID
+        final isParticipant = participants.contains(currentUserId);
         final otherUserId = participants.firstWhere(
           (id) => id != currentUserId,
           orElse: () => '',
@@ -534,15 +541,20 @@ class ChatService {
           'lastMessageTimestamp': data['lastMessageTimestamp'],
           'isAnnouncementGroup': data['isAnnouncementGroup'] ?? false,
           'communityId': data['communityId'],
+          'isParticipant': isParticipant,
         };
       }).where((chat) {
+        final isGroup = chat['isGroup'] == true;
+        if (seeAllGroups && isGroup) return true;
         if (chat['isAnnouncementGroup'] == true) return false;
         if (chat['communityId'] != null) return false;
-        if (chat['isGroup'] == true &&
-            (chat['groupName'] as String).trim() == 'Duyurular') {
+        if (isGroup && (chat['groupName'] as String).trim() == 'Duyurular') {
           return false;
         }
-        return chat['isGroup'] == true || chat['otherUserId'].isNotEmpty;
+        if (seeAllGroups) {
+          return isGroup || chat['isParticipant'] == true;
+        }
+        return isGroup || chat['otherUserId'].isNotEmpty;
       }).toList();
       
       chats.sort((a, b) {

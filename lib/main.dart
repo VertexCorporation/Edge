@@ -22,6 +22,7 @@ void main() async {
   }
 
   await AuthService.configureWebPersistence();
+  await AuthService.completeWebRedirectSignIn();
 
   // Push notifications block first paint on mobile web — init after UI on web.
   if (!kIsWeb) {

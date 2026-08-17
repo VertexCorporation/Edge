@@ -352,7 +352,7 @@ class _AccountScreenState extends State<AccountScreen>
               child: _buildSettingsTile(
                 icon: Icons.admin_panel_settings_outlined,
                 title: 'Yönetici Paneli',
-                subtitle: 'Geliştirici rolü ata',
+                subtitle: 'Üye, Geliştirici, Test, Mod, Support ata',
                 trailing: Icon(
                   Icons.arrow_forward_ios_rounded,
                   size: 14,
@@ -485,7 +485,7 @@ class _AccountScreenState extends State<AccountScreen>
           _buildInfoRow(
             icon: Icons.info_outline_rounded,
             label: 'Uygulama',
-            value: 'Vertex Edge v1.0.6',
+            value: 'Vertex Edge v1.0.7',
           ),
           _sectionDivider(),
           _buildInfoRow(

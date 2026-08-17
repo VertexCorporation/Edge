@@ -10,6 +10,19 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.7',
+      date: '17 Ağustos 2026',
+      highlights: [
+        'Google ile devam et: Google hesap seçim ekranına yönlendirir',
+        'Apple ile devam et: Apple kimliği ile giriş açılır',
+        'Mobil web\'de pop-up engellenirse Google/Apple girişine otomatik yönlendirme',
+        'Yeni roller: Test, Mod, Support',
+        'Mod: Yönetici Paneli\'nden rol atayabilir (Üye, Geliştirici, Test, Mod, Support)',
+        'Support: üye olmadığı gruplar dahil tüm grupları görür',
+        'Yönetici Paneli Hesap → Ayarlar içinde; atanabilir roller genişletildi',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.6',
       date: '14 Ağustos 2026',
       highlights: [

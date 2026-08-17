@@ -5,8 +5,11 @@ class UserRole {
   static const member = 'Üye';
   static const developer = 'Geliştirici';
   static const admin = 'Yönetici';
+  static const test = 'Test';
+  static const mod = 'Mod';
+  static const support = 'Support';
 
-  static const all = [member, developer, admin];
+  static const all = [member, developer, admin, test, mod, support];
 
   /// Normalizes legacy / inconsistent role strings from Firestore.
   static String normalize(String? role) {
@@ -20,13 +23,17 @@ class UserRole {
     }
     if (lower == 'yönetici' ||
         lower == 'yonetici' ||
-        lower == 'admin' ||
-        lower == 'yönetici ') {
+        lower == 'admin') {
       return admin;
     }
     if (lower == 'üye' || lower == 'uye' || lower == 'member') {
       return member;
     }
+    if (lower == 'test') return test;
+    if (lower == 'mod' || lower == 'moderator' || lower == 'moderatör') {
+      return mod;
+    }
+    if (lower == 'support' || lower == 'destek') return support;
     return role;
   }
 
@@ -34,10 +41,25 @@ class UserRole {
   static bool canManageTasks(String? role) =>
       normalize(role) == admin;
 
-  /// Yönetici can assign roles from [assignableByAdmin].
-  static bool canManageRoles(String? role) => normalize(role) == admin;
+  /// Yönetici and Mod can assign roles from [assignableByAdmin].
+  static bool canManageRoles(String? role) {
+    final normalized = normalize(role);
+    return normalized == admin || normalized == mod;
+  }
 
-  static const assignableByAdmin = [member, developer];
+  /// Support can see every group chat, not only ones they joined.
+  static bool canSeeAllGroups(String? role) =>
+      normalize(role) == support;
+
+  static bool isMod(String? role) => normalize(role) == mod;
+
+  static const assignableByAdmin = [
+    member,
+    developer,
+    test,
+    mod,
+    support,
+  ];
 
   /// Geliştirici behaves like Üye — no extra permissions.
   static bool isDeveloper(String? role) =>

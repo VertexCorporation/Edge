@@ -169,8 +169,10 @@ exports.assignUserRole = functions.https.onCall(async (data, context) => {
       .doc(context.auth.uid)
       .get();
   const callerRole = callerDoc.data()?.role;
-  if (callerRole !== ADMIN_ROLE) {
-    throw new functions.https.HttpsError("permission-denied", "Yönetici gerekli.");
+  const canAssignRoles = callerRole === ADMIN_ROLE || callerRole === "Mod";
+  if (!canAssignRoles) {
+    throw new functions.https.HttpsError(
+        "permission-denied", "Yönetici veya Mod gerekli.");
   }
 
   const PROTECTED_ADMIN_EMAILS = [
@@ -180,7 +182,7 @@ exports.assignUserRole = functions.https.onCall(async (data, context) => {
 
   const email = (data.email || "").trim().toLowerCase();
   const role = data.role || "Üye";
-  const allowedRoles = ["Üye", "Geliştirici"];
+  const allowedRoles = ["Üye", "Geliştirici", "Test", "Mod", "Support"];
   if (!email) {
     throw new functions.https.HttpsError("invalid-argument", "E-posta gerekli.");
   }
@@ -190,7 +192,7 @@ exports.assignUserRole = functions.https.onCall(async (data, context) => {
   }
   if (!allowedRoles.includes(role)) {
     throw new functions.https.HttpsError(
-        "invalid-argument", "Sadece Üye veya Geliştirici atanabilir.");
+        "invalid-argument", "Bu rol atanamaz.");
   }
 
   const uid = await setUserRoleByEmail(email, role);

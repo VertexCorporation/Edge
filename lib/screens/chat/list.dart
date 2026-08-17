@@ -6,6 +6,7 @@ import 'package:flutter_contacts/flutter_contacts.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
 import '../../theme.dart';
+import '../../models/role.dart';
 import '../../widgets/appbar.dart';
 
 import '../account.dart';
@@ -65,8 +66,9 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _recentChatsStream = _chatService.getRecentChats();
-    _communitiesStream = _chatService.getCommunities();
+    final seeAllGroups = UserRole.canSeeAllGroups(widget.userRole);
+    _recentChatsStream = _chatService.getRecentChats(seeAllGroups: seeAllGroups);
+    _communitiesStream = _chatService.getCommunities(seeAllGroups: seeAllGroups);
     _initKeys();
     _scrollController.addListener(_onScroll);
     _searchController.addListener(_onSearchChanged);

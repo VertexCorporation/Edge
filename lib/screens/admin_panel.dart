@@ -148,7 +148,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
             children: [
               Text(
-                'Kullanıcılara Geliştirici veya Üye rolü atayabilirsin.',
+                'Kullanıcılara Üye, Geliştirici, Test, Mod veya Support rolü atayabilirsin. Mod da rol verebilir.',
                 style: GoogleFonts.inter(
                   fontSize: 14,
                   color: AppColors.tertiaryColor,
@@ -314,6 +314,15 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
     switch (UserRole.normalize(role)) {
       case UserRole.admin:
         color = AppColors.premium;
+        break;
+      case UserRole.mod:
+        color = const Color(0xFFE36414);
+        break;
+      case UserRole.support:
+        color = const Color(0xFF00E5FF);
+        break;
+      case UserRole.test:
+        color = const Color(0xFF8D6E63);
         break;
       case UserRole.developer:
         color = AppColors.senaryColor;

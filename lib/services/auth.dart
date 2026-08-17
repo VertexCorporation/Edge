@@ -27,6 +27,16 @@ class AuthService {
     }
   }
 
+  /// Completes Google/Apple sign-in after a mobile-web redirect.
+  static Future<void> completeWebRedirectSignIn() async {
+    if (!kIsWeb) return;
+    try {
+      await FirebaseAuth.instance.getRedirectResult();
+    } catch (e) {
+      debugPrint('OAuth redirect result failed: $e');
+    }
+  }
+
   /// Update online status
   Future<void> updateOnlineStatus(bool isOnline) async {
     final user = _auth.currentUser;
@@ -198,31 +208,42 @@ class AuthService {
     }
   }
 
-  /// Sign in with Google
+  /// Sign in with Google — always opens the Google account picker.
   Future<AuthResult> signInWithGoogle() async {
     try {
       User? user;
-      
+
       if (kIsWeb) {
-        final authProvider = GoogleAuthProvider();
-        final userCredential = await _auth.signInWithPopup(authProvider);
-        user = userCredential.user;
+        final authProvider = GoogleAuthProvider()
+          ..addScope('email')
+          ..addScope('profile')
+          ..setCustomParameters({'prompt': 'select_account'});
+        user = await _webOAuthSignIn(authProvider);
+        if (user == null && _auth.currentUser == null) {
+          return AuthResult.error('Google girişi iptal edildi.');
+        }
+        user ??= _auth.currentUser;
       } else {
-        final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+        final googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
+        try {
+          await googleSignIn.disconnect();
+        } catch (_) {
+          await googleSignIn.signOut();
+        }
+        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
         if (googleUser == null) {
           return AuthResult.error('Google girişi iptal edildi.');
         }
 
-        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        final googleAuth = await googleUser.authentication;
         final credential = GoogleAuthProvider.credential(
           accessToken: googleAuth.accessToken,
           idToken: googleAuth.idToken,
         );
-
         final userCredential = await _auth.signInWithCredential(credential);
         user = userCredential.user;
       }
-      
+
       if (user == null) {
         return AuthResult.error('Google girişi başarısız.');
       }
@@ -235,19 +256,23 @@ class AuthService {
     }
   }
 
-  /// Sign in with Apple
+  /// Sign in with Apple — opens Apple ID authentication.
   Future<AuthResult> signInWithApple() async {
     try {
       User? user;
-      
+
       if (kIsWeb) {
-        final authProvider = OAuthProvider('apple.com');
-        authProvider.addScope('email');
-        authProvider.addScope('name');
-        final userCredential = await _auth.signInWithPopup(authProvider);
-        user = userCredential.user;
+        final authProvider = OAuthProvider('apple.com')
+          ..addScope('email')
+          ..addScope('name')
+          ..setCustomParameters({'locale': 'tr_TR'});
+        user = await _webOAuthSignIn(authProvider);
+        if (user == null && _auth.currentUser == null) {
+          return AuthResult.error('Apple girişi iptal edildi.');
+        }
+        user ??= _auth.currentUser;
       } else {
-        final AuthorizationCredentialAppleID appleCredential = await SignInWithApple.getAppleIDCredential(
+        final appleCredential = await SignInWithApple.getAppleIDCredential(
           scopes: [
             AppleIDAuthorizationScopes.email,
             AppleIDAuthorizationScopes.fullName,
@@ -258,15 +283,16 @@ class AuthService {
           idToken: appleCredential.identityToken,
           accessToken: appleCredential.authorizationCode,
         );
-
         final userCredential = await _auth.signInWithCredential(credential);
         user = userCredential.user;
 
-        // If Apple returned a name on mobile, we can update it
-        if (appleCredential.givenName != null || appleCredential.familyName != null) {
-          final name = '${appleCredential.givenName ?? ''} ${appleCredential.familyName ?? ''}'.trim();
+        if (appleCredential.givenName != null ||
+            appleCredential.familyName != null) {
+          final name =
+              '${appleCredential.givenName ?? ''} ${appleCredential.familyName ?? ''}'
+                  .trim();
           if (name.isNotEmpty) {
-            await user!.updateDisplayName(name);
+            await user?.updateDisplayName(name);
           }
         }
       }
@@ -276,10 +302,34 @@ class AuthService {
       }
 
       return await _handleOAuthLogin(user);
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (e.code == AuthorizationErrorCode.canceled) {
+        return AuthResult.error('Apple girişi iptal edildi.');
+      }
+      return AuthResult.error('Apple girişi başarısız.');
     } on FirebaseAuthException catch (e) {
       return AuthResult.error(_getAuthErrorMessage(e.code));
     } catch (e) {
       return AuthResult.error('Beklenmeyen bir hata oluştu: $e');
+    }
+  }
+
+  /// Popup first; if the browser blocks it (common on mobile web), redirect.
+  Future<User?> _webOAuthSignIn(AuthProvider provider) async {
+    try {
+      final credential = await _auth.signInWithPopup(provider);
+      return credential.user;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'popup-closed-by-user' ||
+          e.code == 'cancelled-popup-request') {
+        return null;
+      }
+      if (e.code == 'popup-blocked' ||
+          e.code == 'operation-not-supported-in-this-environment') {
+        await _auth.signInWithRedirect(provider);
+        return null;
+      }
+      rethrow;
     }
   }
 
@@ -417,6 +467,15 @@ class AuthService {
         return 'E-posta veya şifre hatalı.';
       case 'network-request-failed':
         return 'İnternet bağlantınızı kontrol edin.';
+      case 'popup-closed-by-user':
+      case 'cancelled-popup-request':
+        return 'Giriş iptal edildi.';
+      case 'popup-blocked':
+        return 'Tarayıcı pop-up penceresini engelledi. Lütfen tekrar deneyin.';
+      case 'operation-not-allowed':
+        return 'Bu giriş yöntemi henüz etkin değil.';
+      case 'unauthorized-domain':
+        return 'Bu domain için Google/Apple girişi yetkili değil.';
       default:
         return 'Giriş hatası: $code';
     }
