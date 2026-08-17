@@ -10,6 +10,16 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.11',
+      date: '17 Ağustos 2026',
+      highlights: [
+        'Sohbetler WhatsApp düzenine alındı: kişi listesi solda, chat sağda açılır',
+        'Kişiler açılır-kapanır sekme olmaktan çıktı',
+        'Topluluk oluşturma: arama ve + yanına küçük ikon',
+        'Hesap ve profil avatarları seçili temanın rengine uyuyor',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.10',
       date: '17 Ağustos 2026',
       highlights: [
