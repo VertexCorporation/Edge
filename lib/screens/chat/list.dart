@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../../theme.dart';
 import '../../models/role.dart';
 import '../../widgets/appbar.dart';
+import '../../widgets/avatar.dart';
 
 import '../account.dart';
 import '../../services/chat.dart';
@@ -45,6 +46,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   Timer? _debounce;
+  _OpenChat? _openChat;
 
   final ScrollController _scrollController = ScrollController();
   final ScrollController _communitiesScrollController = ScrollController();
@@ -58,7 +60,6 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
   DocumentSnapshot? _lastDocument;
   bool _isLoadingUsers = false;
   bool _hasMoreUsers = true;
-  bool _showSuggestions = false;
   
   // Phone contacts cache
   List<Contact> _phoneContacts = [];
@@ -85,6 +86,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
     _initKeys();
     _scrollController.addListener(_onScroll);
     _searchController.addListener(_onSearchChanged);
+    _loadPeople();
   }
 
   Future<void> _confirmDeleteGroupFromList(String chatId, String name) async {
@@ -156,7 +158,10 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
   }
 
   void _onScroll() {
-    if (_showSuggestions && _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_searchQuery.isEmpty) return;
+    if (_scrollController.hasClients &&
+        _scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200) {
       _fetchSuggestedUsers();
     }
   }
@@ -171,11 +176,30 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
           _suggestedUsers.clear();
           _lastDocument = null;
           _hasMoreUsers = true;
-          _showSuggestions = true; // Automatically show suggestions when searching
         });
-        _fetchSuggestedUsers();
+        if (query.isEmpty) {
+          _loadPeople();
+        } else {
+          _fetchSuggestedUsers();
+        }
       }
     });
+  }
+
+  Future<void> _loadPeople() async {
+    try {
+      final users = await _chatService.listGroupEligibleUsers();
+      if (!mounted) return;
+      setState(() {
+        _suggestedUsers
+          ..clear()
+          ..addAll(users);
+        _hasMoreUsers = false;
+        _isLoadingUsers = false;
+      });
+    } catch (e) {
+      debugPrint('People list failed: $e');
+    }
   }
 
   Future<void> _fetchSuggestedUsers() async {
@@ -252,302 +276,364 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
     context.watch<ThemeProvider>();
     final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
+    final split = MediaQuery.sizeOf(context).width >= 720;
+    final listPane = _buildListPane(brightness, isDark, split);
+
+    if (!split) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: _buildAppBar(isDark),
+        body: SafeArea(child: listPane),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: VertexAppBar(
-        scrollController: _scrollController,
-        titleAlignToActions: true,
-        trailingEdgePadding: 12,
-        leadingActions: [
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                SlideLeftRoute(
-                  page: Scaffold(
-                    backgroundColor: AppColors.background,
-                    appBar: const VertexAppBar(leadingMode: VertexLeadingMode.back),
-                    body: AccountScreen(
-                      userName: widget.userName,
-                      userRole: widget.userRole,
-                      userEmail: widget.userEmail,
-                    ),
-                  ),
-                ),
-              );
-            },
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                CircleAvatar(
-                  backgroundColor: AppColors.isDarkUi
-                      ? AppColors.senaryColor.withValues(alpha: 0.35)
-                      : AppColors.senaryColor.withValues(alpha: 0.2),
-                  child: Text(
-                    widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : '?',
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                if (widget.isVertex)
-                  Positioned(
-                    right: -2,
-                    bottom: -2,
-                    child: Icon(
-                      Icons.verified,
-                      size: 16,
-                      color: AppColors.senaryColor,
-                    ),
-                  ),
-              ],
+      body: Row(
+        children: [
+          SizedBox(
+            width: 380,
+            child: SafeArea(
+              child: Column(
+                children: [
+                  _buildAppBar(isDark),
+                  Expanded(child: listPane),
+                ],
+              ),
             ),
           ),
+          VerticalDivider(width: 1, color: AppColors.border),
+          Expanded(child: _buildChatPane()),
         ],
-        title: AppColors.isBlackTheme
-            ? ShaderMask(
-                shaderCallback: (bounds) =>
-                    AppColors.edgeTitleGradient.createShader(bounds),
-                child: Text(
-                  AppLocalizations.of(context)!.appName,
-                  style: GoogleFonts.outfit(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
-                ),
-              )
-            : Text(
+      ),
+    );
+  }
+
+  VertexAppBar _buildAppBar(bool isDark) {
+    return VertexAppBar(
+      scrollController: _scrollController,
+      titleAlignToActions: true,
+      trailingEdgePadding: 12,
+      leadingActions: [
+        GestureDetector(
+          onTap: _openAccount,
+          child: ThemeAvatar(
+            name: widget.userName,
+            radius: 18,
+            isVerified: widget.isVertex,
+          ),
+        ),
+      ],
+      title: AppColors.isBlackTheme
+          ? ShaderMask(
+              shaderCallback: (bounds) =>
+                  AppColors.edgeTitleGradient.createShader(bounds),
+              child: Text(
                 AppLocalizations.of(context)!.appName,
                 style: GoogleFonts.outfit(
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.edgeTitleColor,
+                  color: Colors.white,
                 ),
               ),
-        actions: [
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _isSearching = !_isSearching;
-                if (!_isSearching) {
-                  _searchController.clear();
-                }
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isDark ? Colors.white10 : Colors.black12,
-              ),
-              child: Icon(
-                _isSearching ? Icons.close : Icons.search,
-                color: isDark ? Colors.white : Colors.black,
-                size: 22,
+            )
+          : Text(
+              AppLocalizations.of(context)!.appName,
+              style: GoogleFonts.outfit(
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color: AppColors.edgeTitleColor,
               ),
             ),
+      actions: [
+        _circleIcon(
+          icon: _isSearching ? Icons.close : Icons.search,
+          filled: false,
+          isDark: isDark,
+          onTap: () {
+            setState(() {
+              _isSearching = !_isSearching;
+              if (!_isSearching) {
+                _searchController.clear();
+              }
+            });
+          },
+        ),
+        if (_canCreateGroups) ...[
+          const SizedBox(width: 4),
+          _circleIcon(
+            icon: Icons.groups_outlined,
+            filled: false,
+            isDark: isDark,
+            onTap: () {
+              Navigator.push(
+                context,
+                SlideRightRoute(page: const CreateCommunityScreen()),
+              );
+            },
           ),
           const SizedBox(width: 4),
-          if (_canCreateGroups)
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  SlideRightRoute(page: const CreateGroupScreen()),
-                );
-              },
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.senaryColor,
-                ),
-                child: Icon(
-                  Icons.add,
-                  color: Colors.white,
-                  size: 22,
-                ),
-              ),
-            ),
+          _circleIcon(
+            icon: Icons.add,
+            filled: true,
+            isDark: isDark,
+            onTap: () {
+              Navigator.push(
+                context,
+                SlideRightRoute(page: const CreateGroupScreen()),
+              );
+            },
+          ),
         ],
-      ),
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      ],
+    );
+  }
 
-              AnimatedSize(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                child: _isSearching
-                    ? Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-                        child: TextField(
-                          controller: _searchController,
-                          style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                          decoration: InputDecoration(
-                            hintText: AppLocalizations.of(context)!.searchUser,
-                            hintStyle: GoogleFonts.inter(color: AppColors.tertiaryColor),
-                            prefixIcon: Icon(Icons.search, color: AppColors.tertiaryColor),
-                            filled: true,
-                            fillColor: isDark ? Colors.white10 : Colors.black12,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(20),
-                              borderSide: BorderSide.none,
+  Widget _circleIcon({
+    required IconData icon,
+    required bool filled,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    final fg = filled
+        ? ThemeAvatar.onAccent()
+        : (isDark ? Colors.white : Colors.black);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: filled
+              ? AppColors.senaryColor
+              : (isDark ? Colors.white10 : Colors.black12),
+        ),
+        child: Icon(icon, color: fg, size: 22),
+      ),
+    );
+  }
+
+  void _openAccount() {
+    Navigator.push(
+      context,
+      SlideLeftRoute(
+        page: Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: const VertexAppBar(leadingMode: VertexLeadingMode.back),
+          body: AccountScreen(
+            userName: widget.userName,
+            userRole: widget.userRole,
+            userEmail: widget.userEmail,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListPane(Brightness brightness, bool isDark, bool split) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AnimatedSize(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          child: _isSearching
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: AppLocalizations.of(context)!.searchUser,
+                      hintStyle: GoogleFonts.inter(
+                        color: AppColors.tertiaryColor,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: AppColors.tertiaryColor,
+                      ),
+                      filled: true,
+                      fillColor: isDark ? Colors.white10 : Colors.black12,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+        Expanded(
+          child: Column(
+            children: [
+              TabBar(
+                controller: _tabController,
+                labelColor: AppColors.senaryColor,
+                unselectedLabelColor: AppColors.tertiaryColor,
+                indicatorColor: AppColors.senaryColor,
+                tabs: const [
+                  Tab(text: 'Sohbetler'),
+                  Tab(text: 'Topluluklar'),
+                ],
+              ),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    ScrollFog(
+                      scrollController: _scrollController,
+                      color: AppColors.background,
+                      child: CustomScrollView(
+                        controller: _scrollController,
+                        slivers: [
+                          _buildRecentChatsStream(brightness, isDark, split),
+                          if (_suggestedUsers.isNotEmpty)
+                            const SliverToBoxAdapter(child: SizedBox(height: 8)),
+                          SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                                if (index == _suggestedUsers.length) {
+                                  return _isLoadingUsers
+                                      ? const Padding(
+                                          padding: EdgeInsets.all(16),
+                                          child: Center(
+                                            child: SizedBox(
+                                              width: 22,
+                                              height: 22,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                      : const SizedBox.shrink();
+                                }
+                                final user = _suggestedUsers[index];
+                                return _buildUserTile(
+                                  user,
+                                  brightness,
+                                  isDark,
+                                  split: split,
+                                );
+                              },
+                              childCount: _suggestedUsers.length +
+                                  (_hasMoreUsers || _isLoadingUsers ? 1 : 0),
                             ),
                           ),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
-              ),
-
-              Expanded(
-                  child: Column(
-                    children: [
-                      TabBar(
-                        controller: _tabController,
-                        labelColor: AppColors.senaryColor,
-                        unselectedLabelColor: AppColors.tertiaryColor,
-                        indicatorColor: AppColors.senaryColor,
-                        tabs: const [
-                          Tab(text: "Sohbetler"),
-                          Tab(text: "Topluluklar"),
                         ],
                       ),
-                      Expanded(
-                        child: TabBarView(
-                          controller: _tabController,
-                          children: [
-                            // 1. Sohbetler Tab
-                            ScrollFog(
-                              scrollController: _scrollController,
-                              color: AppColors.background,
-                              child: CustomScrollView(
-                                controller: _scrollController,
-                                slivers: [
-                                  // Recent Chats Section
-                                  SliverToBoxAdapter(
-                                    child: Padding(
-                                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-                                      child: Text(
-                                        AppLocalizations.of(context)!.chats,
-                                        style: GoogleFonts.inter(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w700,
-                                          color: isDark ? Colors.white : Colors.black,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  _buildRecentChatsStream(brightness, isDark),
-
-                                  // Suggested Users Button
-                                  SliverToBoxAdapter(
-                                    child: Padding(
-                                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                                      child: InkWell(
-                                        onTap: () {
-                                          setState(() {
-                                            _showSuggestions = !_showSuggestions;
-                                          });
-                                          if (_showSuggestions && _suggestedUsers.isEmpty) {
-                                            _fetchSuggestedUsers();
-                                          }
-                                        },
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Row(
-                                          children: [
-                                            Container(
-                                              padding: const EdgeInsets.all(8),
-                                              decoration: BoxDecoration(
-                                                color: AppColors.senaryColor.withValues(alpha: 0.2),
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: Icon(
-                                                Icons.person_add,
-                                                size: 16,
-                                                color: AppColors.senaryColor,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              'Kişiler',
-                                              style: GoogleFonts.inter(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w600,
-                                                color: AppColors.senaryColor,
-                                              ),
-                                            ),
-                                            const Spacer(),
-                                            Icon(
-                                              _showSuggestions ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                                              color: AppColors.senaryColor,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-
-                                  // Suggested Users List
-                                  if (_showSuggestions)
-                                    SliverList(
-                                      delegate: SliverChildBuilderDelegate(
-                                        (context, index) {
-                                          if (index == _suggestedUsers.length) {
-                                            return const SizedBox.shrink();
-                                          }
-
-                                          final user = _suggestedUsers[index];
-                                          return _buildUserTile(user, brightness, isDark);
-                                        },
-                                        childCount: _suggestedUsers.length + (_hasMoreUsers ? 1 : 0),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            
-                            // 2. Topluluklar Tab
-                            _buildCommunitiesTab(brightness, isDark),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                    _buildCommunitiesTab(brightness, isDark),
+                  ],
                 ),
+              ),
             ],
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildChatPane() {
+    final open = _openChat;
+    if (open == null) {
+      return ColoredBox(
+        color: AppColors.background,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ThemeAvatar(
+                name: 'Edge',
+                radius: 36,
+                icon: Icons.chat_bubble_outline_rounded,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Bir sohbet seç',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.edgeTitleColor,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Soldan bir kişiye tıklayınca sohbet burada açılır.',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: AppColors.tertiaryColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ChatDetailScreen(
+      key: ValueKey(open.key),
+      title: open.title,
+      receiverId: open.receiverId,
+      chatId: open.chatId,
+      isGroup: open.isGroup,
+      canDeleteGroup: open.isGroup && _canDeleteGroups,
+      embedded: true,
+      onClose: () => setState(() => _openChat = null),
+    );
+  }
+
+  void _openConversation({
+    required String title,
+    String? receiverId,
+    String? chatId,
+    bool isGroup = false,
+    required bool split,
+  }) {
+    if (isGroup && !_canOpenGroups) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bu grubu yalnızca Yönetici ve Mod açabilir.'),
+        ),
+      );
+      return;
+    }
+    if (!isGroup && (receiverId == null || receiverId.isEmpty)) return;
+
+    final open = _OpenChat(
+      title: title,
+      receiverId: receiverId,
+      chatId: chatId,
+      isGroup: isGroup,
+    );
+
+    if (split) {
+      setState(() => _openChat = open);
+      return;
+    }
+
+    Navigator.push(
+      context,
+      SlideRightRoute(
+        page: ChatDetailScreen(
+          title: title,
+          receiverId: isGroup ? null : receiverId,
+          chatId: isGroup ? chatId : null,
+          isGroup: isGroup,
+          canDeleteGroup: isGroup && _canDeleteGroups,
+        ),
+      ),
     );
   }
 
   Widget _buildCommunitiesTab(Brightness brightness, bool isDark) {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: _canCreateGroups
-              ? ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                SlideRightRoute(page: const CreateCommunityScreen()),
-              );
-            },
-            icon: const Icon(Icons.group_add, color: Colors.white),
-            label: Text(AppLocalizations.of(context)!.createNewCommunity, style: TextStyle(color: Colors.white)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.senaryColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              minimumSize: const Size(double.infinity, 50),
-            ),
-          )
-              : const SizedBox.shrink(),
-        ),
         Expanded(
           child: StreamBuilder<List<Map<String, dynamic>>>(
             stream: _communitiesStream,
@@ -573,9 +659,10 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                   itemBuilder: (context, index) {
                     final comm = comms[index];
                     return ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: AppColors.secondaryColor,
-                        child: Icon(Icons.groups, color: AppColors.senaryColor),
+                      leading: ThemeAvatar(
+                        name: comm['name'] ?? 'T',
+                        radius: 20,
+                        icon: Icons.groups_rounded,
                       ),
                       title: Text(comm['name'] ?? '', style: TextStyle(color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold)),
                       subtitle: Text(comm['description'] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: AppColors.tertiaryColor)),
@@ -602,7 +689,11 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildRecentChatsStream(Brightness brightness, bool isDark) {
+  Widget _buildRecentChatsStream(
+    Brightness brightness,
+    bool isDark,
+    bool split,
+  ) {
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: _recentChatsStream,
       builder: (context, snapshot) {
@@ -612,18 +703,21 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
 
         final chats = snapshot.data ?? [];
         if (chats.isEmpty) {
-          return SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
-              child: Text(
-                'Henüz kimseyle konuşmadınız, hemen sohbete başlayın.',
-                style: GoogleFonts.inter(
-                  color: AppColors.tertiaryColor,
-                  fontStyle: FontStyle.italic,
+          if (_suggestedUsers.isEmpty && !_isLoadingUsers) {
+            return SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
+                child: Text(
+                  'Henüz kimseyle konuşmadınız, hemen sohbete başlayın.',
+                  style: GoogleFonts.inter(
+                    color: AppColors.tertiaryColor,
+                    fontStyle: FontStyle.italic,
+                  ),
                 ),
               ),
-            ),
-          );
+            );
+          }
+          return const SliverToBoxAdapter(child: SizedBox.shrink());
         }
 
         return SliverList(
@@ -632,11 +726,11 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
               final chat = chats[index];
               if (chat['isGroup'] == true) {
                 return _buildUserTile({
-                  'uid': '', // no single user
+                  'uid': '',
                   'chatId': chat['chatId'],
                   'name': chat['groupName'],
                   'isGroup': true,
-                }, brightness, isDark);
+                }, brightness, isDark, split: split);
               }
 
               return FutureBuilder<DocumentSnapshot>(
@@ -647,7 +741,12 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                   }
                   final userData = userSnapshot.data!.data() as Map<String, dynamic>;
                   userData['uid'] = userSnapshot.data!.id; // ensure ID is passed
-                  return _buildUserTile(userData, brightness, isDark);
+                  return _buildUserTile(
+                    userData,
+                    brightness,
+                    isDark,
+                    split: split,
+                  );
                 },
               );
             },
@@ -658,81 +757,84 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildUserTile(Map<String, dynamic> user, Brightness brightness, bool isDark) {
+  Widget _buildUserTile(
+    Map<String, dynamic> user,
+    Brightness brightness,
+    bool isDark, {
+    required bool split,
+  }) {
     final isOnline = user['isOnline'] == true;
     final isGroup = user['isGroup'] == true;
     final chatId = user['chatId'];
 
     String displayName = (user['name'] ?? '').toString().trim();
     if (displayName.isEmpty) {
-      displayName = isGroup 
-          ? 'İsimsiz Grup' 
-          : (user['username'] ?? user['email'] ?? AppLocalizations.of(context)!.anonymousUser).toString().trim();
+      displayName = isGroup
+          ? 'İsimsiz Grup'
+          : (user['username'] ??
+                  user['email'] ??
+                  AppLocalizations.of(context)!.anonymousUser)
+              .toString()
+              .trim();
     }
-    
-    // Some endpoints may return 'uid' or 'userId' or 'id'
-    final uid = user['uid'] ?? user['userId'] ?? user['id'] ?? '';
 
-    return Card(
-      color: AppColors.secondaryColor,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppColors.border),
-      ),
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Material(
-        type: MaterialType.transparency,
-        child: ListTile(
-          leading: Stack(
+    final uid = (user['uid'] ?? user['userId'] ?? user['id'] ?? '').toString();
+    final tileKey = isGroup ? 'g:${chatId ?? ''}' : 'u:$uid';
+    final selected = _openChat?.key == tileKey;
+
+    return Material(
+      color: selected
+          ? AppColors.senaryColor.withValues(alpha: AppColors.isDarkUi ? 0.18 : 0.12)
+          : Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          _openConversation(
+            title: displayName,
+            receiverId: isGroup ? null : uid,
+            chatId: isGroup ? chatId?.toString() : null,
+            isGroup: isGroup,
+            split: split,
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
             children: [
-              CircleAvatar(
-                backgroundColor: AppColors.senaryColor.withValues(alpha: 0.2),
-                child: Text(
-                  displayName.isNotEmpty ? displayName.substring(0, 1).toUpperCase() : '?',
-                  style: GoogleFonts.inter(
-                    color: AppColors.senaryColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+              ThemeAvatar(
+                name: displayName,
+                radius: 22,
+                isOnline: isOnline,
+                icon: isGroup ? Icons.groups_rounded : null,
               ),
-              if (isOnline)
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppColors.background,
-                        width: 2,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
-                  ),
+                    if (user['username'] != null)
+                      Text(
+                        '@${user['username']}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          color: AppColors.tertiaryColor,
+                          fontSize: 12,
+                        ),
+                      ),
+                  ],
                 ),
-            ],
-          ),
-          title: Text(
-            displayName,
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white : Colors.black,
-            ),
-          ),
-          subtitle: user['username'] != null
-              ? Text(
-                  '@${user['username']}',
-                  style: GoogleFonts.inter(
-                    color: AppColors.tertiaryColor,
-                    fontSize: 12,
-                  ),
-                )
-              : null,
-          trailing: isGroup && _canDeleteGroups
-              ? IconButton(
+              ),
+              if (isGroup && _canDeleteGroups)
+                IconButton(
                   tooltip: 'Grubu sil',
                   icon: Icon(
                     Icons.delete_outline_rounded,
@@ -743,37 +845,27 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                     if (id.isEmpty) return;
                     _confirmDeleteGroupFromList(id, displayName);
                   },
-                )
-              : Icon(
-                  Icons.chevron_right,
-                  color: AppColors.tertiaryColor,
-                  size: 16,
                 ),
-            onTap: () {
-              if (isGroup && !_canOpenGroups) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Bu grubu yalnızca Yönetici ve Mod açabilir.'),
-                  ),
-                );
-                return;
-              }
-              if (!isGroup && uid.isEmpty) return;
-              Navigator.push(
-                context,
-                SlideRightRoute(
-                  page: ChatDetailScreen(
-                    title: displayName,
-                    receiverId: isGroup ? null : uid,
-                    chatId: isGroup ? chatId : null,
-                    isGroup: isGroup,
-                    canDeleteGroup: isGroup && _canDeleteGroups,
-                  ),
-                ),
-              );
-            },
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+class _OpenChat {
+  final String title;
+  final String? receiverId;
+  final String? chatId;
+  final bool isGroup;
+
+  const _OpenChat({
+    required this.title,
+    this.receiverId,
+    this.chatId,
+    this.isGroup = false,
+  });
+
+  String get key => isGroup ? 'g:${chatId ?? ''}' : 'u:${receiverId ?? ''}';
 }
