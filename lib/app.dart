@@ -11,6 +11,7 @@ import 'services/auth.dart';
 import 'services/chat.dart';
 import 'services/cortex_profile.dart';
 import 'services/notification.dart';
+import 'widgets/notice_banner.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:edge/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -45,6 +46,9 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
         _authService.updateOnlineStatus(true);
         ChatService().initializeKeys().catchError((_) {});
         _authService.tryClaimBootstrapAdmin(user);
+        NotificationService().startInboxAlerts();
+      } else {
+        NotificationService().stopInboxAlerts();
       }
     });
   }
@@ -91,6 +95,9 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
         Locale('en'),
         Locale('tr'),
       ],
+      builder: (context, child) => InboxNoticeLayer(
+        child: child ?? const SizedBox.shrink(),
+      ),
       home: StreamBuilder<User?>(
         stream: _authService.authStateChanges,
         builder: (context, snapshot) {
@@ -105,6 +112,7 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
           final user = snapshot.data;
           if (user == null) {
             _stableUser = null;
+            NotificationService().stopInboxAlerts();
             return const LoginScreen();
           }
 

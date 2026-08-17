@@ -36,30 +36,58 @@ exports.sendNotificationOnMessage = functions.firestore
       if (!senderDoc.empty) {
         const data = senderDoc.docs[0].data();
         senderName = data.name || data.username || "Biri";
+      } else {
+        const senderUser = await admin.firestore()
+            .collection("users").doc(senderId).get();
+        if (senderUser.exists) {
+          const data = senderUser.data();
+          senderName = data.name || data.username || "Biri";
+        }
       }
 
       const tokens = [];
       for (const receiverId of receivers) {
         const userDoc = await admin.firestore()
+            .collection("users").doc(receiverId).get();
+        if (userDoc.exists) {
+          const data = userDoc.data();
+          if (data.fcmToken) tokens.push(data.fcmToken);
+          if (Array.isArray(data.fcmTokens)) {
+            data.fcmTokens.forEach((t) => tokens.push(t));
+          }
+        }
+
+        const usernameDoc = await admin.firestore()
             .collection("usernames")
             .where("userId", "==", receiverId)
             .limit(1)
             .get();
-        if (!userDoc.empty) {
-          const token = userDoc.docs[0].data().fcmToken;
+        if (!usernameDoc.empty) {
+          const token = usernameDoc.docs[0].data().fcmToken;
           if (token) tokens.push(token);
         }
       }
 
-      if (tokens.length > 0) {
+      const uniqueTokens = [...new Set(tokens.filter(Boolean))];
+
+      if (uniqueTokens.length > 0) {
         try {
           const response = await admin.messaging().sendEachForMulticast({
-            tokens,
+            tokens: uniqueTokens,
             notification: {
               title: `Yeni mesaj: ${senderName}`,
               body: message.type === "text" ?
                 "Sana bir mesaj gönderdi." :
                 "Sana bir dosya gönderdi.",
+            },
+            webpush: {
+              notification: {
+                title: `Yeni mesaj: ${senderName}`,
+                body: message.type === "text" ?
+                  "Sana bir mesaj gönderdi." :
+                  "Sana bir dosya gönderdi.",
+                icon: "/icons/Icon-192.png",
+              },
             },
           });
           console.log("Bildirimler başarıyla gönderildi:", response);

@@ -13,6 +13,9 @@ import 'cortex_profile.dart';
 import 'crypto.dart';
 
 class ChatService {
+  /// Open chat id so inbox banners are not shown for the conversation on screen.
+  static String? activeChatId;
+
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
@@ -800,12 +803,15 @@ class ChatService {
     if (isGroup) {
       await _firestore.collection('chats').doc(chatId).set({
         'lastMessageTimestamp': FieldValue.serverTimestamp(),
-        // participants should already exist from group creation
+        'lastSenderId': currentUserId,
+        'lastMessageType': type,
       }, SetOptions(merge: true));
     } else {
       await _firestore.collection('chats').doc(chatId).set({
         'participants': [currentUserId, receiverId],
         'lastMessageTimestamp': FieldValue.serverTimestamp(),
+        'lastSenderId': currentUserId,
+        'lastMessageType': type,
       }, SetOptions(merge: true));
     }
   }

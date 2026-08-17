@@ -63,11 +63,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     super.initState();
     _resolvedChatId = widget.chatId ??
         _chatService.getChatId(_chatService.currentUserId, widget.receiverId!);
+    ChatService.activeChatId = _resolvedChatId;
     _messageController.addListener(_onComposeChanged);
   }
 
   @override
   void dispose() {
+    if (ChatService.activeChatId == _resolvedChatId) {
+      ChatService.activeChatId = null;
+    }
     _typingIdleTimer?.cancel();
     _messageController.removeListener(_onComposeChanged);
     _setTyping(false);

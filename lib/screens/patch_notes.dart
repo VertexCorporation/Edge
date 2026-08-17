@@ -10,6 +10,15 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.10',
+      date: '17 Ağustos 2026',
+      highlights: [
+        'Sitede mesaj bildirimi: biri yazınca karşı tarafta banner düşer',
+        'Görev Oluştur tuşu tepkisiz kalma hatası düzeltildi',
+        'E-posta / şifre ile klasik giriş Cortex sonrası da çalışır',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.9',
       date: '17 Ağustos 2026',
       highlights: [

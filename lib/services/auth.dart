@@ -162,8 +162,14 @@ class AuthService {
 
       // 2. Get user profile data
       await tryClaimBootstrapAdmin(user);
-      final userData =
-          await _linkCortexProfile(user) ?? await getUserData(user.uid);
+      Map<String, dynamic>? userData;
+      try {
+        userData = await _linkCortexProfile(user)
+            .timeout(const Duration(seconds: 8));
+      } catch (e) {
+        debugPrint('Profile link timed out: $e');
+      }
+      userData ??= await getUserData(user.uid);
 
       return AuthResult.success(
         user: user,
@@ -197,24 +203,25 @@ class AuthService {
 
       final emailNormalized = email.trim().toLowerCase();
       final username = _usernameFromEmail(emailNormalized);
+      final existing = await _firestore.collection('users').doc(user.uid).get();
+      final existingData = existing.data();
 
       await _firestore.collection('users').doc(user.uid).set({
         'name': name,
         'email': emailNormalized,
-        'role': 'Üye',
-        'isVertex': false,
+        if (existingData?['role'] == null) 'role': 'Üye',
+        if (!CortexProfile.isRegistered(existingData)) 'isVertex': false,
         'isOnline': true,
         'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      await _firestore.collection('usernames').doc(username).set({
-        'userId': user.uid,
-        'name': name,
-        'email': emailNormalized,
-        'role': 'Üye',
-        'isOnline': true,
-        'lastSeen': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      await _ensureUsernameDoc(
+        user,
+        name: name,
+        email: emailNormalized,
+        role: existingData?['role'] as String? ?? 'Üye',
+        preferredUsername: CortexProfile.usernameOf(existingData) ?? username,
+      );
 
       await tryClaimBootstrapAdmin(user);
       final userData =
@@ -425,7 +432,33 @@ class AuthService {
     try {
       final doc = await _firestore.collection('users').doc(user.uid).get();
       final data = doc.data();
-      if (data == null) return null;
+      if (data == null) {
+        final classicName =
+            (user.displayName ?? '').trim().isNotEmpty
+                ? user.displayName!.trim()
+                : 'Kullanıcı';
+        final classic = <String, dynamic>{
+          'name': classicName,
+          'email': user.email ?? '',
+          'role': UserRole.member,
+          'isVertex': false,
+          'isOnline': true,
+          'lastSeen': FieldValue.serverTimestamp(),
+          'createdAt': FieldValue.serverTimestamp(),
+        };
+        await _firestore.collection('users').doc(user.uid).set(
+              classic,
+              SetOptions(merge: true),
+            );
+        await _ensureUsernameDoc(
+          user,
+          name: classicName,
+          email: user.email ?? '',
+          role: UserRole.member,
+        );
+        classic['name'] = classicName;
+        return classic;
+      }
       if (CortexProfile.isAnonymousAccount(data)) return data;
 
       final displayName = CortexProfile.displayName(

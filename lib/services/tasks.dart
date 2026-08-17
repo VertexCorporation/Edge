@@ -172,52 +172,61 @@ class TaskService {
       return _assigneesCache!;
     }
 
-    List<Map<String, dynamic>> assignees = [];
+    final byUid = <String, Map<String, dynamic>>{};
 
     try {
-      final snap = await _firestore
-          .collection('usernames')
-          .where(
-            'lastSeen',
-            isGreaterThan: Timestamp.fromDate(DateTime(2020, 1, 1)),
-          )
-          .limit(150)
-          .get();
-      assignees = _mapAssigneeDocs(snap.docs);
+      QuerySnapshot<Map<String, dynamic>> snap;
+      try {
+        snap = await _firestore
+            .collection('usernames')
+            .where(
+              'lastSeen',
+              isGreaterThan: Timestamp.fromDate(DateTime(2020, 1, 1)),
+            )
+            .limit(150)
+            .get();
+      } catch (e) {
+        debugPrint('TaskService: lastSeen query failed, using full list: $e');
+        snap = await _firestore.collection('usernames').limit(150).get();
+      }
+      for (final mapped in _mapAssigneeDocs(snap.docs)) {
+        byUid[mapped['userId'] as String] = mapped;
+      }
     } catch (e) {
       debugPrint('TaskService: usernames list failed: $e');
     }
 
-    if (assignees.isEmpty) {
-      try {
-        final snap = await _firestore.collection('users').limit(150).get();
-        assignees = snap.docs
-            .map((doc) {
-              final data = doc.data();
-              if (data['lastSeen'] == null && data['createdAt'] == null) {
-                return null;
-              }
-              return {
-                'userId': doc.id,
-                'name': CortexProfile.displayName(
-                  data,
-                  fallback: data['email'] as String? ?? doc.id,
-                ),
-                'role': UserRole.normalize(data['role'] as String?),
-              };
-            })
-            .whereType<Map<String, dynamic>>()
-            .toList();
-      } catch (e) {
-        debugPrint('TaskService: users list failed: $e');
+    try {
+      final snap = await _firestore.collection('users').limit(150).get();
+      for (final doc in snap.docs) {
+        final data = doc.data();
+        if (CortexProfile.isAnonymousAccount(data)) continue;
+        if (data['lastSeen'] == null &&
+            data['createdAt'] == null &&
+            CortexProfile.usernameOf(data) == null) {
+          continue;
+        }
+        byUid.putIfAbsent(doc.id, () {
+          return {
+            'userId': doc.id,
+            'name': CortexProfile.displayName(
+              data,
+              fallback: data['email'] as String? ?? doc.id,
+            ),
+            'role': UserRole.normalize(data['role'] as String?),
+          };
+        });
       }
+    } catch (e) {
+      debugPrint('TaskService: users list failed: $e');
     }
 
-    assignees.sort(
-      (a, b) => (a['name'] as String)
-          .toLowerCase()
-          .compareTo((b['name'] as String).toLowerCase()),
-    );
+    final assignees = byUid.values.toList()
+      ..sort(
+        (a, b) => (a['name'] as String)
+            .toLowerCase()
+            .compareTo((b['name'] as String).toLowerCase()),
+      );
 
     _assigneesCache = assignees;
     _assigneesCachedAt = DateTime.now();

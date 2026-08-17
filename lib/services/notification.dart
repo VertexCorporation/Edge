@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -5,8 +6,21 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../firebase.dart';
+import '../utils/browser_notify.dart';
+import 'chat.dart';
 
-// Background message handler must be a top-level function
+class InboxNotice {
+  final String title;
+  final String body;
+  final String? chatId;
+
+  const InboxNotice({
+    required this.title,
+    required this.body,
+    this.chatId,
+  });
+}
+
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   final options = DefaultFirebaseOptions.currentPlatform;
@@ -24,104 +38,132 @@ class NotificationService {
   NotificationService._internal();
 
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
-  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
+  final _inbox = StreamController<InboxNotice>.broadcast();
+
+  Stream<InboxNotice> get inboxNotices => _inbox.stream;
 
   bool _isInitialized = false;
   bool _tokenRefreshListenerAttached = false;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _chatAlertSub;
+  DateTime? _alertsReadyAt;
+  String? _alertUid;
 
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    // Set background handler
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    if (kIsWeb) {
+      await requestBrowserNotifications();
+    } else {
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    }
 
-    // Request permissions for iOS
-    NotificationSettings settings = await _fcm.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-    debugPrint('User granted permission: ${settings.authorizationStatus}');
+    try {
+      await _fcm.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+    } catch (e) {
+      debugPrint('Notification permission failed: $e');
+    }
 
-    // Initialize local notifications for foreground display
+    if (!kIsWeb) {
+      await _initNativeLocalNotifications();
+    }
+
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      final notification = message.notification;
+      if (notification == null) return;
+      presentInboxNotice(
+        InboxNotice(
+          title: notification.title ?? 'Yeni mesaj',
+          body: notification.body ?? 'Sana bir mesaj gönderildi.',
+        ),
+      );
+    });
+
+    _isInitialized = true;
+    await saveDeviceToken();
+    startInboxAlerts();
+  }
+
+  Future<void> _initNativeLocalNotifications() async {
     const androidInit = AndroidInitializationSettings('@mipmap/launcher_icon');
     const iosInit = DarwinInitializationSettings();
-    const initSettings = InitializationSettings(android: androidInit, iOS: iosInit);
+    const initSettings = InitializationSettings(
+      android: androidInit,
+      iOS: iosInit,
+    );
 
     await _localNotifications.initialize(settings: initSettings);
 
-    // Create a high importance channel for Android
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'high_importance_channel', // id
-      'High Importance Notifications', // title
+      'high_importance_channel',
+      'High Importance Notifications',
       description: 'This channel is used for important notifications.',
       importance: Importance.max,
     );
 
-    final androidPlugin = _localNotifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    final androidPlugin = _localNotifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
     if (androidPlugin != null) {
       await androidPlugin.createNotificationChannel(channel);
     }
 
-    // Update FCM settings for foreground display on iOS
     await _fcm.setForegroundNotificationPresentationOptions(
       alert: true,
       badge: true,
       sound: true,
     );
-
-    // Listen to incoming messages in foreground
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      RemoteNotification? notification = message.notification;
-      AndroidNotification? android = message.notification?.android;
-
-      if (notification != null && android != null) {
-        _localNotifications.show(
-          id: notification.hashCode,
-          title: notification.title,
-          body: notification.body,
-          notificationDetails: NotificationDetails(
-            android: AndroidNotificationDetails(
-              channel.id,
-              channel.name,
-              channelDescription: channel.description,
-              icon: '@mipmap/launcher_icon',
-              importance: Importance.max,
-              priority: Priority.high,
-            ),
-            iOS: const DarwinNotificationDetails(
-              presentAlert: true,
-              presentBadge: true,
-              presentSound: true,
-            ),
-          ),
-        );
-      } else if (notification != null) {
-        _localNotifications.show(
-          id: notification.hashCode,
-          title: notification.title,
-          body: notification.body,
-          notificationDetails: const NotificationDetails(
-            iOS: DarwinNotificationDetails(
-              presentAlert: true,
-              presentBadge: true,
-              presentSound: true,
-            ),
-          ),
-        );
-      }
-    });
-
-    _isInitialized = true;
-    await saveDeviceToken();
   }
 
-  /// Saves the current device's FCM token to Firestore. Call after login.
+  void presentInboxNotice(InboxNotice notice) {
+    if (!_inbox.isClosed) {
+      _inbox.add(notice);
+    }
+    showBrowserNotification(notice.title, notice.body);
+    if (!kIsWeb) {
+      _showNativeBanner(notice);
+    }
+  }
+
+  Future<void> _showNativeBanner(InboxNotice notice) async {
+    try {
+      await _localNotifications.show(
+        id: notice.hashCode,
+        title: notice.title,
+        body: notice.body,
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'high_importance_channel',
+            'High Importance Notifications',
+            channelDescription:
+                'This channel is used for important notifications.',
+            icon: '@mipmap/launcher_icon',
+            importance: Importance.max,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Local notification failed: $e');
+    }
+  }
+
   Future<void> saveDeviceToken() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     try {
+      if (!await _fcm.isSupported()) return;
       final token = await _fcm.getToken();
       if (token != null) {
         await _persistToken(user.uid, token);
@@ -142,17 +184,93 @@ class NotificationService {
   }
 
   Future<void> _persistToken(String uid, String token) async {
-    final query = await FirebaseFirestore.instance
-        .collection('usernames')
-        .where('userId', isEqualTo: uid)
-        .limit(1)
-        .get();
-
-    if (query.docs.isNotEmpty) {
-      await FirebaseFirestore.instance
-          .collection('usernames')
-          .doc(query.docs.first.id)
-          .set({'fcmToken': token}, SetOptions(merge: true));
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(uid).set(
+        {'fcmToken': token},
+        SetOptions(merge: true),
+      );
+    } catch (e) {
+      debugPrint('FCM token users write failed: $e');
     }
+
+    try {
+      final query = await FirebaseFirestore.instance
+          .collection('usernames')
+          .where('userId', isEqualTo: uid)
+          .limit(1)
+          .get();
+
+      if (query.docs.isNotEmpty) {
+        await query.docs.first.reference.set(
+          {'fcmToken': token},
+          SetOptions(merge: true),
+        );
+      }
+    } catch (e) {
+      debugPrint('FCM token usernames write failed: $e');
+    }
+  }
+
+  /// Site açıkken yeni mesajları banner + tarayıcı bildirimi olarak gösterir.
+  void startInboxAlerts() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    if (_alertUid == uid && _chatAlertSub != null) return;
+
+    stopInboxAlerts();
+    _alertUid = uid;
+    _alertsReadyAt = DateTime.now();
+
+    _chatAlertSub = FirebaseFirestore.instance
+        .collection('chats')
+        .where('participants', arrayContains: uid)
+        .snapshots()
+        .listen((snap) {
+      final readyAt = _alertsReadyAt;
+      if (readyAt == null) return;
+      final warmup = DateTime.now().difference(readyAt) <
+          const Duration(seconds: 2);
+
+      for (final change in snap.docChanges) {
+        if (change.type == DocumentChangeType.removed) continue;
+        if (warmup && change.type == DocumentChangeType.added) continue;
+
+        final data = change.doc.data();
+        if (data == null || data['deleted'] == true) continue;
+
+        final senderId = data['lastSenderId'] as String?;
+        if (senderId == null || senderId == uid) continue;
+        if (ChatService.activeChatId == change.doc.id) continue;
+
+        final ts = data['lastMessageTimestamp'];
+        if (ts is Timestamp && ts.toDate().isBefore(readyAt)) continue;
+
+        final isGroup = data['isGroup'] == true;
+        final title = isGroup
+            ? ((data['groupName'] as String?)?.trim().isNotEmpty == true
+                ? data['groupName'] as String
+                : 'Grup')
+            : 'Yeni mesaj';
+        final type = data['lastMessageType'] as String? ?? 'text';
+        presentInboxNotice(
+          InboxNotice(
+            title: title,
+            body: type == 'text'
+                ? 'Sana bir mesaj gönderildi.'
+                : 'Sana bir dosya gönderildi.',
+            chatId: change.doc.id,
+          ),
+        );
+      }
+    }, onError: (e) {
+      debugPrint('Inbox alert listen failed: $e');
+    });
+  }
+
+  void stopInboxAlerts() {
+    _chatAlertSub?.cancel();
+    _chatAlertSub = null;
+    _alertUid = null;
+    _alertsReadyAt = null;
   }
 }

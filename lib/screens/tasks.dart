@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme.dart';
@@ -695,6 +696,7 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
   String? _selectedUserName;
   late Future<List<Map<String, dynamic>>> _assigneesFuture;
   bool _submitting = false;
+  String? _formError;
 
   @override
   void initState() {
@@ -718,11 +720,22 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
   }
 
   Future<void> _submit() async {
-    if (_titleCtrl.text.trim().isEmpty || _selectedUserId == null) return;
-    setState(() => _submitting = true);
+    final title = _titleCtrl.text.trim();
+    if (title.isEmpty) {
+      setState(() => _formError = 'Başlık yaz.');
+      return;
+    }
+    if (_selectedUserId == null || _selectedUserId!.isEmpty) {
+      setState(() => _formError = 'Kişi seç.');
+      return;
+    }
+    setState(() {
+      _submitting = true;
+      _formError = null;
+    });
     try {
       await widget.taskService.createTask(
-        title: _titleCtrl.text,
+        title: title,
         description: _descCtrl.text,
         assigneeId: _selectedUserId!,
         assigneeName: _selectedUserName ?? '',
@@ -730,7 +743,12 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
         dueDate: _dueDate,
         priority: _priority,
       );
-      if (mounted) Navigator.pop(context);
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      debugPrint('createTask failed: $e');
+      if (mounted) {
+        setState(() => _formError = 'Görev oluşturulamadı. Yetki veya bağlantıyı kontrol et.');
+      }
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -800,9 +818,20 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
                   );
                 }
 
-                final assignees = snapshot.data ?? [];
+                final seen = <String>{};
+                final assignees = (snapshot.data ?? [])
+                    .where((u) {
+                      final id = (u['userId'] as String?) ?? '';
+                      return id.isNotEmpty && seen.add(id);
+                    })
+                    .toList();
+                final selectedId = assignees.any(
+                  (u) => u['userId'] == _selectedUserId,
+                )
+                    ? _selectedUserId
+                    : null;
                 return DropdownButtonFormField<String>(
-                  value: _selectedUserId,
+                  value: selectedId,
                   decoration: const InputDecoration(
                     labelText: 'Kişi',
                     border: OutlineInputBorder(),
@@ -827,6 +856,7 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
                           setState(() {
                             _selectedUserId = v;
                             _selectedUserName = user['name'] as String;
+                            _formError = null;
                           });
                         },
                 );
@@ -876,6 +906,17 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
               },
             ),
             const SizedBox(height: 20),
+            if (_formError != null) ...[
+              Text(
+                _formError!,
+                style: GoogleFonts.inter(
+                  color: Colors.redAccent,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             SizedBox(
               width: double.infinity,
               child: FilledButton(
