@@ -10,6 +10,16 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.13',
+      date: '18 Ağustos 2026',
+      highlights: [
+        'Giriş ekranından tema seçici kaldırıldı',
+        'Uzay temasında pikselli yıldızlar ve gezegenler',
+        'Aşk temasında temaya uygun pikselli kalpler',
+        'Biri mesaj atınca sohbet listesinin en üstüne düşer',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.12',
       date: '18 Ağustos 2026',
       highlights: [
