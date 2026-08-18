@@ -116,6 +116,8 @@ exports.createUserProfile = functions.auth.user().onCreate(async (user) => {
   const edgeFields = {
     email: email || existing.email || "",
     isOnline: true,
+    isEdge: true,
+    lastSeen: admin.firestore.FieldValue.serverTimestamp(),
     photoURL: photoURL || existing.photoURL || "",
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   };
@@ -156,6 +158,7 @@ exports.createUserProfile = functions.auth.user().onCreate(async (user) => {
     name,
     email: email || "",
     isOnline: true,
+    isEdge: true,
     lastSeen: admin.firestore.FieldValue.serverTimestamp(),
   };
   if (!usernameDoc.exists || !usernameDoc.data()?.role) {
@@ -218,6 +221,13 @@ exports.claimBootstrapAdmin = functions.https.onCall(async (_data, context) => {
   }
 
   await setUserRole(context.auth.uid, ADMIN_ROLE);
+  for (const bootstrapEmail of bootstrapEmails) {
+    try {
+      await setUserRoleByEmail(bootstrapEmail, ADMIN_ROLE);
+    } catch (error) {
+      console.log("Bootstrap admin restore skipped:", bootstrapEmail, error);
+    }
+  }
   return {success: true, role: ADMIN_ROLE};
 });
 
@@ -248,7 +258,7 @@ exports.assignUserRole = functions.https.onCall(async (data, context) => {
   const role = data.role || "Üye";
   const allowedRoles = ["Üye", "Geliştirici", "Test", "Mod", "Support"];
   if (!email && !uid) {
-    throw new functions.https.HttpsError("invalid-argument", "E-posta gerekli.");
+    throw new functions.https.HttpsError("invalid-argument", "Kullanıcı gerekli.");
   }
   if (email && PROTECTED_ADMIN_EMAILS.includes(email)) {
     throw new functions.https.HttpsError(
@@ -259,17 +269,25 @@ exports.assignUserRole = functions.https.onCall(async (data, context) => {
         "invalid-argument", "Bu rol atanamaz.");
   }
 
-  let assignedUid = uid;
-  if (assignedUid) {
-    const target = await admin.auth().getUser(assignedUid).catch(() => null);
-    const targetEmail = (target?.email || email || "").toLowerCase();
-    if (PROTECTED_ADMIN_EMAILS.includes(targetEmail)) {
-      throw new functions.https.HttpsError(
-          "permission-denied", "Bu hesabın rolü panelden değiştirilemez.");
+  try {
+    let assignedUid = uid;
+    if (assignedUid) {
+      const target = await admin.auth().getUser(assignedUid).catch(() => null);
+      const targetEmail = (target?.email || email || "").toLowerCase();
+      if (PROTECTED_ADMIN_EMAILS.includes(targetEmail)) {
+        throw new functions.https.HttpsError(
+            "permission-denied", "Bu hesabın rolü panelden değiştirilemez.");
+      }
+      await setUserRole(assignedUid, role);
+    } else {
+      assignedUid = await setUserRoleByEmail(email, role);
     }
-    await setUserRole(assignedUid, role);
-  } else {
-    assignedUid = await setUserRoleByEmail(email, role);
+    return {success: true, uid: assignedUid, role};
+  } catch (error) {
+    if (error instanceof functions.https.HttpsError) throw error;
+    console.error("assignUserRole failed:", error);
+    throw new functions.https.HttpsError(
+        "internal",
+        "Rol kaydedilemedi. Bağlantıyı kontrol et, sonra tekrar dene.");
   }
-  return {success: true, uid: assignedUid, role};
 });

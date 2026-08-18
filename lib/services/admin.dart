@@ -28,6 +28,10 @@ class AdminService {
       final snap = await _firestore.collection('users').get();
       for (final doc in snap.docs) {
         final data = doc.data();
+        if (!CortexProfile.isEdgeListed(data) &&
+            data['role'] != UserRole.admin) {
+          continue;
+        }
         byUid[doc.id] = AdminUser(
           userId: doc.id,
           name: CortexProfile.displayName(
@@ -49,6 +53,11 @@ class AdminService {
         final userId = data['userId'] as String? ?? '';
         if (userId.isEmpty) continue;
         final existing = byUid[userId];
+        if (!CortexProfile.isEdgeListed(data) &&
+            UserRole.normalize(data['role'] as String?) != UserRole.admin &&
+            existing == null) {
+          continue;
+        }
         final usernameRole = UserRole.normalize(data['role'] as String?);
         byUid[userId] = AdminUser(
           userId: userId,
@@ -85,7 +94,7 @@ class AdminService {
 
     final normalizedEmail = email.trim().toLowerCase();
     if (normalizedEmail.isEmpty && (userId == null || userId.isEmpty)) {
-      throw ArgumentError('E-posta gerekli.');
+      throw ArgumentError('Kullanıcı bulunamadı.');
     }
 
     try {
@@ -104,8 +113,17 @@ class AdminService {
         debugPrint('Role Firestore sync after CF: $e');
       }
       return;
+    } on FirebaseFunctionsException catch (e) {
+      debugPrint('assignUserRole CF failed, using Firestore: ${e.code} ${e.message}');
+      if (e.code == 'permission-denied') {
+        throw StateError('Rol atamak için Yönetici veya Mod olmalısın.');
+      }
     } catch (e) {
       debugPrint('assignUserRole CF failed, using Firestore: $e');
+      final text = e.toString();
+      if (text.contains('permission-denied')) {
+        throw StateError('Rol atamak için Yönetici veya Mod olmalısın.');
+      }
     }
 
     await _writeRoleToFirestore(
@@ -181,6 +199,9 @@ class AdminService {
       );
     } catch (e) {
       debugPrint('AdminService: users role write failed: $e');
+      throw StateError(
+        'Rol kaydedilemedi. Firebase izinleri veya bağlantıyı kontrol et.',
+      );
     }
 
     try {

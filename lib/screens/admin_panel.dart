@@ -84,12 +84,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
     if (user.role == role) return;
 
     final email = user.email.trim().toLowerCase();
-    if (email.isEmpty) {
-      _showMessage('Bu kullanıcıda e-posta yok.', isError: true);
-      return;
-    }
-
-    setState(() => _busyEmails.add(email));
+    setState(() => _busyEmails.add(email.isEmpty ? user.userId : email));
     try {
       await _adminService.assignRole(
         email: email,
@@ -111,10 +106,29 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
       _showMessage('${user.name} → $role');
     } catch (e) {
       if (!mounted) return;
-      _showMessage('Rol atanamadı: $e', isError: true);
+      _showMessage(_roleError(e), isError: true);
     } finally {
-      if (mounted) setState(() => _busyEmails.remove(email));
+      if (mounted) {
+        setState(
+          () => _busyEmails.remove(email.isEmpty ? user.userId : email),
+        );
+      }
     }
+  }
+
+  String _roleError(Object error) {
+    final text = error.toString();
+    if (text.contains('permission-denied') || text.contains('PERMISSION_DENIED')) {
+      return 'Rol yazılamadı: yetki yok.';
+    }
+    if (text.contains('not-found') || text.contains('Kullanıcı bulunamadı')) {
+      return 'Kullanıcı bulunamadı.';
+    }
+    if (text.toLowerCase().contains('firebase') ||
+        text.toLowerCase().contains('firestart')) {
+      return 'Rol yazılamadı. Bağlantıyı kontrol et, sonra tekrar dene.';
+    }
+    return 'Rol atanamadı: $error';
   }
 
   void _showMessage(String message, {bool isError = false}) {
@@ -223,7 +237,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
   Widget _buildUserTile(AdminUser user) {
     final isProtected = AuthService.isBootstrapAdminEmail(user.email);
     final isAdmin = user.role == UserRole.admin || isProtected;
-    final isBusy = _busyEmails.contains(user.email.trim().toLowerCase());
+    final isBusy = _busyEmails.contains(
+      user.email.trim().isEmpty ? user.userId : user.email.trim().toLowerCase(),
+    );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
