@@ -57,6 +57,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
   
   // Suggested Users State
   final List<Map<String, dynamic>> _suggestedUsers = [];
+  final Map<String, Map<String, dynamic>> _partnerCache = {};
   DocumentSnapshot? _lastDocument;
   bool _isLoadingUsers = false;
   bool _hasMoreUsers = true;
@@ -737,14 +738,24 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                 }, brightness, isDark, split: split);
               }
 
-              return FutureBuilder<DocumentSnapshot>(
-                future: FirebaseFirestore.instance.collection('users').doc(chat['otherUserId']).get(),
+              final otherId = (chat['otherUserId'] ?? '').toString();
+              if (otherId.isEmpty) return const SizedBox.shrink();
+
+              return FutureBuilder<Map<String, dynamic>>(
+                future: _profileForChatPartner(otherId),
                 builder: (context, userSnapshot) {
-                  if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
-                    return const SizedBox.shrink();
-                  }
-                  final userData = userSnapshot.data!.data() as Map<String, dynamic>;
-                  userData['uid'] = userSnapshot.data!.id; // ensure ID is passed
+                  final userData = Map<String, dynamic>.from(
+                    userSnapshot.data ??
+                        {
+                          'uid': otherId,
+                          'userId': otherId,
+                          'id': otherId,
+                          'name': otherId,
+                        },
+                  );
+                  userData['uid'] = otherId;
+                  userData['userId'] ??= otherId;
+                  userData['id'] ??= otherId;
                   return _buildUserTile(
                     userData,
                     brightness,
@@ -759,6 +770,14 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
         );
       },
     );
+  }
+
+  Future<Map<String, dynamic>> _profileForChatPartner(String userId) async {
+    final cached = _partnerCache[userId];
+    if (cached != null) return cached;
+    final profile = await _chatService.resolvePublicProfile(userId);
+    _partnerCache[userId] = profile;
+    return profile;
   }
 
   Widget _buildUserTile(

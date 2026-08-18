@@ -8,11 +8,13 @@ class CortexProfile {
   }
 
   /// Edge people lists should not dump Cortex-only accounts.
+  /// Anyone who logged into Edge or has chat keys still belongs in the list.
   static bool isEdgeListed(Map<String, dynamic>? data) {
     if (data == null || isAnonymousAccount(data)) return false;
     if (data['isEdge'] == true) return true;
+    if (data['publicKey'] != null) return true;
     if (isRegistered(data)) return false;
-    return data['publicKey'] != null && data['lastSeen'] != null;
+    return data['lastSeen'] != null;
   }
 
   /// Cortex writes `username` (and often subscription/accountType) on register.

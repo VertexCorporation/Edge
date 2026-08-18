@@ -274,6 +274,12 @@ class ChatService {
       debugPrint('ChatService: cortex users query failed: $e');
     }
 
+    try {
+      await _includeChatPartners(byUid, uid);
+    } catch (e) {
+      debugPrint('ChatService: chat partners query failed: $e');
+    }
+
     final users = byUid.values.toList()
       ..sort(
         (a, b) => (a['name'] as String)
@@ -303,6 +309,84 @@ class ChatService {
         })
         .whereType<Map<String, dynamic>>()
         .toList();
+  }
+
+  Future<void> _includeChatPartners(
+    Map<String, Map<String, dynamic>> byUid,
+    String? uid,
+  ) async {
+    if (uid == null || uid.isEmpty) return;
+    final chats = await _firestore
+        .collection('chats')
+        .where('participants', arrayContains: uid)
+        .limit(80)
+        .get();
+    for (final doc in chats.docs) {
+      final data = doc.data();
+      if (data['deleted'] == true || data['isGroup'] == true) continue;
+      final participants = List<String>.from(data['participants'] ?? []);
+      for (final otherId in participants) {
+        if (otherId.isEmpty || otherId == uid || byUid.containsKey(otherId)) {
+          continue;
+        }
+        final profile = await resolvePublicProfile(otherId);
+        byUid[otherId] = {
+          'id': otherId,
+          'userId': otherId,
+          'username': (profile['username'] ?? otherId).toString(),
+          'name': CortexProfile.displayName(profile, fallback: otherId),
+          'email': profile['email']?.toString() ?? '',
+        };
+      }
+    }
+  }
+
+  Future<Map<String, dynamic>> resolvePublicProfile(String userId) async {
+    if (userId.isEmpty) {
+      return {'uid': userId, 'userId': userId, 'id': userId, 'name': ''};
+    }
+
+    try {
+      final userDoc = await _firestore.collection('users').doc(userId).get();
+      if (userDoc.exists) {
+        final data = Map<String, dynamic>.from(userDoc.data()!);
+        data['uid'] = userId;
+        data['userId'] = userId;
+        data['id'] = userId;
+        data['name'] = CortexProfile.displayName(data, fallback: userId);
+        data['username'] ??= CortexProfile.usernameOf(data);
+        return data;
+      }
+    } catch (e) {
+      debugPrint('ChatService: users profile lookup failed: $e');
+    }
+
+    try {
+      final snap = await _firestore
+          .collection('usernames')
+          .where('userId', isEqualTo: userId)
+          .limit(1)
+          .get();
+      if (snap.docs.isNotEmpty) {
+        final doc = snap.docs.first;
+        final data = Map<String, dynamic>.from(doc.data());
+        data['uid'] = userId;
+        data['userId'] = userId;
+        data['id'] = userId;
+        data['username'] = CortexProfile.usernameOf(data) ?? doc.id;
+        data['name'] = CortexProfile.displayName(data, fallback: doc.id);
+        return data;
+      }
+    } catch (e) {
+      debugPrint('ChatService: usernames profile lookup failed: $e');
+    }
+
+    return {
+      'uid': userId,
+      'userId': userId,
+      'id': userId,
+      'name': userId,
+    };
   }
 
   /// Get a paginated list of users, filtering out those without a public key
