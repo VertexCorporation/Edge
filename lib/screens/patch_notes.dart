@@ -10,6 +10,14 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.15',
+      date: '18 Ağustos 2026',
+      highlights: [
+        'Bootstrap Yönetici hesapları artık ekranda Üye olarak kalmaz',
+        'Rol birleştirmede users belgesi usernames kaydının önüne geçer',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.14',
       date: '18 Ağustos 2026',
       highlights: [

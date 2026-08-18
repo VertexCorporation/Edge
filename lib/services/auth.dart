@@ -117,6 +117,21 @@ class AuthService {
     return normalized != null && bootstrapAdminEmails.contains(normalized);
   }
 
+  /// Prefer `users/{uid}` role; bootstrap emails always resolve to Yönetici.
+  static String mergedRole({
+    Map<String, dynamic>? userData,
+    Map<String, dynamic>? usernameData,
+    String? authEmail,
+  }) {
+    final email = authEmail ??
+        userData?['email']?.toString() ??
+        usernameData?['email']?.toString();
+    if (isBootstrapAdminEmail(email)) return UserRole.admin;
+
+    final roleRaw = userData?['role'] ?? usernameData?['role'];
+    return UserRole.normalize(roleRaw as String?);
+  }
+
   /// Bootstrap Yönetici claim for allowlisted emails (server-validated).
   Future<bool> tryClaimBootstrapAdmin(User user) async {
     final email = user.email?.trim().toLowerCase();
@@ -163,10 +178,22 @@ class AuthService {
             .limit(1)
             .get();
         if (snap.docs.isEmpty) continue;
+        final uid = snap.docs.first.id;
         await snap.docs.first.reference.set({
           'role': UserRole.admin,
           'isEdge': true,
         }, SetOptions(merge: true));
+
+        final usernameSnap = await _firestore
+            .collection('usernames')
+            .where('userId', isEqualTo: uid)
+            .limit(1)
+            .get();
+        if (usernameSnap.docs.isNotEmpty) {
+          await usernameSnap.docs.first.reference.set({
+            'role': UserRole.admin,
+          }, SetOptions(merge: true));
+        }
       } catch (e) {
         debugPrint('Bootstrap admin restore failed for $email: $e');
       }
@@ -672,8 +699,10 @@ class AuthService {
         ...?usernameData,
         ...?userData,
       };
-      merged['role'] = UserRole.normalize(
-        usernameData?['role'] as String? ?? userData?['role'] as String?,
+      merged['role'] = AuthService.mergedRole(
+        userData: userData,
+        usernameData: usernameData,
+        authEmail: _auth.currentUser?.email,
       );
       merged['name'] = CortexProfile.displayName(merged);
       merged['isVertex'] = CortexProfile.isVertexMember(userData ?? merged);
