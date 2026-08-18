@@ -9,6 +9,7 @@ import '../widgets/button.dart';
 import '../widgets/input.dart';
 import '../services/auth.dart';
 import '../utils/ios.dart';
+import '../version.dart';
 import 'package:edge/l10n/app_localizations.dart';
 
 /// Login screen with Vertex branding
@@ -273,6 +274,14 @@ class _LoginScreenState extends State<LoginScreen>
           child: _buildLoginCard(brightness, isDark),
         ),
         const SizedBox(height: 24),
+        Text(
+          'v$kAppVersion',
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            color: AppColors.tertiaryColor.withValues(alpha: 0.45),
+          ),
+        ),
+        const SizedBox(height: 8),
         Text(
           AppLocalizations.of(context)!.copyRightText,
           style: GoogleFonts.inter(

@@ -10,6 +10,15 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.17',
+      date: '18 Ağustos 2026',
+      highlights: [
+        'main push sonrası otomatik Cloudflare web deploy',
+        'Giriş ekranında sürüm numarası (güncelleme kontrolü)',
+        'Mobil tarayıcı/PWA önbelleği için cache header düzeltmesi',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.16',
       date: '18 Ağustos 2026',
       highlights: [

@@ -1,3 +1,15 @@
 /*
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
+
+/index.html
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/flutter_bootstrap.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/flutter_service_worker.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/version.json
+  Cache-Control: no-cache, no-store, must-revalidate
