@@ -3,9 +3,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
 import '../theme.dart';
 import '../widgets/button.dart';
 import '../widgets/input.dart';
+import '../widgets/theme_chips.dart';
 import '../services/auth.dart';
 import '../utils/ios.dart';
 import 'package:edge/l10n/app_localizations.dart';
@@ -145,25 +147,26 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ThemeProvider>();
     final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
     final screenHeight = MediaQuery.of(context).size.height;
+    final wide = MediaQuery.of(context).size.width >= 900;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF101010),
+      backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // Background Blurs
           AnimatedBuilder(
             animation: _fillAnimation,
             builder: (context, child) {
               final fillValue = _fillAnimation.value;
               final topSize = 300.0 + (screenHeight * fillValue);
               final bottomSize = 400.0 + (screenHeight * fillValue);
-              
+              final glow = AppColors.senaryColor;
+
               return Stack(
                 children: [
-                  // Top light blue blur
                   Positioned(
                     top: -150 - (fillValue * 100),
                     left: -100 - (fillValue * 100),
@@ -175,7 +178,9 @@ class _LoginScreenState extends State<LoginScreen>
                         color: Colors.transparent,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF00E5FF).withValues(alpha: 0.15 + (fillValue * 0.85)),
+                            color: glow.withValues(
+                              alpha: 0.12 + (fillValue * 0.55),
+                            ),
                             blurRadius: 100 - (fillValue * 50),
                             spreadRadius: 20,
                           ),
@@ -183,7 +188,6 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                     ),
                   ),
-                  // Bottom dark blue blur
                   Positioned(
                     bottom: -200 - (fillValue * 100),
                     right: -100 - (fillValue * 100),
@@ -195,7 +199,9 @@ class _LoginScreenState extends State<LoginScreen>
                         color: Colors.transparent,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF2F6BF5).withValues(alpha: 0.15 + (fillValue * 0.85)),
+                            color: glow.withValues(
+                              alpha: 0.10 + (fillValue * 0.45),
+                            ),
                             blurRadius: 120 - (fillValue * 60),
                             spreadRadius: 20,
                           ),
@@ -207,64 +213,236 @@ class _LoginScreenState extends State<LoginScreen>
               );
             },
           ),
-          
-          // Content
-          Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 420),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // ─── Login Card ───
-                        AnimatedBuilder(
-                          animation: _shakeAnimation,
-                          builder: (context, child) {
-                            final _ =
-                                (ui.PlatformDispatcher.instance.views.first.physicalSize.width > 0) ? 
-                                  // Just a simple sine wave for shaking
-                                  (1 - (_shakeController.value)) * 
-                                  (1 - (_shakeController.value)) // decay
-                                : 0.0;
-                            // Actually, let's use a simpler sine wave based on value
-                            final offset = _shakeController.value > 0 
-                                ? (12 * (1 - _shakeController.value) * 
-                                   math.sin(3.14159 * 6 * _shakeController.value))
-                                : 0.0;
-                            return Transform.translate(
-                              offset: Offset(offset, 0),
-                              child: child,
-                            );
-                          },
-                          child: _buildLoginCard(brightness, isDark),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // ─── Footer ───
-                        Text(
-                          AppLocalizations.of(context)!.copyRightText,
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: AppColors.tertiaryColor
-                                .withValues(alpha: 0.5),
+          FadeTransition(
+            opacity: _fadeAnimation,
+            child: SlideTransition(
+              position: _slideAnimation,
+              child: SafeArea(
+                child: wide
+                    ? Row(
+                        children: [
+                          Expanded(flex: 5, child: _buildBranding(isDark)),
+                          Expanded(
+                            flex: 4,
+                            child: Center(
+                              child: SingleChildScrollView(
+                                padding: const EdgeInsets.fromLTRB(24, 32, 40, 32),
+                                child: ConstrainedBox(
+                                  constraints:
+                                      const BoxConstraints(maxWidth: 460),
+                                  child: _buildAuthColumn(brightness, isDark),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Center(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(24),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 460),
+                            child: _buildAuthColumn(brightness, isDark),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
+                      ),
               ),
-            ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAuthColumn(Brightness brightness, bool isDark) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        AnimatedBuilder(
+          animation: _shakeAnimation,
+          builder: (context, child) {
+            final offset = _shakeController.value > 0
+                ? (12 *
+                    (1 - _shakeController.value) *
+                    math.sin(3.14159 * 6 * _shakeController.value))
+                : 0.0;
+            return Transform.translate(
+              offset: Offset(offset, 0),
+              child: child,
+            );
+          },
+          child: _buildLoginCard(brightness, isDark),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          AppLocalizations.of(context)!.copyRightText,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            color: AppColors.tertiaryColor.withValues(alpha: 0.5),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBranding(bool isDark) {
+    final muted = AppColors.tertiaryColor;
+    final titleColor = isDark ? Colors.white : AppColors.primaryColor.inverted;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(48, 40, 32, 40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: AppColors.secondaryColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Icon(
+              Icons.send_rounded,
+              color: AppColors.senaryColor,
+              size: 28,
+            ),
+          ),
+          const SizedBox(height: 28),
+          Text(
+            'Edge.',
+            style: GoogleFonts.outfit(
+              fontSize: 52,
+              fontWeight: FontWeight.w800,
+              color: titleColor,
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 460),
+            child: Text(
+              'Ekibin için uçtan uca şifreli mesajlaşma, arama ve iş takibi. Anahtarlar cihazında kalır.',
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                height: 1.5,
+                color: muted,
+              ),
+            ),
+          ),
+          const SizedBox(height: 36),
+          _featureRow(
+            Icons.lock_outline_rounded,
+            'Uçtan uca şifreleme',
+            'Mesajlar, fotoğraflar ve arama sinyali cihazında şifrelenir.',
+          ),
+          _featureRow(
+            Icons.videocam_outlined,
+            'Ses, görüntü, ekran paylaşımı',
+            'Cihazlar arasında doğrudan yayın, 4K kaliteye kadar.',
+          ),
+          _featureRow(
+            Icons.groups_outlined,
+            'Şirketler, gruplar ve davet linkleri',
+            'Tek tek eklemek yok — linki paylaş, ekip katılsın.',
+          ),
+          _featureRow(
+            Icons.checklist_rounded,
+            'Görevler ve toplantılar',
+            'İşi bir kişiye veya gruba ata, toplantı planla.',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _featureRow(IconData icon, String title, String body) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: AppColors.senaryColor),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.isDarkUi
+                        ? Colors.white
+                        : AppColors.primaryColor.inverted,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  body,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    height: 1.4,
+                    color: AppColors.tertiaryColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModeTabs() {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.background.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: _modeTab('Giriş', true)),
+          Expanded(child: _modeTab('Kayıt', false)),
+        ],
+      ),
+    );
+  }
+
+  Widget _modeTab(String label, bool loginTab) {
+    final selected = _isLogin == loginTab;
+    return Material(
+      color: selected ? AppColors.secondaryColor : Colors.transparent,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: () {
+          if (_isLogin == loginTab) return;
+          setState(() {
+            _isLogin = loginTab;
+            _errorMessage = null;
+          });
+        },
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              color: selected
+                  ? (AppColors.isDarkUi
+                      ? Colors.white
+                      : AppColors.primaryColor.inverted)
+                  : AppColors.tertiaryColor,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -290,8 +468,25 @@ class _LoginScreenState extends State<LoginScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Center(
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Icon(
+                      Icons.send_rounded,
+                      color: AppColors.senaryColor,
+                      size: 22,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
                 Text(
-                  _isLogin ? AppLocalizations.of(context)!.login : AppLocalizations.of(context)!.signUp,
+                  _isLogin ? 'Tekrar hoş geldin' : 'Hesap oluştur',
                   style: GoogleFonts.inter(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
@@ -302,13 +497,30 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _isLogin ? AppLocalizations.of(context)!.continueWithVertex : AppLocalizations.of(context)!.createNewAccount,
+                  _isLogin
+                      ? 'E-posta ile giriş yap veya yeni hesap aç.'
+                      : 'Adın, e-posta ve şifre ile kayıt ol.',
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     color: AppColors.tertiaryColor,
                   ),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 20),
+                _buildModeTabs(),
+                if (_isLogin) ...[
+                  const SizedBox(height: 20),
+                  Text(
+                    'Tema',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.tertiaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const ThemeChips(),
+                ],
+                const SizedBox(height: 24),
 
                 // Name input (only for Sign Up) with smooth animation
                 AnimatedSize(
@@ -504,26 +716,14 @@ class _LoginScreenState extends State<LoginScreen>
                   ],
                 ),
 
-                const SizedBox(height: 24),
-                
-                // Toggle mode button
-                Center(
-                  child: TextButton(
-                    onPressed: () {
-                      setState(() {
-                        _isLogin = !_isLogin;
-                        _errorMessage = null;
-                      });
-                    },
-                    child: Text(
-                      _isLogin 
-                          ? AppLocalizations.of(context)!.dontHaveAccount 
-                          : AppLocalizations.of(context)!.alreadyHaveAccount,
-                      style: GoogleFonts.inter(
-                        color: AppColors.senaryColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                const SizedBox(height: 16),
+                Text(
+                  'Sunucu yalnızca şifreli veri tutar. Şifreni kaybedersen eski mesajlar geri gelmez.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    height: 1.4,
+                    color: AppColors.tertiaryColor.withValues(alpha: 0.8),
                   ),
                 ),
               ],

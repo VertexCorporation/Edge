@@ -9,8 +9,10 @@ import '../widgets/button.dart';
 import '../widgets/text.dart';
 import '../services/auth.dart';
 import '../services/cortex_profile.dart';
+import '../services/notification.dart';
 import '../widgets/fog.dart';
 import '../widgets/avatar.dart';
+import '../widgets/theme_chips.dart';
 import '../routes.dart';
 import 'patch_notes.dart';
 import 'admin_panel.dart';
@@ -43,12 +45,18 @@ class _AccountScreenState extends State<AccountScreen>
   StreamSubscription<Map<String, dynamic>?>? _profileSub;
   late String _liveName;
   late String _liveRole;
+  bool _notificationsEnabled = true;
 
   @override
   void initState() {
     super.initState();
     _liveName = widget.userName;
     _liveRole = widget.userRole;
+    _notificationsEnabled = NotificationService().enabled;
+    NotificationService().ensurePrefsLoaded().then((_) {
+      if (!mounted) return;
+      setState(() => _notificationsEnabled = NotificationService().enabled);
+    });
     final uid = _authService.currentUser?.uid;
     if (uid != null) {
       _profileSub = _authService.watchUserData(uid).listen((data) {
@@ -328,11 +336,15 @@ class _AccountScreenState extends State<AccountScreen>
           _buildSettingsTile(
             icon: Icons.notifications_none_rounded,
             title: 'Bildirimler',
-            subtitle: 'Açık',
-            trailing: Icon(
-              Icons.arrow_forward_ios_rounded,
-              size: 14,
-              color: AppColors.tertiaryColor,
+            subtitle: _notificationsEnabled ? 'Açık' : 'Kapalı',
+            trailing: Switch.adaptive(
+              value: _notificationsEnabled,
+              activeThumbColor: AppColors.senaryColor,
+              onChanged: (value) async {
+                await NotificationService().setEnabled(value);
+                if (!mounted) return;
+                setState(() => _notificationsEnabled = value);
+              },
             ),
           ),
           if (_showAdminPanel) ...[
@@ -363,8 +375,6 @@ class _AccountScreenState extends State<AccountScreen>
   }
 
   Widget _buildThemePicker() {
-    final currentTheme = context.watch<ThemeProvider>().currentTheme;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -383,45 +393,7 @@ class _AccountScreenState extends State<AccountScreen>
           ],
         ),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: AppColors.themeDefinitions.keys.map((themeKey) {
-            final themeColors = AppColors.getThemeColors(themeKey);
-            final selected = themeKey == currentTheme;
-            final labelColor = themeColors.background.computeLuminance() < 0.5
-                ? Colors.white
-                : Colors.black87;
-
-            return GestureDetector(
-              onTap: () =>
-                  context.read<ThemeProvider>().changeTheme(themeKey),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: themeColors.background,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: selected
-                        ? AppColors.senaryColor
-                        : themeColors.border,
-                    width: selected ? 2 : 1,
-                  ),
-                ),
-                child: Text(
-                  AppColors.themeDisplayName(themeKey),
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                    color: labelColor,
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
+        const ThemeChips(),
       ],
     );
   }
@@ -481,7 +453,7 @@ class _AccountScreenState extends State<AccountScreen>
           _buildInfoRow(
             icon: Icons.info_outline_rounded,
             label: 'Uygulama',
-            value: 'Vertex Edge v1.0.11',
+            value: 'Vertex Edge v1.0.12',
           ),
           _sectionDivider(),
           _buildInfoRow(

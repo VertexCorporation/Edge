@@ -5,6 +5,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../firebase.dart';
 import '../utils/browser_notify.dart';
 import 'chat.dart';
@@ -46,12 +47,46 @@ class NotificationService {
 
   bool _isInitialized = false;
   bool _tokenRefreshListenerAttached = false;
+  bool _prefsLoaded = false;
+  bool _enabled = true;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _chatAlertSub;
   DateTime? _alertsReadyAt;
   String? _alertUid;
 
+  static const _enabledPrefsKey = 'inbox_notifications_enabled';
+
+  bool get enabled => _enabled;
+
+  Future<void> ensurePrefsLoaded() async {
+    if (_prefsLoaded) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _enabled = prefs.getBool(_enabledPrefsKey) ?? true;
+    } catch (e) {
+      debugPrint('Notification prefs load failed: $e');
+    }
+    _prefsLoaded = true;
+  }
+
+  Future<void> setEnabled(bool value) async {
+    _enabled = value;
+    _prefsLoaded = true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_enabledPrefsKey, value);
+    } catch (e) {
+      debugPrint('Notification prefs save failed: $e');
+    }
+    if (value) {
+      startInboxAlerts();
+    } else {
+      stopInboxAlerts();
+    }
+  }
+
   Future<void> initialize() async {
     if (_isInitialized) return;
+    await ensurePrefsLoaded();
 
     if (kIsWeb) {
       await requestBrowserNotifications();
@@ -121,6 +156,7 @@ class NotificationService {
   }
 
   void presentInboxNotice(InboxNotice notice) {
+    if (!_enabled) return;
     if (!_inbox.isClosed) {
       _inbox.add(notice);
     }
@@ -213,6 +249,16 @@ class NotificationService {
 
   /// Site açıkken yeni mesajları banner + tarayıcı bildirimi olarak gösterir.
   void startInboxAlerts() {
+    ensurePrefsLoaded().then((_) {
+      if (!_enabled) {
+        stopInboxAlerts();
+        return;
+      }
+      _attachInboxAlerts();
+    });
+  }
+
+  void _attachInboxAlerts() {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
     if (_alertUid == uid && _chatAlertSub != null) return;
