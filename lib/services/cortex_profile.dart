@@ -7,6 +7,14 @@ class CortexProfile {
     return data?['accountType']?.toString() == 'anonymous';
   }
 
+  /// Edge people lists should not dump Cortex-only accounts.
+  static bool isEdgeListed(Map<String, dynamic>? data) {
+    if (data == null || isAnonymousAccount(data)) return false;
+    if (data['isEdge'] == true) return true;
+    if (isRegistered(data)) return false;
+    return data['publicKey'] != null && data['lastSeen'] != null;
+  }
+
   /// Cortex writes `username` (and often subscription/accountType) on register.
   static bool isRegistered(Map<String, dynamic>? data) {
     if (data == null || isAnonymousAccount(data)) return false;

@@ -258,7 +258,7 @@ class ChatService {
       for (final doc in snap.docs) {
         if (doc.id == uid) continue;
         final data = doc.data();
-        if (CortexProfile.isAnonymousAccount(data)) continue;
+        if (!CortexProfile.isEdgeListed(data)) continue;
         final name = CortexProfile.displayName(data, fallback: doc.id);
         byUid.putIfAbsent(doc.id, () {
           return {
@@ -292,6 +292,7 @@ class ChatService {
           final data = doc.data();
           final userId = data['userId']?.toString() ?? '';
           if (userId.isEmpty || userId == currentUid) return null;
+          if (!CortexProfile.isEdgeListed(data)) return null;
           return {
             'id': userId,
             'userId': userId,
@@ -376,6 +377,7 @@ class ChatService {
     for (var doc in docs) {
       final data = doc.data() as Map<String, dynamic>;
       if (data['userId'] == currentUserId) continue;
+      if (!CortexProfile.isEdgeListed(data)) continue;
       if (data['publicKey'] == null) continue;
       if (searchQuery != null && searchQuery.isNotEmpty) {
         final q = searchQuery.toLowerCase();

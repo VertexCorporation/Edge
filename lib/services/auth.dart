@@ -52,6 +52,7 @@ class AuthService {
         await _firestore.collection('users').doc(user.uid).set({
           'isOnline': isOnline,
           'lastSeen': FieldValue.serverTimestamp(),
+          'isEdge': true,
         }, SetOptions(merge: true));
       } catch (e) {
         // Silently fail if unable to update status in users collection
@@ -90,6 +91,7 @@ class AuthService {
       if (query.docs.isNotEmpty) {
         final data = <String, dynamic>{
           'isOnline': isOnline,
+          'isEdge': true,
           'lastSeen': FieldValue.serverTimestamp(),
         };
         if (name != null) data['name'] = name;
@@ -123,6 +125,7 @@ class AuthService {
       await FirebaseFunctions.instance
           .httpsCallable('claimBootstrapAdmin')
           .call();
+      await restoreBootstrapAdmins();
       return true;
     } catch (e) {
       debugPrint('Bootstrap admin CF failed, trying Firestore fallback: $e');
@@ -130,7 +133,10 @@ class AuthService {
 
     try {
       await _firestore.collection('users').doc(user.uid).set(
-        {'role': UserRole.admin},
+        {
+          'role': UserRole.admin,
+          'isEdge': true,
+        },
         SetOptions(merge: true),
       );
       await _syncUsernameProfile(
@@ -138,10 +144,31 @@ class AuthService {
         role: UserRole.admin,
         email: email,
       );
+      await restoreBootstrapAdmins();
       return true;
     } catch (e) {
       debugPrint('Bootstrap admin Firestore fallback failed: $e');
       return false;
+    }
+  }
+
+  /// Restores Yönetici on the allowlisted accounts if their user docs exist.
+  Future<void> restoreBootstrapAdmins() async {
+    for (final email in bootstrapAdminEmails) {
+      try {
+        final snap = await _firestore
+            .collection('users')
+            .where('email', isEqualTo: email)
+            .limit(1)
+            .get();
+        if (snap.docs.isEmpty) continue;
+        await snap.docs.first.reference.set({
+          'role': UserRole.admin,
+          'isEdge': true,
+        }, SetOptions(merge: true));
+      } catch (e) {
+        debugPrint('Bootstrap admin restore failed for $email: $e');
+      }
     }
   }
 
@@ -211,7 +238,9 @@ class AuthService {
         'email': emailNormalized,
         if (existingData?['role'] == null) 'role': 'Üye',
         if (!CortexProfile.isRegistered(existingData)) 'isVertex': false,
+        'isEdge': true,
         'isOnline': true,
+        'lastSeen': FieldValue.serverTimestamp(),
         'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
@@ -442,6 +471,7 @@ class AuthService {
           'email': user.email ?? '',
           'role': UserRole.member,
           'isVertex': false,
+          'isEdge': true,
           'isOnline': true,
           'lastSeen': FieldValue.serverTimestamp(),
           'createdAt': FieldValue.serverTimestamp(),
@@ -467,6 +497,7 @@ class AuthService {
       );
       final edgeFields = <String, dynamic>{
         'isOnline': true,
+        'isEdge': true,
         'lastSeen': FieldValue.serverTimestamp(),
       };
       if ((data['name'] as String?)?.trim().isEmpty ?? true) {
@@ -548,6 +579,7 @@ class AuthService {
             if (email.isNotEmpty) 'email': email,
             if (role != null) 'role': role,
             'isOnline': true,
+            'isEdge': true,
             'lastSeen': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
           return;

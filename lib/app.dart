@@ -46,6 +46,7 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
         _authService.updateOnlineStatus(true);
         ChatService().initializeKeys().catchError((_) {});
         _authService.tryClaimBootstrapAdmin(user);
+        _authService.restoreBootstrapAdmins();
         NotificationService().startInboxAlerts();
       } else {
         NotificationService().stopInboxAlerts();
@@ -67,6 +68,7 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
       final user = _authService.currentUser;
       if (user != null) {
         _authService.tryClaimBootstrapAdmin(user);
+        _authService.restoreBootstrapAdmins();
       }
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
