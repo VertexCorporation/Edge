@@ -10,6 +10,18 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.12',
+      date: '18 Ağustos 2026',
+      highlights: [
+        'Edge hesapları kalıcı işaretlenir; Cortex-only kişiler sohbet listesine düşmez',
+        'Profil ve arama ikonları birbirine yapışmayı bıraktı',
+        'Grup rol atamada Firebase hatası yerine anlaşılır Türkçe mesaj',
+        'Hesap → Bildirimler artık aç/kapa anahtarı',
+        'Giriş ve kayıt ekranı iki panelli düzene alındı',
+        'Giriş sekmesinde uygulama temaları seçilebilir',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.11',
       date: '17 Ağustos 2026',
       highlights: [
