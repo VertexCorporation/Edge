@@ -10,6 +10,13 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.16',
+      date: '18 Ağustos 2026',
+      highlights: [
+        'Hesap ekranında tema değişince arka plan anında güncellenir',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.15',
       date: '18 Ağustos 2026',
       highlights: [

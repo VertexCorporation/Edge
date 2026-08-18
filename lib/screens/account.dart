@@ -14,6 +14,7 @@ import '../widgets/fog.dart';
 import '../widgets/avatar.dart';
 import '../widgets/theme_chips.dart';
 import '../widgets/background.dart';
+import '../widgets/appbar.dart';
 import '../routes.dart';
 import 'patch_notes.dart';
 import 'admin_panel.dart';
@@ -34,6 +35,37 @@ class AccountScreen extends StatefulWidget {
 
   @override
   State<AccountScreen> createState() => _AccountScreenState();
+}
+
+/// Full-screen account route — scaffold rebuilds when accent/dark mode changes.
+class AccountPage extends StatelessWidget {
+  final String userName;
+  final String userRole;
+  final String userEmail;
+
+  const AccountPage({
+    super.key,
+    required this.userName,
+    required this.userRole,
+    required this.userEmail,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.watch<ThemeProvider>();
+    final themeKey = ValueKey('account_${theme.accentTheme}_${theme.darkMode}');
+
+    return Scaffold(
+      key: themeKey,
+      backgroundColor: AppColors.background,
+      appBar: const VertexAppBar(leadingMode: VertexLeadingMode.back),
+      body: AccountScreen(
+        userName: userName,
+        userRole: userRole,
+        userEmail: userEmail,
+      ),
+    );
+  }
 }
 
 class _AccountScreenState extends State<AccountScreen>
@@ -113,7 +145,9 @@ class _AccountScreenState extends State<AccountScreen>
     context.watch<ThemeProvider>();
 
     return ThemedSkyShell(
-      child: SafeArea(
+      child: ColoredBox(
+        color: AppColors.hasThemedSky ? Colors.transparent : AppColors.background,
+        child: SafeArea(
         child: ScrollFog(
           scrollController: _scrollController,
           color: AppColors.fogColor,
@@ -157,6 +191,7 @@ class _AccountScreenState extends State<AccountScreen>
             ),
           ),
         ),
+      ),
       ),
     );
   }

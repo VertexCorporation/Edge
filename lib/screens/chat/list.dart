@@ -18,7 +18,6 @@ import 'create/group.dart';
 import 'create/community.dart';
 import 'community.dart';
 import '../../widgets/fog.dart';
-import '../../widgets/background.dart';
 import '../../routes.dart';
 import 'package:edge/l10n/app_localizations.dart';
 
@@ -438,16 +437,10 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
     Navigator.push(
       context,
       SlideLeftRoute(
-        page: Scaffold(
-          backgroundColor: AppColors.background,
-          appBar: const VertexAppBar(leadingMode: VertexLeadingMode.back),
-          body: ThemedSkyShell(
-            child: AccountScreen(
-              userName: widget.userName,
-              userRole: widget.userRole,
-              userEmail: widget.userEmail,
-            ),
-          ),
+        page: AccountPage(
+          userName: widget.userName,
+          userRole: widget.userRole,
+          userEmail: widget.userEmail,
         ),
       ),
     );
