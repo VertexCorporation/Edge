@@ -375,6 +375,7 @@ class _AccountScreenState extends State<AccountScreen>
   }
 
   Widget _buildThemePicker() {
+    final provider = context.watch<ThemeProvider>();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -394,6 +395,42 @@ class _AccountScreenState extends State<AccountScreen>
         ),
         const SizedBox(height: 12),
         const ThemeChips(),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Icon(Icons.dark_mode_outlined, size: 20, color: AppColors.senaryColor),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Koyu mod',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: _primaryText,
+                    ),
+                  ),
+                  Text(
+                    provider.darkMode ? 'Koyu' : 'Açık',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: AppColors.tertiaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Switch.adaptive(
+              value: provider.darkMode,
+              activeThumbColor: AppColors.senaryColor,
+              onChanged: (value) {
+                context.read<ThemeProvider>().setDarkMode(value);
+              },
+            ),
+          ],
+        ),
       ],
     );
   }

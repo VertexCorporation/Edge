@@ -8,20 +8,21 @@ class ThemeChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currentTheme = context.watch<ThemeProvider>().currentTheme;
+    final provider = context.watch<ThemeProvider>();
+    final selectedAccent = provider.accentTheme;
 
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: AppColors.themeDefinitions.keys.map((themeKey) {
-        final themeColors = AppColors.getThemeColors(themeKey);
-        final selected = themeKey == currentTheme;
+      children: AppColors.accentThemeKeys.map((themeKey) {
+        final themeColors = AppColors.previewForAccent(themeKey);
+        final selected = themeKey == selectedAccent;
         final labelColor = themeColors.background.computeLuminance() < 0.5
             ? Colors.white
             : Colors.black87;
 
         return GestureDetector(
-          onTap: () => context.read<ThemeProvider>().changeTheme(themeKey),
+          onTap: () => context.read<ThemeProvider>().changeAccent(themeKey),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

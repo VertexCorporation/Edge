@@ -18,8 +18,10 @@ import '../../services/chat.dart';
 import '../../widgets/appbar.dart';
 import '../../widgets/avatar.dart';
 import '../../widgets/fog.dart';
+import '../../widgets/background.dart';
 import '../../utils/file_bytes.dart';
 import 'package:edge/l10n/app_localizations.dart';
+import 'package:provider/provider.dart';
 
 class ChatDetailScreen extends StatefulWidget {
   final String title;
@@ -259,10 +261,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    final isDark = brightness == Brightness.dark;
+    context.watch<ThemeProvider>();
+    final isDark = AppColors.isDarkUi;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: VertexAppBar(
         scrollController: _scrollController,
         leadingMode: widget.embedded
@@ -300,7 +303,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               ]
             : null,
       ),
-      body: SafeArea(
+      body: ThemedSkyShell(
+        child: SafeArea(
         child: Column(
           children: [
             if (widget.isGroup && widget.canDeleteGroup)
@@ -372,6 +376,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -445,7 +450,8 @@ class _ChatMessagesList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    context.watch<ThemeProvider>();
+    final isDark = AppColors.isDarkUi;
 
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: chatService.getMessages(chatId, isGroup: isGroup),
@@ -454,7 +460,7 @@ class _ChatMessagesList extends StatelessWidget {
 
         return ScrollFog(
           scrollController: scrollController,
-          color: AppColors.background,
+          color: AppColors.fogColor,
           child: ListView.builder(
             controller: scrollController,
             reverse: true,

@@ -10,6 +10,17 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.14',
+      date: '18 Ağustos 2026',
+      highlights: [
+        'Hesap → Ayarlar: renk temaları ve ayrı koyu mod anahtarı',
+        'Aşk + koyu mod: daha koyu arka plan ve bordo kalpler',
+        'Sohbet mesaj alanında tema arka planı düzgün görünür',
+        'Tema değişince panel anında yenilenir',
+        'Görev atama kişi listesi Edge kullanıcılarını doğru çeker',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.13',
       date: '18 Ağustos 2026',
       highlights: [

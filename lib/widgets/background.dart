@@ -157,12 +157,13 @@ class _ThemeSkyState extends State<_ThemeSky>
   @override
   Widget build(BuildContext context) {
     final theme = AppColors.currentTheme;
+    final isDarkLove = AppColors.darkMode && theme == 'love';
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
         return CustomPaint(
           painter: theme == 'love'
-              ? _PixelHeartsPainter(_controller.value)
+              ? _PixelHeartsPainter(_controller.value, isDark: isDarkLove)
               : _PixelSpacePainter(_controller.value),
           size: Size.infinite,
         );
@@ -294,7 +295,9 @@ class _Star {
 
 class _PixelHeartsPainter extends CustomPainter {
   final double t;
-  _PixelHeartsPainter(this.t);
+  final bool isDark;
+
+  _PixelHeartsPainter(this.t, {this.isDark = false});
 
   static const _heart = [
     [0, 1, 1, 0, 1, 1, 0],
@@ -324,7 +327,9 @@ class _PixelHeartsPainter extends CustomPainter {
       final p = _positions[i];
       final x = p.x * size.width;
       final y = p.y * size.height + float * (0.4 + (i % 3) * 0.2);
-      final color = (p.dark ? const Color(0xFFBE123C) : const Color(0xFFFB7185))
+      final color = (p.dark
+              ? (isDark ? const Color(0xFF7F1D1D) : const Color(0xFFBE123C))
+              : (isDark ? const Color(0xFF991B1B) : const Color(0xFFFB7185)))
           .withValues(alpha: 0.42 + (i % 5) * 0.08);
       _drawHeart(canvas, Offset(x, y), p.scale, color);
     }
@@ -350,5 +355,5 @@ class _PixelHeartsPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _PixelHeartsPainter oldDelegate) =>
-      oldDelegate.t != t;
+      oldDelegate.t != t || oldDelegate.isDark != isDark;
 }

@@ -154,7 +154,7 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
   }
 
   ThemeData _buildTheme(Brightness brightness) {
-    final themeColors = AppColors.getThemeColors(AppColors.currentTheme);
+    final themeColors = AppColors.resolvedColors;
     final isDarkUi = themeColors.statusBarIconBrightness == Brightness.light;
     final surface = themeColors.secondaryColor;
 

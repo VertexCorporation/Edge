@@ -12,34 +12,69 @@ extension ColorExtension on Color {
 }
 
 class ThemeProvider extends ChangeNotifier {
-  String _currentTheme;
+  String _accentTheme;
+  bool _darkMode;
 
-  ThemeProvider(this._currentTheme) {
-    AppColors.currentTheme = _currentTheme;
+  ThemeProvider({
+    required String accentTheme,
+    required bool darkMode,
+  })  : _accentTheme = accentTheme,
+        _darkMode = darkMode {
+    AppColors.applyTheme(_accentTheme, _darkMode);
     updateSystemUIOverlayStyle();
   }
 
-  String get currentTheme => _currentTheme;
+  /// Accent palette key (e.g. love, deepSpace). `default` = classic UI.
+  String get accentTheme => _accentTheme;
 
-  void changeTheme(String theme) async {
-    if (_currentTheme == theme) return; // Prevent unnecessary notifications
+  /// Separate light/dark toggle layered on top of the accent palette.
+  bool get darkMode => _darkMode;
 
-    _currentTheme = theme;
-    AppColors.currentTheme = theme;
-    updateSystemUIOverlayStyle();
-    notifyListeners(); // This is the ONLY place that should notify.
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('selectedTheme', theme);
+  /// Backward-compatible alias used by older widgets.
+  String get currentTheme => _accentTheme;
+
+  static ({String accent, bool dark}) loadSavedTheme(SharedPreferences prefs) {
+    final savedAccent = prefs.getString('accentTheme');
+    final savedDark = prefs.getBool('themeDarkMode');
+    if (savedAccent != null) {
+      return (accent: savedAccent, dark: savedDark ?? false);
+    }
+
+    final legacy = prefs.getString('selectedTheme') ?? 'light';
+    if (legacy == 'light') return (accent: 'default', dark: false);
+    if (legacy == 'dark') return (accent: 'default', dark: true);
+    return (accent: legacy, dark: false);
   }
 
-  // It's a side effect, not a state change that affects the UI tree.
+  void changeAccent(String theme) async {
+    if (_accentTheme == theme) return;
+    _accentTheme = theme;
+    _applyAndNotify();
+    await _persist();
+  }
+
+  /// Legacy entry point — maps to accent change.
+  void changeTheme(String theme) => changeAccent(theme);
+
+  void setDarkMode(bool dark) async {
+    if (_darkMode == dark) return;
+    _darkMode = dark;
+    _applyAndNotify();
+    await _persist();
+  }
+
+  void _applyAndNotify() {
+    AppColors.applyTheme(_accentTheme, _darkMode);
+    updateSystemUIOverlayStyle();
+    notifyListeners();
+  }
+
   void updateSystemUIOverlayStyle() {
-    final themeColors = AppColors.getThemeColors(_currentTheme);
+    final themeColors = AppColors.resolvedColors;
 
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         systemNavigationBarColor: Colors.transparent,
-        // Enforce transparent for Edge-to-Edge
         systemNavigationBarDividerColor: Colors.transparent,
         statusBarColor: Colors.transparent,
         systemNavigationBarIconBrightness:
@@ -47,6 +82,13 @@ class ThemeProvider extends ChangeNotifier {
         statusBarIconBrightness: themeColors.statusBarIconBrightness,
       ),
     );
+  }
+
+  Future<void> _persist() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('accentTheme', _accentTheme);
+    await prefs.setBool('themeDarkMode', _darkMode);
+    await prefs.setString('selectedTheme', _accentTheme);
   }
 }
 
@@ -85,13 +127,20 @@ class ThemeColors {
 }
 
 class AppColors {
-  static String _currentTheme = 'light';
+  static String _accentTheme = 'default';
+  static bool _darkMode = false;
 
-  static String get currentTheme => _currentTheme;
+  static String get accentTheme => _accentTheme;
 
-  static set currentTheme(String value) {
-    _currentTheme = value;
-    _cachedColors = _themeDefinitions[value] ?? _themeDefinitions['light']!;
+  static bool get darkMode => _darkMode;
+
+  /// Backward-compatible alias — returns accent key, not resolved palette id.
+  static String get currentTheme => _accentTheme;
+
+  static void applyTheme(String accent, bool dark) {
+    _accentTheme = accent;
+    _darkMode = dark;
+    _cachedColors = _resolveColors(accent, dark);
   }
 
   static final Map<String, ThemeColors> _themeDefinitions = {
@@ -369,9 +418,141 @@ class AppColors {
     ),
   };
 
+  /// Dark-mode variants for light accent palettes (e.g. Aşk + Koyu).
+  static final Map<String, ThemeColors> _darkAccentVariants = {
+    'love': ThemeColors(
+      primaryColor: Colors.black,
+      secondaryColor: const Color(0xFF3B0D16),
+      tertiaryColor: const Color(0xFFFECACA),
+      quaternaryColor: const Color(0xFF2A0910),
+      quinaryColor: Colors.white70,
+      senaryColor: const Color(0xFFBE123C),
+      septenaryColor: const Color(0xFF7F1D1D),
+      background: const Color(0xFF1A0509),
+      border: const Color(0xFF7F1D1D),
+      premium: const Color(0xFFFDA4AF),
+      navigationBarColor: const Color(0xFF1A0509),
+      statusBarColor: Colors.transparent,
+      navigationBarIconBrightness: Brightness.light,
+      statusBarIconBrightness: Brightness.light,
+    ),
+    'mint': ThemeColors(
+      primaryColor: Colors.black,
+      secondaryColor: const Color(0xFF0F2A24),
+      tertiaryColor: const Color(0xFFB7E4D4),
+      quaternaryColor: const Color(0xFF0A1F1A),
+      quinaryColor: Colors.white70,
+      senaryColor: const Color(0xFF14B8A6),
+      septenaryColor: const Color(0xFFF87171),
+      background: const Color(0xFF071612),
+      border: const Color(0xFF115E59),
+      premium: const Color(0xFF5EEAD4),
+      navigationBarColor: const Color(0xFF071612),
+      statusBarColor: Colors.transparent,
+      navigationBarIconBrightness: Brightness.light,
+      statusBarIconBrightness: Brightness.light,
+    ),
+    'nord': ThemeColors(
+      primaryColor: Colors.black,
+      secondaryColor: const Color(0xFF2E3440),
+      tertiaryColor: const Color(0xFFD8DEE9),
+      quaternaryColor: const Color(0xFF242933),
+      quinaryColor: Colors.white70,
+      senaryColor: const Color(0xFF88C0D0),
+      septenaryColor: const Color(0xFFBF616A),
+      background: const Color(0xFF2E3440),
+      border: const Color(0xFF4C566A),
+      premium: const Color(0xFFB48EAD),
+      navigationBarColor: const Color(0xFF2E3440),
+      statusBarColor: Colors.transparent,
+      navigationBarIconBrightness: Brightness.light,
+      statusBarIconBrightness: Brightness.light,
+    ),
+    'porcelain': ThemeColors(
+      primaryColor: Colors.black,
+      secondaryColor: const Color(0xFF2C241C),
+      tertiaryColor: const Color(0xFFE7DFD6),
+      quaternaryColor: const Color(0xFF1F1914),
+      quinaryColor: Colors.white70,
+      senaryColor: const Color(0xFFD97706),
+      septenaryColor: const Color(0xFFEF4444),
+      background: const Color(0xFF14100C),
+      border: const Color(0xFF6B5E52),
+      premium: const Color(0xFFFBBF24),
+      navigationBarColor: const Color(0xFF14100C),
+      statusBarColor: Colors.transparent,
+      navigationBarIconBrightness: Brightness.light,
+      statusBarIconBrightness: Brightness.light,
+    ),
+    'deepSpace': ThemeColors(
+      primaryColor: Colors.black,
+      secondaryColor: const Color(0xFF0C0C18),
+      tertiaryColor: const Color(0xFFA5B4FC),
+      quaternaryColor: const Color(0xFF060610),
+      quinaryColor: Colors.white70,
+      senaryColor: const Color(0xFF6366F1),
+      septenaryColor: const Color(0xFFF87171),
+      background: const Color(0xFF030308),
+      border: const Color(0xFF1E1B4B),
+      premium: const Color(0xFF818CF8),
+      navigationBarColor: const Color(0xFF030308),
+      statusBarColor: Colors.transparent,
+      navigationBarIconBrightness: Brightness.light,
+      statusBarIconBrightness: Brightness.light,
+    ),
+  };
+
+  static ThemeColors _resolveColors(String accent, bool dark) {
+    if (accent == 'default') {
+      return dark ? _themeDefinitions['dark']! : _themeDefinitions['light']!;
+    }
+    final base = _themeDefinitions[accent];
+    if (base == null) {
+      return dark ? _themeDefinitions['dark']! : _themeDefinitions['light']!;
+    }
+    if (dark) {
+      return _darkAccentVariants[accent] ?? _deriveDarkFromAccent(base);
+    }
+    return base;
+  }
+
+  static ThemeColors _deriveDarkFromAccent(ThemeColors base) {
+    if (base.background.computeLuminance() < 0.5) return base;
+    return ThemeColors(
+      primaryColor: Colors.black,
+      secondaryColor: darken(base.secondaryColor, 0.28),
+      tertiaryColor: base.tertiaryColor,
+      quaternaryColor: darken(base.quaternaryColor, 0.35),
+      quinaryColor: Colors.white70,
+      senaryColor: base.senaryColor,
+      septenaryColor: base.septenaryColor,
+      background: darken(base.background, 0.58),
+      border: darken(base.border, 0.15),
+      premium: base.premium,
+      navigationBarColor: darken(base.background, 0.58),
+      statusBarColor: Colors.transparent,
+      navigationBarIconBrightness: Brightness.light,
+      statusBarIconBrightness: Brightness.light,
+    );
+  }
+
+  /// Accent chips — excludes legacy light/dark-only keys.
+  static List<String> get accentThemeKeys => [
+        'default',
+        ..._themeDefinitions.keys.where(
+          (key) => key != 'light' && key != 'dark',
+        ),
+      ];
+
+  static ThemeColors previewForAccent(String accent) {
+    if (accent == 'default') return _themeDefinitions['light']!;
+    return _themeDefinitions[accent] ?? _themeDefinitions['light']!;
+  }
+
   static Map<String, ThemeColors> get themeDefinitions => _themeDefinitions;
 
   static const Map<String, String> themeDisplayNames = {
+    'default': 'Varsayılan',
     'light': 'Açık',
     'dark': 'Koyu',
     'love': 'Aşk',
@@ -396,12 +577,12 @@ class AppColors {
 
   static bool get isDarkUi => background.computeLuminance() < 0.5;
 
-  /// True only for the built-in black "Koyu" theme key.
-  static bool get isBlackTheme => _currentTheme == 'dark';
+  /// True when classic default palette is in dark mode.
+  static bool get isBlackTheme => _accentTheme == 'default' && _darkMode;
 
   /// Uzay and Aşk show pixel sky decorations behind transparent surfaces.
   static bool get hasThemedSky =>
-      _currentTheme == 'deepSpace' || _currentTheme == 'love';
+      _accentTheme == 'deepSpace' || _accentTheme == 'love';
 
   /// Scroll/list backdrop — transparent when sky decorations are active.
   static Color get fogColor => hasThemedSky ? Colors.transparent : background;
@@ -417,8 +598,13 @@ class AppColors {
 
   static ThemeColors _cachedColors = _themeDefinitions['light']!;
 
-  static ThemeColors getThemeColors(String theme) {
-    return _themeDefinitions[theme] ?? _themeDefinitions['light']!;
+  static ThemeColors get resolvedColors => _cachedColors;
+
+  static ThemeColors getThemeColors(String theme, {bool? dark}) {
+    if (dark != null || theme != _accentTheme) {
+      return _resolveColors(theme, dark ?? _darkMode);
+    }
+    return _cachedColors;
   }
 
   static Map<String, dynamic> getSystemUIOverlayStyleForTheme(String theme) {

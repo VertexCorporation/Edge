@@ -37,14 +37,18 @@ class _HomeShellState extends State<HomeShell> {
     final role = UserRole.normalize(widget.userRole);
     final canManageTasks = UserRole.canManageTasks(role) ||
         AuthService.isBootstrapAdminEmail(widget.userEmail);
+    final themeProvider = context.watch<ThemeProvider>();
+    final themeStamp = '${themeProvider.accentTheme}_${themeProvider.darkMode}';
 
     final tasksTab = TasksScreen(
+      key: ValueKey('tasks_$themeStamp'),
       userName: widget.userName,
       userRole: role,
       canManageTasks: canManageTasks,
       isEmbedded: true,
     );
     final chatsTab = ChatListScreen(
+      key: ValueKey('chats_$themeStamp'),
       userName: widget.userName,
       userRole: role,
       userEmail: widget.userEmail,

@@ -30,11 +30,14 @@ void main() async {
   }
 
   final prefs = await SharedPreferences.getInstance();
-  final savedTheme = prefs.getString('selectedTheme') ?? 'light';
+  final saved = ThemeProvider.loadSavedTheme(prefs);
 
   runApp(
     ChangeNotifierProvider(
-      create: (_) => ThemeProvider(savedTheme),
+      create: (_) => ThemeProvider(
+        accentTheme: saved.accent,
+        darkMode: saved.dark,
+      ),
       child: const EdgeApp(),
     ),
   );

@@ -172,24 +172,12 @@ class TaskService {
       return _assigneesCache!;
     }
 
+    final currentUid = _auth.currentUser?.uid;
     final byUid = <String, Map<String, dynamic>>{};
 
     try {
-      QuerySnapshot<Map<String, dynamic>> snap;
-      try {
-        snap = await _firestore
-            .collection('usernames')
-            .where(
-              'lastSeen',
-              isGreaterThan: Timestamp.fromDate(DateTime(2020, 1, 1)),
-            )
-            .limit(150)
-            .get();
-      } catch (e) {
-        debugPrint('TaskService: lastSeen query failed, using full list: $e');
-        snap = await _firestore.collection('usernames').limit(150).get();
-      }
-      for (final mapped in _mapAssigneeDocs(snap.docs)) {
+      final snap = await _firestore.collection('usernames').limit(150).get();
+      for (final mapped in _mapAssigneeDocs(snap.docs, currentUid)) {
         byUid[mapped['userId'] as String] = mapped;
       }
     } catch (e) {
@@ -199,13 +187,9 @@ class TaskService {
     try {
       final snap = await _firestore.collection('users').limit(150).get();
       for (final doc in snap.docs) {
+        if (doc.id == currentUid) continue;
         final data = doc.data();
-        if (CortexProfile.isAnonymousAccount(data)) continue;
-        if (data['lastSeen'] == null &&
-            data['createdAt'] == null &&
-            CortexProfile.usernameOf(data) == null) {
-          continue;
-        }
+        if (!CortexProfile.isEdgeListed(data)) continue;
         byUid.putIfAbsent(doc.id, () {
           return {
             'userId': doc.id,
@@ -235,12 +219,14 @@ class TaskService {
 
   List<Map<String, dynamic>> _mapAssigneeDocs(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+    String? currentUid,
   ) {
     return docs
         .map((doc) {
           final data = doc.data();
           final userId = data['userId'] as String? ?? '';
-          if (userId.isEmpty) return null;
+          if (userId.isEmpty || userId == currentUid) return null;
+          if (!CortexProfile.isEdgeListed(data)) return null;
           return {
             'userId': userId,
             'name': CortexProfile.displayName(data, fallback: doc.id),
