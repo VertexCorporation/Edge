@@ -3,6 +3,12 @@ const admin = require("firebase-admin");
 
 admin.initializeApp();
 
+const BOOTSTRAP_ADMIN_EMAILS = [
+  "rel0adneverdone@gmail.com",
+  "mustawtfa@gmail.com",
+  "egemen.topcuoglu6740@gmail.com",
+];
+
 exports.sendNotificationOnMessage = functions.firestore
     .document("chats/{chatId}/messages/{messageId}")
     .onCreate(async (snap, context) => {
@@ -211,10 +217,7 @@ exports.claimBootstrapAdmin = functions.https.onCall(async (_data, context) => {
   }
 
   const email = (context.auth.token.email || "").toLowerCase();
-  const bootstrapEmails = [
-    "rel0adneverdone@gmail.com",
-    "mustawtfa@gmail.com",
-  ];
+  const bootstrapEmails = BOOTSTRAP_ADMIN_EMAILS;
 
   if (!bootstrapEmails.includes(email)) {
     throw new functions.https.HttpsError("permission-denied", "Yetkisiz.");
@@ -248,10 +251,7 @@ exports.assignUserRole = functions.https.onCall(async (data, context) => {
         "permission-denied", "Yönetici veya Mod gerekli.");
   }
 
-  const PROTECTED_ADMIN_EMAILS = [
-    "rel0adneverdone@gmail.com",
-    "mustawtfa@gmail.com",
-  ];
+  const PROTECTED_ADMIN_EMAILS = BOOTSTRAP_ADMIN_EMAILS;
 
   const uid = data.uid;
   const email = (data.email || "").trim().toLowerCase();
@@ -290,4 +290,40 @@ exports.assignUserRole = functions.https.onCall(async (data, context) => {
         "internal",
         "Rol kaydedilemedi. Bağlantıyı kontrol et, sonra tekrar dene.");
   }
+});
+
+/** Resolve a Cortex username to the Firebase Auth email for Edge login. */
+exports.resolveLoginEmail = functions.https.onCall(async (data) => {
+  const raw = String((data && data.username) || "").trim();
+  if (!raw) {
+    throw new functions.https.HttpsError("invalid-argument", "Kullanıcı gerekli.");
+  }
+  if (raw.includes("@")) {
+    return {email: raw.toLowerCase()};
+  }
+
+  const db = admin.firestore();
+  const candidates = Array.from(new Set([raw, raw.toLowerCase()]));
+
+  for (const candidate of candidates) {
+    const byUsername = await db.collection("users")
+        .where("username", "==", candidate)
+        .limit(1)
+        .get();
+    if (!byUsername.empty) {
+      const email = (byUsername.docs[0].data().email || "").trim().toLowerCase();
+      if (email.includes("@")) return {email};
+    }
+  }
+
+  const sanitized = raw.toLowerCase().replace(/[^a-z0-9_]/g, "");
+  if (sanitized) {
+    const usernameDoc = await db.collection("usernames").doc(sanitized).get();
+    if (usernameDoc.exists) {
+      const email = (usernameDoc.data().email || "").trim().toLowerCase();
+      if (email.includes("@")) return {email};
+    }
+  }
+
+  throw new functions.https.HttpsError("not-found", "Kullanıcı bulunamadı.");
 });

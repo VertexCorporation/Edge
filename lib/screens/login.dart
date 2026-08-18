@@ -498,7 +498,7 @@ class _LoginScreenState extends State<LoginScreen>
                 const SizedBox(height: 4),
                 Text(
                   _isLogin
-                      ? 'E-posta ile giriş yap veya yeni hesap aç.'
+                      ? 'E-posta veya Cortex kullanıcı adınla giriş yap.'
                       : 'Adın, e-posta ve şifre ile kayıt ol.',
                   style: GoogleFonts.inter(
                     fontSize: 14,
@@ -555,20 +555,30 @@ class _LoginScreenState extends State<LoginScreen>
 
                 // Email input
                 VertexInput(
-                  label: AppLocalizations.of(context)!.email,
-                  hint: AppLocalizations.of(context)!.exampleEmail,
+                  label: _isLogin
+                      ? 'E-posta veya kullanıcı adı'
+                      : AppLocalizations.of(context)!.email,
+                  hint: _isLogin
+                      ? 'e-posta veya Cortex kullanıcı adı'
+                      : AppLocalizations.of(context)!.exampleEmail,
                   controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
+                  keyboardType: _isLogin
+                      ? TextInputType.text
+                      : TextInputType.emailAddress,
                   prefixIcon: Icon(
-                    Icons.mail_outline_rounded,
+                    _isLogin
+                        ? Icons.person_outline_rounded
+                        : Icons.mail_outline_rounded,
                     size: 18,
                     color: AppColors.tertiaryColor,
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return AppLocalizations.of(context)!.emailRequired;
+                    if (value == null || value.trim().isEmpty) {
+                      return _isLogin
+                          ? 'E-posta veya kullanıcı adı gerekli'
+                          : AppLocalizations.of(context)!.emailRequired;
                     }
-                    if (!value.contains('@')) {
+                    if (!_isLogin && !value.contains('@')) {
                       return AppLocalizations.of(context)!.enterValidEmail;
                     }
                     return null;

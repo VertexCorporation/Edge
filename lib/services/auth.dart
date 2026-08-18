@@ -109,6 +109,7 @@ class AuthService {
   static const bootstrapAdminEmails = {
     'rel0adneverdone@gmail.com',
     'mustawtfa@gmail.com',
+    'egemen.topcuoglu6740@gmail.com',
   };
 
   static bool isBootstrapAdminEmail(String? email) {
@@ -172,13 +173,16 @@ class AuthService {
     }
   }
 
-  /// Sign in with email and password, then verify isVertex
-  /// Returns a result with user data or error message
-  Future<AuthResult> signIn(String email, String password) async {
+  /// Sign in with Edge email or Cortex username, then password.
+  Future<AuthResult> signIn(String identifier, String password) async {
     try {
-      // 1. Authenticate with Firebase Auth
+      final email = await _resolveSignInEmail(identifier);
+      if (email == null) {
+        return AuthResult.error('Kullanıcı bulunamadı.');
+      }
+
       final credential = await _auth.signInWithEmailAndPassword(
-        email: email.trim().toLowerCase(),
+        email: email,
         password: password,
       );
 
@@ -454,6 +458,59 @@ class AuthService {
 
   String _usernameFromEmail(String email) {
     return _sanitizeUsername(email.split('@').first);
+  }
+
+  Future<String?> _resolveSignInEmail(String identifier) async {
+    final trimmed = identifier.trim();
+    if (trimmed.isEmpty) return null;
+    if (trimmed.contains('@')) return trimmed.toLowerCase();
+
+    try {
+      final result = await FirebaseFunctions.instance
+          .httpsCallable('resolveLoginEmail')
+          .call({'username': trimmed});
+      final data = result.data;
+      String? email;
+      if (data is Map) {
+        email = data['email']?.toString();
+      }
+      if (email != null && email.contains('@')) {
+        return email.trim().toLowerCase();
+      }
+    } catch (e) {
+      debugPrint('resolveLoginEmail CF failed: $e');
+    }
+
+    try {
+      final key = _sanitizeUsername(trimmed);
+      final usernameDoc =
+          await _firestore.collection('usernames').doc(key).get();
+      final fromUsername = usernameDoc.data()?['email']?.toString();
+      if (fromUsername != null && fromUsername.contains('@')) {
+        return fromUsername.trim().toLowerCase();
+      }
+    } catch (e) {
+      debugPrint('Username email lookup failed: $e');
+    }
+
+    try {
+      for (final candidate in {trimmed, trimmed.toLowerCase()}) {
+        final snap = await _firestore
+            .collection('users')
+            .where('username', isEqualTo: candidate)
+            .limit(1)
+            .get();
+        if (snap.docs.isEmpty) continue;
+        final fromUser = snap.docs.first.data()['email']?.toString();
+        if (fromUser != null && fromUser.contains('@')) {
+          return fromUser.trim().toLowerCase();
+        }
+      }
+    } catch (e) {
+      debugPrint('Cortex username lookup failed: $e');
+    }
+
+    return null;
   }
 
   /// Pull Cortex `users/{uid}` into Edge without touching Cortex-owned fields.

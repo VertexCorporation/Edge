@@ -19,6 +19,8 @@ class PatchNotesScreen extends StatelessWidget {
         'Hesap → Bildirimler artık aç/kapa anahtarı',
         'Giriş ve kayıt ekranı iki panelli düzene alındı',
         'Giriş sekmesinde uygulama temaları seçilebilir',
+        'Son konuşulan kişi sohbet listesinden düşmez',
+        'Cortex kullanıcı adı ile de giriş yapılabilir',
       ],
     ),
     _PatchNote(
