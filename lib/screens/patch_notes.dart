@@ -10,6 +10,14 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.18',
+      date: '18 Ağustos 2026',
+      highlights: [
+        'Mac/Safari eski giriş ekranını cache’ten tutmayı bırakır',
+        'Giriş kartı Safari’de donmaz',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.17',
       date: '18 Ağustos 2026',
       highlights: [

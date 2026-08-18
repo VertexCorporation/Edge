@@ -40,6 +40,8 @@
   <link rel="icon" type="image/png" href="favicon.png"/>
 
   <title>Vertex Edge</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
   <link rel="manifest" href="manifest.json">
 
   <!-- Vertex Dark Background (prevent white flash) -->
@@ -114,6 +116,34 @@
       if (loading) loading.remove();
     });
 
+    // Safari / Mac PWA keeps an old Flutter service worker and never
+    // picks up new deploys (login screen stays on the cached build).
+    function bootFlutter() {
+      var s = document.createElement('script');
+      s.src = 'flutter_bootstrap.js?v=1.0.18';
+      s.async = true;
+      document.body.appendChild(s);
+    }
+
+    function clearStaleCache() {
+      var wait = Promise.resolve();
+      if ('serviceWorker' in navigator) {
+        wait = navigator.serviceWorker.getRegistrations().then(function (regs) {
+          return Promise.all(regs.map(function (r) { return r.unregister(); }));
+        });
+      }
+      if (window.caches) {
+        wait = wait.then(function () {
+          return caches.keys().then(function (keys) {
+            return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+          });
+        });
+      }
+      return wait.catch(function () {});
+    }
+
+    clearStaleCache().then(bootFlutter);
+
     // Fallback if Flutter fails to boot on slow mobile networks
     setTimeout(function () {
       var loading = document.getElementById('loading');
@@ -126,7 +156,5 @@
         '</div>';
     }, 25000);
   </script>
-
-  <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

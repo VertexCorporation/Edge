@@ -460,9 +460,7 @@ class _LoginScreenState extends State<LoginScreen>
   Widget _buildLoginCard(Brightness brightness, bool isDark) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
+      child: Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             color: AppColors.secondaryColor,

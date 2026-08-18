@@ -23,7 +23,7 @@ jobs:
         run: flutter pub get
 
       - name: Build web (release)
-        run: flutter build web --release
+        run: flutter build web --release --pwa-strategy=none
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
