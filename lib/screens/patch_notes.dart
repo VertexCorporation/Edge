@@ -10,6 +10,13 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.21',
+      date: '18 Ağustos 2026',
+      highlights: [
+        'Cloudflare Pages build: flutter_bootstrap.js geri eklendi',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.20',
       date: '18 Ağustos 2026',
       highlights: [
