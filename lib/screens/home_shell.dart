@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../models/role.dart';
 import '../services/auth.dart';
+import '../widgets/background.dart';
 import 'tasks.dart';
 import 'chat/list.dart' show ChatListScreen;
 import 'package:edge/l10n/app_localizations.dart';
@@ -51,22 +52,29 @@ class _HomeShellState extends State<HomeShell> {
     );
 
     return Scaffold(
-      body: kIsWeb
-          ? (_index == 0 ? tasksTab : chatsTab)
-          : IndexedStack(
-              index: _index,
-              sizing: StackFit.expand,
-              children: [
-                IgnorePointer(
-                  ignoring: _index != 0,
-                  child: TickerMode(enabled: _index == 0, child: tasksTab),
+      backgroundColor: AppColors.background,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const ThemeAtmosphere(),
+          kIsWeb
+              ? (_index == 0 ? tasksTab : chatsTab)
+              : IndexedStack(
+                  index: _index,
+                  sizing: StackFit.expand,
+                  children: [
+                    IgnorePointer(
+                      ignoring: _index != 0,
+                      child: TickerMode(enabled: _index == 0, child: tasksTab),
+                    ),
+                    IgnorePointer(
+                      ignoring: _index != 1,
+                      child: TickerMode(enabled: _index == 1, child: chatsTab),
+                    ),
+                  ],
                 ),
-                IgnorePointer(
-                  ignoring: _index != 1,
-                  child: TickerMode(enabled: _index == 1, child: chatsTab),
-                ),
-              ],
-            ),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),

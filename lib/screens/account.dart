@@ -13,6 +13,7 @@ import '../services/notification.dart';
 import '../widgets/fog.dart';
 import '../widgets/avatar.dart';
 import '../widgets/theme_chips.dart';
+import '../widgets/background.dart';
 import '../routes.dart';
 import 'patch_notes.dart';
 import 'admin_panel.dart';
@@ -111,9 +112,13 @@ class _AccountScreenState extends State<AccountScreen>
     super.build(context);
     context.watch<ThemeProvider>();
 
-    return ColoredBox(
-      color: AppColors.background,
-      child: SafeArea(
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const ThemeAtmosphere(),
+        ColoredBox(
+          color: Colors.transparent,
+          child: SafeArea(
         child: ScrollFog(
           scrollController: _scrollController,
           color: AppColors.background,
@@ -157,7 +162,9 @@ class _AccountScreenState extends State<AccountScreen>
             ),
           ),
         ),
-      ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -453,7 +460,7 @@ class _AccountScreenState extends State<AccountScreen>
           _buildInfoRow(
             icon: Icons.info_outline_rounded,
             label: 'Uygulama',
-            value: 'Vertex Edge v1.0.12',
+            value: 'Vertex Edge v1.0.13',
           ),
           _sectionDivider(),
           _buildInfoRow(
