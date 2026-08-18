@@ -30,6 +30,7 @@ class VertexAppBar extends StatelessWidget implements PreferredSizeWidget {
   final double? trailingEdgePadding;
   final ScrollController? scrollController;
   final VertexLeadingMode leadingMode;
+  final double? layoutWidth;
 
   const VertexAppBar({
     super.key,
@@ -46,6 +47,7 @@ class VertexAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.trailingEdgePadding,
     this.scrollController,
     this.leadingMode = VertexLeadingMode.auto,
+    this.layoutWidth,
   });
 
   @override
@@ -53,13 +55,14 @@ class VertexAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double screenWidth = MediaQuery.sizeOf(context).width;
+    final double screenWidth =
+        layoutWidth ?? MediaQuery.sizeOf(context).width;
     final bool isTablet = screenWidth >= 600;
 
     final double buttonSize = isTablet ? 46.0 : 40.0;
     final double iconSize = isTablet ? 24.0 : 20.0;
-    final double horizontalPadding = screenWidth * 0.04;
-    final double gapSize = 10.0;
+    final double horizontalPadding = math.max(12.0, screenWidth * 0.04);
+    final double gapSize = 12.0;
 
     // --- LEADING LOGIC ---
     final ModalRoute<dynamic>? parentRoute = ModalRoute.of(context);
@@ -115,9 +118,8 @@ class VertexAppBar extends StatelessWidget implements PreferredSizeWidget {
       final Widget sourceAction = sourceActions[i];
       double estimatedActionWidth = buttonSize;
       if (sourceAction is SizedBox && sourceAction.width != null) {
-        estimatedActionWidth = sourceAction.width! <= 0
-            ? 0
-            : math.max(buttonSize, sourceAction.width!);
+        estimatedActionWidth =
+            sourceAction.width! <= 0 ? 0 : sourceAction.width!;
       }
 
       rightWidgets.add(

@@ -296,7 +296,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
             child: SafeArea(
               child: Column(
                 children: [
-                  _buildAppBar(isDark),
+                  _buildAppBar(isDark, layoutWidth: 380),
                   Expanded(child: listPane),
                 ],
               ),
@@ -309,18 +309,22 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
     );
   }
 
-  VertexAppBar _buildAppBar(bool isDark) {
+  VertexAppBar _buildAppBar(bool isDark, {double? layoutWidth}) {
     return VertexAppBar(
       scrollController: _scrollController,
-      titleAlignToActions: true,
+      layoutWidth: layoutWidth,
+      titleAlignToActions: false,
       trailingEdgePadding: 12,
       leadingActions: [
-        GestureDetector(
-          onTap: _openAccount,
-          child: ThemeAvatar(
-            name: widget.userName,
-            radius: 18,
-            isVerified: widget.isVertex,
+        Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: GestureDetector(
+            onTap: _openAccount,
+            child: ThemeAvatar(
+              name: widget.userName,
+              radius: 18,
+              isVerified: widget.isVertex,
+            ),
           ),
         ),
       ],
@@ -360,7 +364,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
           },
         ),
         if (_canCreateGroups) ...[
-          const SizedBox(width: 4),
+          const SizedBox(width: 10),
           _circleIcon(
             icon: Icons.groups_outlined,
             filled: false,
@@ -372,7 +376,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
               );
             },
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 10),
           _circleIcon(
             icon: Icons.add,
             filled: true,
