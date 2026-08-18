@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 import '../theme.dart';
 import '../widgets/button.dart';
 import '../widgets/input.dart';
-import '../widgets/theme_chips.dart';
+import '../widgets/background.dart';
 import '../services/auth.dart';
 import '../utils/ios.dart';
 import 'package:edge/l10n/app_localizations.dart';
@@ -157,6 +157,7 @@ class _LoginScreenState extends State<LoginScreen>
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
+          const ThemeAtmosphere(),
           AnimatedBuilder(
             animation: _fillAnimation,
             builder: (context, child) {
@@ -507,19 +508,6 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
                 const SizedBox(height: 20),
                 _buildModeTabs(),
-                if (_isLogin) ...[
-                  const SizedBox(height: 20),
-                  Text(
-                    'Tema',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.tertiaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  const ThemeChips(),
-                ],
                 const SizedBox(height: 24),
 
                 // Name input (only for Sign Up) with smooth animation
