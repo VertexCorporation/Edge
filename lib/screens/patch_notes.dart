@@ -10,6 +10,14 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.20',
+      date: '18 Ağustos 2026',
+      highlights: [
+        'Yinelenen GitHub Cloudflare deploy kaldırıldı; site zaten Cloudflare Pages ile gidiyor',
+        'Commit durumundaki kırmızı Deploy Edge Web işareti kalkar',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.19',
       date: '18 Ağustos 2026',
       highlights: [
@@ -29,7 +37,6 @@ class PatchNotesScreen extends StatelessWidget {
       version: '1.0.17',
       date: '18 Ağustos 2026',
       highlights: [
-        'main push sonrası otomatik Cloudflare web deploy',
         'Giriş ekranında sürüm numarası (güncelleme kontrolü)',
         'Mobil tarayıcı/PWA önbelleği için cache header düzeltmesi',
       ],
