@@ -9,9 +9,21 @@ jobs:
   deploy:
     name: Build Flutter web and deploy to Cloudflare Pages
     runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT || 'edge' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Require Cloudflare secrets
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN veya CLOUDFLARE_ACCOUNT_ID GitHub secret olarak yok. Site eski build'de kalır."
+            echo "Repo → Settings → Secrets and variables → Actions içine ekle."
+            exit 1
+          fi
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -26,8 +38,8 @@ jobs:
         run: flutter build web --release --pwa-strategy=none
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy build/web --project-name=edge --branch=main
+        run: |
+          npx --yes wrangler@3.90.0 pages deploy build/web \
+            --project-name="$CLOUDFLARE_PAGES_PROJECT" \
+            --branch=main \
+            --commit-dirty=true

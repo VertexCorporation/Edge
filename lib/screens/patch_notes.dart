@@ -10,6 +10,14 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.19',
+      date: '18 Ağustos 2026',
+      highlights: [
+        'Hesap → Hakkında sürümü artık gerçek uygulama sürümünü gösterir',
+        'Cloudflare deploy token yoksa workflow sessizce düşmez, net hata verir',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.18',
       date: '18 Ağustos 2026',
       highlights: [

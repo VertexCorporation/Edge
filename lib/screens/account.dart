@@ -19,6 +19,7 @@ import '../routes.dart';
 import 'patch_notes.dart';
 import 'admin_panel.dart';
 import '../models/role.dart';
+import '../version.dart';
 
 /// Account screen - profile, settings, and logout
 class AccountScreen extends StatefulWidget {
@@ -525,7 +526,7 @@ class _AccountScreenState extends State<AccountScreen>
           _buildInfoRow(
             icon: Icons.info_outline_rounded,
             label: 'Uygulama',
-            value: 'Vertex Edge v1.0.13',
+            value: 'Vertex Edge v$kAppVersion',
           ),
           _sectionDivider(),
           _buildInfoRow(
