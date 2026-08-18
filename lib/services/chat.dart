@@ -274,12 +274,6 @@ class ChatService {
       debugPrint('ChatService: cortex users query failed: $e');
     }
 
-    try {
-      await _includeChatPartners(byUid, uid);
-    } catch (e) {
-      debugPrint('ChatService: chat partners query failed: $e');
-    }
-
     final users = byUid.values.toList()
       ..sort(
         (a, b) => (a['name'] as String)
@@ -331,36 +325,6 @@ class ChatService {
       return chatId.substring(0, chatId.length - suffix.length);
     }
     return '';
-  }
-
-  Future<void> _includeChatPartners(
-    Map<String, Map<String, dynamic>> byUid,
-    String? uid,
-  ) async {
-    if (uid == null || uid.isEmpty) return;
-    final chats = await _firestore
-        .collection('chats')
-        .where('participants', arrayContains: uid)
-        .limit(80)
-        .get();
-    for (final doc in chats.docs) {
-      final data = doc.data();
-      if (data['deleted'] == true || data['isGroup'] == true) continue;
-      final participants = List<String>.from(data['participants'] ?? []);
-      for (final otherId in participants) {
-        if (otherId.isEmpty || otherId == uid || byUid.containsKey(otherId)) {
-          continue;
-        }
-        final profile = await resolvePublicProfile(otherId);
-        byUid[otherId] = {
-          'id': otherId,
-          'userId': otherId,
-          'username': (profile['username'] ?? otherId).toString(),
-          'name': CortexProfile.displayName(profile, fallback: otherId),
-          'email': profile['email']?.toString() ?? '',
-        };
-      }
-    }
   }
 
   Future<Map<String, dynamic>> resolvePublicProfile(String userId) async {
@@ -766,9 +730,28 @@ class ChatService {
         if (tB == null) return -1;
         return tB.compareTo(tA);
       });
-      
-      return chats;
+
+      return _dedupeDirectChats(chats);
     });
+  }
+
+  List<Map<String, dynamic>> _dedupeDirectChats(
+    List<Map<String, dynamic>> chats,
+  ) {
+    final seenPartners = <String>{};
+    final seenGroups = <String>{};
+    final out = <Map<String, dynamic>>[];
+    for (final chat in chats) {
+      if (chat['isGroup'] == true) {
+        final id = chat['chatId'] as String? ?? '';
+        if (id.isEmpty || seenGroups.add(id)) out.add(chat);
+        continue;
+      }
+      final other = (chat['otherUserId'] as String?) ?? '';
+      if (other.isEmpty) continue;
+      if (seenPartners.add(other)) out.add(chat);
+    }
+    return out;
   }
 
   /// Get messages stream for a specific chat, decrypted
@@ -919,6 +902,7 @@ class ChatService {
     } else {
       await _firestore.collection('chats').doc(chatId).set({
         'participants': [currentUserId, receiverId],
+        'isGroup': false,
         'lastMessageTimestamp': FieldValue.serverTimestamp(),
         'lastSenderId': currentUserId,
         'lastMessageType': type,

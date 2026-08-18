@@ -75,7 +75,7 @@ class _TasksScreenState extends State<TasksScreen>
 
         final content = ScrollFog(
           scrollController: _scrollController,
-          color: AppColors.background,
+          color: AppColors.fogColor,
           child: CustomScrollView(
             controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(),

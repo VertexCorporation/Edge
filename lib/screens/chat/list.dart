@@ -507,7 +507,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                   children: [
                     ScrollFog(
                       scrollController: _scrollController,
-                      color: AppColors.background,
+                      color: AppColors.fogColor,
                       child: CustomScrollView(
                         controller: _scrollController,
                         slivers: [
@@ -564,7 +564,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
     final open = _openChat;
     if (open == null) {
       return ColoredBox(
-        color: AppColors.background,
+        color: AppColors.fogColor,
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -673,7 +673,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
               }
               return ScrollFog(
                 scrollController: _communitiesScrollController,
-                color: AppColors.background,
+                color: AppColors.fogColor,
                 child: ListView.builder(
                   controller: _communitiesScrollController,
                   itemCount: comms.length,
@@ -711,14 +711,28 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
   }
 
   List<Map<String, dynamic>> get _peopleWithoutChats {
-    final chatIds = _recentChats
-        .map((chat) => (chat['otherUserId'] ?? '').toString())
-        .where((id) => id.isNotEmpty)
-        .toSet();
+    final chatted = _chattedPartnerIds;
     return _suggestedUsers.where((user) {
       final id = (user['uid'] ?? user['userId'] ?? user['id'] ?? '').toString();
-      return id.isEmpty || !chatIds.contains(id);
+      return id.isEmpty || !chatted.contains(id);
     }).toList();
+  }
+
+  Set<String> get _chattedPartnerIds {
+    final ids = <String>{};
+    final me = AuthService().currentUser?.uid ?? '';
+    for (final chat in _recentChats) {
+      if (chat['isGroup'] == true) continue;
+      final other = (chat['otherUserId'] ?? '').toString();
+      if (other.isNotEmpty) ids.add(other);
+      final chatId = (chat['chatId'] ?? '').toString();
+      if (me.isNotEmpty && chatId.contains('_')) {
+        for (final part in chatId.split('_')) {
+          if (part.isNotEmpty && part != me) ids.add(part);
+        }
+      }
+    }
+    return ids;
   }
 
   Widget _buildRecentChatsSliver(

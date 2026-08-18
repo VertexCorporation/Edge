@@ -112,16 +112,11 @@ class _AccountScreenState extends State<AccountScreen>
     super.build(context);
     context.watch<ThemeProvider>();
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        const ThemeAtmosphere(),
-        ColoredBox(
-          color: Colors.transparent,
-          child: SafeArea(
+    return ThemedSkyShell(
+      child: SafeArea(
         child: ScrollFog(
           scrollController: _scrollController,
-          color: AppColors.background,
+          color: AppColors.fogColor,
           child: SingleChildScrollView(
             controller: _scrollController,
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
@@ -162,9 +157,7 @@ class _AccountScreenState extends State<AccountScreen>
             ),
           ),
         ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 

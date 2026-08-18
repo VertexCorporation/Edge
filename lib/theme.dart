@@ -399,6 +399,13 @@ class AppColors {
   /// True only for the built-in black "Koyu" theme key.
   static bool get isBlackTheme => _currentTheme == 'dark';
 
+  /// Uzay and Aşk show pixel sky decorations behind transparent surfaces.
+  static bool get hasThemedSky =>
+      _currentTheme == 'deepSpace' || _currentTheme == 'love';
+
+  /// Scroll/list backdrop — transparent when sky decorations are active.
+  static Color get fogColor => hasThemedSky ? Colors.transparent : background;
+
   static Color get edgeTitleColor =>
       isDarkUi ? Colors.white : const Color(0xFF111827);
 

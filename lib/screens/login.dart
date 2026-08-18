@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import '../theme.dart';
 import '../widgets/button.dart';
 import '../widgets/input.dart';
-import '../widgets/background.dart';
 import '../services/auth.dart';
 import '../utils/ios.dart';
 import 'package:edge/l10n/app_localizations.dart';
@@ -157,7 +156,6 @@ class _LoginScreenState extends State<LoginScreen>
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          const ThemeAtmosphere(),
           AnimatedBuilder(
             animation: _fillAnimation,
             builder: (context, child) {

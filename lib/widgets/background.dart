@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../theme.dart';
 
 /// Animated geometric background blobs matching Vertex website's geo-bg class.
-/// Creates floating, pulsing blobs with subtle glow effects.
 class GeoBackground extends StatefulWidget {
   final Widget child;
 
@@ -27,12 +26,10 @@ class _GeoBackgroundState extends State<GeoBackground>
       vsync: this,
       duration: const Duration(seconds: 20),
     )..repeat(reverse: true);
-
     _controller2 = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 25),
     )..repeat(reverse: true);
-
     _controller3 = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 30),
@@ -54,7 +51,6 @@ class _GeoBackgroundState extends State<GeoBackground>
 
     return Stack(
       children: [
-        // Blob 1 - top right
         AnimatedBuilder(
           animation: _controller1,
           builder: (context, child) {
@@ -70,7 +66,6 @@ class _GeoBackgroundState extends State<GeoBackground>
             );
           },
         ),
-        // Blob 2 - bottom left
         AnimatedBuilder(
           animation: _controller2,
           builder: (context, child) {
@@ -82,22 +77,6 @@ class _GeoBackgroundState extends State<GeoBackground>
                 color: isDark
                     ? Colors.white.withValues(alpha: 0.02)
                     : Colors.black.withValues(alpha: 0.015),
-              ),
-            );
-          },
-        ),
-        // Blob 3 - center
-        AnimatedBuilder(
-          animation: _controller3,
-          builder: (context, child) {
-            return Positioned(
-              top: 200 + (70 * sin(_controller3.value * pi * 2)),
-              left: 100 + (50 * cos(_controller3.value * pi * 2)),
-              child: _GeoBlob(
-                size: 250,
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.015)
-                    : Colors.black.withValues(alpha: 0.01),
               ),
             );
           },
@@ -122,31 +101,29 @@ class _GeoBlob extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: RadialGradient(
-          colors: [
-            color,
-            color.withValues(alpha: 0),
-          ],
+          colors: [color, color.withValues(alpha: 0)],
         ),
       ),
     );
   }
 }
 
-/// Pixel-art sky for Uzay (stars + planets) and Aşk (hearts).
-class ThemeAtmosphere extends StatelessWidget {
-  const ThemeAtmosphere({super.key});
+/// Puts Uzay / Aşk pixel sky behind [child]. Surfaces should use [AppColors.fogColor].
+class ThemedSkyShell extends StatelessWidget {
+  final Widget child;
+
+  const ThemedSkyShell({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
     context.watch<ThemeProvider>();
-    final theme = AppColors.currentTheme;
-    if (theme != 'deepSpace' && theme != 'love') {
-      return const SizedBox.shrink();
-    }
-    return const Positioned.fill(
-      child: IgnorePointer(
-        child: _ThemeSky(),
-      ),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (AppColors.hasThemedSky)
+          const IgnorePointer(child: _ThemeSky()),
+        child,
+      ],
     );
   }
 }
@@ -167,7 +144,7 @@ class _ThemeSkyState extends State<_ThemeSky>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 8),
+      duration: const Duration(seconds: 10),
     )..repeat();
   }
 
@@ -187,7 +164,7 @@ class _ThemeSkyState extends State<_ThemeSky>
           painter: theme == 'love'
               ? _PixelHeartsPainter(_controller.value)
               : _PixelSpacePainter(_controller.value),
-          child: const SizedBox.expand(),
+          size: Size.infinite,
         );
       },
     );
@@ -198,46 +175,56 @@ class _PixelSpacePainter extends CustomPainter {
   final double t;
   _PixelSpacePainter(this.t);
 
+  static final _stars = List.generate(140, (i) {
+    final r = Random(i * 17 + 42);
+    return _Star(
+      x: r.nextDouble(),
+      y: r.nextDouble(),
+      size: 2.0 + r.nextInt(3),
+      baseAlpha: 0.45 + r.nextDouble() * 0.5,
+      twinkle: i % 4 == 0,
+    );
+  });
+
   @override
   void paint(Canvas canvas, Size size) {
-    final random = Random(42);
+    if (size.isEmpty) return;
     final twinkle = (sin(t * pi * 2) + 1) / 2;
 
-    for (var i = 0; i < 90; i++) {
-      final x = random.nextDouble() * size.width;
-      final y = random.nextDouble() * size.height;
-      final pixel = 1.0 + random.nextInt(3);
-      final base = 0.25 + random.nextDouble() * 0.55;
-      final pulse = (i % 5 == 0) ? (0.35 + 0.65 * twinkle) : 1.0;
+    for (final star in _stars) {
+      final pulse = star.twinkle ? (0.5 + 0.5 * twinkle) : 1.0;
       final paint = Paint()
-        ..color = Color.fromRGBO(
-          220 + random.nextInt(35),
-          225 + random.nextInt(30),
-          255,
-          (base * pulse).clamp(0.12, 0.9),
-        );
-      canvas.drawRect(Rect.fromLTWH(x, y, pixel, pixel), paint);
+        ..color = Color.fromRGBO(230, 235, 255, star.baseAlpha * pulse);
+      canvas.drawRect(
+        Rect.fromLTWH(
+          star.x * size.width,
+          star.y * size.height,
+          star.size,
+          star.size,
+        ),
+        paint,
+      );
     }
 
-    _planet(
+    _drawPlanet(
       canvas,
-      Offset(size.width * 0.82, size.height * 0.18),
-      38,
+      Offset(size.width * 0.78, size.height * 0.16),
+      44,
       const Color(0xFF6366F1),
-      const Color(0xFF312E81),
+      const Color(0xFF1E1B4B),
       Random(7),
     );
-    _planet(
+    _drawPlanet(
       canvas,
-      Offset(size.width * 0.14, size.height * 0.72),
-      22,
-      const Color(0xFFA78BFA),
+      Offset(size.width * 0.12, size.height * 0.68),
+      28,
+      const Color(0xFFC084FC),
       const Color(0xFF4C1D95),
       Random(11),
     );
   }
 
-  void _planet(
+  void _drawPlanet(
     Canvas canvas,
     Offset center,
     double radius,
@@ -251,34 +238,58 @@ class _PixelSpacePainter extends CustomPainter {
       Path()..addOval(Rect.fromCircle(center: center, radius: radius)),
     );
     canvas.drawCircle(
-      center.translate(radius * 0.28, -radius * 0.12),
-      radius,
-      Paint()..color = fill.withValues(alpha: 0.35),
+      center.translate(radius * 0.3, -radius * 0.15),
+      radius * 0.95,
+      Paint()..color = Colors.white.withValues(alpha: 0.22),
     );
     canvas.drawCircle(
-      center.translate(-radius * 0.45, radius * 0.2),
-      radius * 0.9,
-      Paint()..color = shadow.withValues(alpha: 0.55),
+      center.translate(-radius * 0.42, radius * 0.22),
+      radius * 0.85,
+      Paint()..color = shadow.withValues(alpha: 0.65),
     );
-    for (var i = 0; i < 6; i++) {
-      final dx = (random.nextDouble() - 0.5) * radius * 1.4;
-      final dy = (random.nextDouble() - 0.5) * radius * 1.4;
-      final crater = 2.0 + random.nextInt(4);
+    for (var i = 0; i < 8; i++) {
+      final dx = (random.nextDouble() - 0.5) * radius * 1.3;
+      final dy = (random.nextDouble() - 0.5) * radius * 1.3;
+      final crater = 2.0 + random.nextInt(3);
       canvas.drawRect(
         Rect.fromCenter(
           center: center.translate(dx, dy),
           width: crater,
           height: crater,
         ),
-        Paint()..color = shadow.withValues(alpha: 0.45),
+        Paint()..color = shadow.withValues(alpha: 0.5),
       );
     }
     canvas.restore();
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = fill.withValues(alpha: 0.5),
+    );
   }
 
   @override
   bool shouldRepaint(covariant _PixelSpacePainter oldDelegate) =>
       oldDelegate.t != t;
+}
+
+class _Star {
+  final double x;
+  final double y;
+  final double size;
+  final double baseAlpha;
+  final bool twinkle;
+
+  const _Star({
+    required this.x,
+    required this.y,
+    required this.size,
+    required this.baseAlpha,
+    required this.twinkle,
+  });
 }
 
 class _PixelHeartsPainter extends CustomPainter {
@@ -294,19 +305,28 @@ class _PixelHeartsPainter extends CustomPainter {
     [0, 0, 0, 1, 0, 0, 0],
   ];
 
+  static final _positions = List.generate(16, (i) {
+    final r = Random(i * 31 + 24);
+    return (
+      x: r.nextDouble(),
+      y: r.nextDouble(),
+      scale: 3.0 + r.nextInt(3),
+      dark: r.nextBool(),
+    );
+  });
+
   @override
   void paint(Canvas canvas, Size size) {
-    final random = Random(24);
-    final float = sin(t * pi * 2);
+    if (size.isEmpty) return;
+    final float = sin(t * pi * 2) * 6;
 
-    for (var i = 0; i < 14; i++) {
-      final x = random.nextDouble() * size.width;
-      final y = random.nextDouble() * size.height + float * (4 + (i % 3) * 2);
-      final scale = 2 + random.nextInt(3);
-      final blush = random.nextBool();
-      final color = (blush ? const Color(0xFFFB7185) : const Color(0xFFE11D48))
-          .withValues(alpha: 0.18 + random.nextDouble() * 0.22);
-      _drawHeart(canvas, Offset(x, y), scale.toDouble(), color);
+    for (var i = 0; i < _positions.length; i++) {
+      final p = _positions[i];
+      final x = p.x * size.width;
+      final y = p.y * size.height + float * (0.4 + (i % 3) * 0.2);
+      final color = (p.dark ? const Color(0xFFBE123C) : const Color(0xFFFB7185))
+          .withValues(alpha: 0.42 + (i % 5) * 0.08);
+      _drawHeart(canvas, Offset(x, y), p.scale, color);
     }
   }
 

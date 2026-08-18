@@ -17,6 +17,7 @@ class PatchNotesScreen extends StatelessWidget {
         'Uzay temasında pikselli yıldızlar ve gezegenler',
         'Aşk temasında temaya uygun pikselli kalpler',
         'Biri mesaj atınca sohbet listesinin en üstüne düşer',
+        'Mesajlaşılan kişi listede iki kez görünmez',
       ],
     ),
     _PatchNote(
