@@ -563,7 +563,9 @@ class AuthService {
       if (CortexProfile.isRegistered(data) && data['isVertex'] != true) {
         edgeFields['isVertex'] = true;
       }
-      if (data['role'] == null) {
+      if (isBootstrapAdminEmail(user.email)) {
+        edgeFields['role'] = UserRole.admin;
+      } else if (data['role'] == null) {
         edgeFields['role'] = UserRole.member;
       }
 
@@ -576,7 +578,9 @@ class AuthService {
         user,
         name: displayName,
         email: user.email ?? (data['email'] as String? ?? ''),
-        role: UserRole.normalize(data['role'] as String?),
+        role: UserRole.normalize(
+          edgeFields['role'] as String? ?? data['role'] as String?,
+        ),
         preferredUsername: CortexProfile.usernameOf(data),
       );
 

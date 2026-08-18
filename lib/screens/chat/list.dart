@@ -58,6 +58,8 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
   // Suggested Users State
   final List<Map<String, dynamic>> _suggestedUsers = [];
   final Map<String, Map<String, dynamic>> _partnerCache = {};
+  List<Map<String, dynamic>> _recentChats = [];
+  StreamSubscription<List<Map<String, dynamic>>>? _recentChatsSub;
   DocumentSnapshot? _lastDocument;
   bool _isLoadingUsers = false;
   bool _hasMoreUsers = true;
@@ -84,6 +86,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
     final seeAllGroups = UserRole.canSeeAllGroups(widget.userRole);
     _recentChatsStream = _chatService.getRecentChats(seeAllGroups: seeAllGroups);
     _communitiesStream = _chatService.getCommunities(seeAllGroups: seeAllGroups);
+    _bindRecentChats();
     _initKeys();
     _scrollController.addListener(_onScroll);
     _searchController.addListener(_onSearchChanged);
@@ -140,7 +143,18 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
         _recentChatsStream = _chatService.getRecentChats(seeAllGroups: seeAllGroups);
         _communitiesStream = _chatService.getCommunities(seeAllGroups: seeAllGroups);
       });
+      _bindRecentChats();
     }
+  }
+
+  void _bindRecentChats() {
+    _recentChatsSub?.cancel();
+    _recentChatsSub = _recentChatsStream.listen((chats) {
+      if (!mounted) return;
+      setState(() => _recentChats = chats);
+    }, onError: (e) {
+      debugPrint('Recent chats listen failed: $e');
+    });
   }
 
   Future<void> _initKeys() async {
@@ -264,6 +278,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
 
   @override
   void dispose() {
+    _recentChatsSub?.cancel();
     _debounce?.cancel();
     _searchController.dispose();
     _scrollController.dispose();
@@ -282,14 +297,14 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
 
     if (!split) {
       return Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.transparent,
         appBar: _buildAppBar(isDark),
         body: SafeArea(child: listPane),
       );
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       body: Row(
         children: [
           SizedBox(
@@ -496,13 +511,14 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                       child: CustomScrollView(
                         controller: _scrollController,
                         slivers: [
-                          _buildRecentChatsStream(brightness, isDark, split),
-                          if (_suggestedUsers.isNotEmpty)
+                          _buildRecentChatsSliver(brightness, isDark, split),
+                          if (_peopleWithoutChats.isNotEmpty)
                             const SliverToBoxAdapter(child: SizedBox(height: 8)),
                           SliverList(
                             delegate: SliverChildBuilderDelegate(
                               (context, index) {
-                                if (index == _suggestedUsers.length) {
+                                final people = _peopleWithoutChats;
+                                if (index == people.length) {
                                   return _isLoadingUsers
                                       ? const Padding(
                                           padding: EdgeInsets.all(16),
@@ -518,7 +534,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                                         )
                                       : const SizedBox.shrink();
                                 }
-                                final user = _suggestedUsers[index];
+                                final user = people[index];
                                 return _buildUserTile(
                                   user,
                                   brightness,
@@ -526,7 +542,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                                   split: split,
                                 );
                               },
-                              childCount: _suggestedUsers.length +
+                              childCount: _peopleWithoutChats.length +
                                   (_hasMoreUsers || _isLoadingUsers ? 1 : 0),
                             ),
                           ),
@@ -694,82 +710,96 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildRecentChatsStream(
+  List<Map<String, dynamic>> get _peopleWithoutChats {
+    final chatIds = _recentChats
+        .map((chat) => (chat['otherUserId'] ?? '').toString())
+        .where((id) => id.isNotEmpty)
+        .toSet();
+    return _suggestedUsers.where((user) {
+      final id = (user['uid'] ?? user['userId'] ?? user['id'] ?? '').toString();
+      return id.isEmpty || !chatIds.contains(id);
+    }).toList();
+  }
+
+  Widget _buildRecentChatsSliver(
     Brightness brightness,
     bool isDark,
     bool split,
   ) {
-    return StreamBuilder<List<Map<String, dynamic>>>(
-      stream: _recentChatsStream,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SliverToBoxAdapter(child: SizedBox.shrink());
-        }
-
-        final chats = snapshot.data ?? [];
-        if (chats.isEmpty) {
-          if (_suggestedUsers.isEmpty && !_isLoadingUsers) {
-            return SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
-                child: Text(
-                  'Henüz kimseyle konuşmadınız, hemen sohbete başlayın.',
-                  style: GoogleFonts.inter(
-                    color: AppColors.tertiaryColor,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
+    final chats = _recentChats;
+    if (chats.isEmpty) {
+      if (_suggestedUsers.isEmpty && !_isLoadingUsers) {
+        return SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
+            child: Text(
+              'Henüz kimseyle konuşmadınız, hemen sohbete başlayın.',
+              style: GoogleFonts.inter(
+                color: AppColors.tertiaryColor,
+                fontStyle: FontStyle.italic,
               ),
-            );
-          }
-          return const SliverToBoxAdapter(child: SizedBox.shrink());
-        }
-
-        return SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              final chat = chats[index];
-              if (chat['isGroup'] == true) {
-                return _buildUserTile({
-                  'uid': '',
-                  'chatId': chat['chatId'],
-                  'name': chat['groupName'],
-                  'isGroup': true,
-                }, brightness, isDark, split: split);
-              }
-
-              final otherId = (chat['otherUserId'] ?? '').toString();
-              if (otherId.isEmpty) return const SizedBox.shrink();
-
-              return FutureBuilder<Map<String, dynamic>>(
-                future: _profileForChatPartner(otherId),
-                builder: (context, userSnapshot) {
-                  final userData = Map<String, dynamic>.from(
-                    userSnapshot.data ??
-                        {
-                          'uid': otherId,
-                          'userId': otherId,
-                          'id': otherId,
-                          'name': otherId,
-                        },
-                  );
-                  userData['uid'] = otherId;
-                  userData['userId'] ??= otherId;
-                  userData['id'] ??= otherId;
-                  return _buildUserTile(
-                    userData,
-                    brightness,
-                    isDark,
-                    split: split,
-                  );
-                },
-              );
-            },
-            childCount: chats.length,
+            ),
           ),
         );
-      },
+      }
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          final chat = chats[index];
+          if (chat['isGroup'] == true) {
+            return _buildUserTile({
+              'uid': '',
+              'chatId': chat['chatId'],
+              'name': chat['groupName'],
+              'isGroup': true,
+              'preview': _chatPreview(chat),
+            }, brightness, isDark, split: split);
+          }
+
+          final otherId = (chat['otherUserId'] ?? '').toString();
+          if (otherId.isEmpty) return const SizedBox.shrink();
+
+          return FutureBuilder<Map<String, dynamic>>(
+            future: _profileForChatPartner(otherId),
+            builder: (context, userSnapshot) {
+              final userData = Map<String, dynamic>.from(
+                userSnapshot.data ??
+                    {
+                      'uid': otherId,
+                      'userId': otherId,
+                      'id': otherId,
+                      'name': otherId,
+                    },
+              );
+              userData['uid'] = otherId;
+              userData['userId'] ??= otherId;
+              userData['id'] ??= otherId;
+              userData['chatId'] = chat['chatId'];
+              userData['preview'] = _chatPreview(chat);
+              return _buildUserTile(
+                userData,
+                brightness,
+                isDark,
+                split: split,
+              );
+            },
+          );
+        },
+        childCount: chats.length,
+      ),
     );
+  }
+
+  String _chatPreview(Map<String, dynamic> chat) {
+    final mine = chat['lastSenderId'] == AuthService().currentUser?.uid;
+    final type = (chat['lastMessageType'] as String?) ?? 'text';
+    if (mine) {
+      return type == 'text' ? 'Mesaj gönderdin' : 'Dosya gönderdin';
+    }
+    return type == 'text' ? 'Sana bir mesaj gönderildi' : 'Sana bir dosya gönderildi';
   }
 
   Future<Map<String, dynamic>> _profileForChatPartner(String userId) async {
@@ -843,7 +873,17 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                         color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
-                    if (user['username'] != null)
+                    if ((user['preview'] ?? '').toString().isNotEmpty)
+                      Text(
+                        user['preview'].toString(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          color: AppColors.senaryColor,
+                          fontSize: 12,
+                        ),
+                      )
+                    else if (user['username'] != null)
                       Text(
                         '@${user['username']}',
                         maxLines: 1,

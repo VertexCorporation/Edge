@@ -311,6 +311,28 @@ class ChatService {
         .toList();
   }
 
+  String _otherUserIdFromChat(
+    String chatId,
+    List<String> participants,
+    String? me,
+  ) {
+    if (me != null && me.isNotEmpty) {
+      final fromParticipants = participants.firstWhere(
+        (id) => id != me,
+        orElse: () => '',
+      );
+      if (fromParticipants.isNotEmpty) return fromParticipants;
+    }
+    if (me == null || me.isEmpty || !chatId.contains('_')) return '';
+    final prefix = '${me}_';
+    final suffix = '_$me';
+    if (chatId.startsWith(prefix)) return chatId.substring(prefix.length);
+    if (chatId.endsWith(suffix)) {
+      return chatId.substring(0, chatId.length - suffix.length);
+    }
+    return '';
+  }
+
   Future<void> _includeChatPartners(
     Map<String, Map<String, dynamic>> byUid,
     String? uid,
@@ -695,27 +717,28 @@ class ChatService {
   Stream<List<Map<String, dynamic>>> getRecentChats({
     bool seeAllGroups = false,
   }) {
+    final me = _auth.currentUser?.uid ?? '';
     Query<Map<String, dynamic>> query = _firestore.collection('chats');
-    if (!seeAllGroups) {
-      query = query.where('participants', arrayContains: currentUserId);
+    if (!seeAllGroups && me.isNotEmpty) {
+      query = query.where('participants', arrayContains: me);
     }
     return query.snapshots().map((snapshot) {
       final chats = snapshot.docs.map((doc) {
         final data = doc.data();
         final participants = List<String>.from(data['participants'] ?? []);
-        final isParticipant = participants.contains(currentUserId);
-        final otherUserId = participants.firstWhere(
-          (id) => id != currentUserId,
-          orElse: () => '',
-        );
+        final isParticipant = me.isNotEmpty && participants.contains(me);
+        final otherUserId = _otherUserIdFromChat(doc.id, participants, me);
+        final communityId = data['communityId']?.toString().trim();
         return {
           'chatId': doc.id,
           'otherUserId': otherUserId,
           'isGroup': data['isGroup'] ?? false,
           'groupName': data['groupName'] ?? '',
           'lastMessageTimestamp': data['lastMessageTimestamp'],
+          'lastMessageType': data['lastMessageType'] ?? 'text',
+          'lastSenderId': data['lastSenderId'] ?? '',
           'isAnnouncementGroup': data['isAnnouncementGroup'] ?? false,
-          'communityId': data['communityId'],
+          'communityId': communityId,
           'isParticipant': isParticipant,
           'deleted': data['deleted'] == true,
         };
@@ -724,14 +747,15 @@ class ChatService {
         final isGroup = chat['isGroup'] == true;
         if (seeAllGroups && isGroup) return true;
         if (chat['isAnnouncementGroup'] == true) return false;
-        if (chat['communityId'] != null) return false;
+        final communityId = chat['communityId'] as String?;
+        if (communityId != null && communityId.isNotEmpty) return false;
         if (isGroup && (chat['groupName'] as String).trim() == 'Duyurular') {
           return false;
         }
         if (seeAllGroups) {
           return isGroup || chat['isParticipant'] == true;
         }
-        return isGroup || chat['otherUserId'].isNotEmpty;
+        return isGroup || (chat['otherUserId'] as String).isNotEmpty;
       }).toList();
       
       chats.sort((a, b) {
