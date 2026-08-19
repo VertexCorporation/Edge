@@ -49,6 +49,15 @@ class CortexProfile {
     return 'Kullanıcı';
   }
 
+  /// People who can receive Edge tasks (logged-in Edge users or role holders).
+  static bool isTaskAssignable(Map<String, dynamic>? data) {
+    if (data == null || isAnonymousAccount(data)) return false;
+    if (isEdgeListed(data)) return true;
+    final role = (data['role'] as String?)?.trim();
+    if (role != null && role.isNotEmpty) return true;
+    return false;
+  }
+
   static bool isVertexMember(Map<String, dynamic>? data) {
     if (data?['isVertex'] == true) return true;
     return isRegistered(data);

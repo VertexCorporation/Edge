@@ -168,6 +168,7 @@ class TaskService {
     if (!forceRefresh &&
         _assigneesCache != null &&
         _assigneesCachedAt != null &&
+        _assigneesCache!.isNotEmpty &&
         DateTime.now().difference(_assigneesCachedAt!) < _assigneesCacheTtl) {
       return _assigneesCache!;
     }
@@ -176,33 +177,34 @@ class TaskService {
     final byUid = <String, Map<String, dynamic>>{};
 
     try {
-      final snap = await _firestore.collection('usernames').limit(150).get();
-      for (final mapped in _mapAssigneeDocs(snap.docs, currentUid)) {
-        byUid[mapped['userId'] as String] = mapped;
-      }
-    } catch (e) {
-      debugPrint('TaskService: usernames list failed: $e');
-    }
-
-    try {
-      final snap = await _firestore.collection('users').limit(150).get();
+      final snap = await _firestore.collection('users').get();
       for (final doc in snap.docs) {
         if (doc.id == currentUid) continue;
         final data = doc.data();
-        if (!CortexProfile.isEdgeListed(data)) continue;
-        byUid.putIfAbsent(doc.id, () {
-          return {
-            'userId': doc.id,
-            'name': CortexProfile.displayName(
-              data,
-              fallback: data['email'] as String? ?? doc.id,
-            ),
-            'role': UserRole.normalize(data['role'] as String?),
-          };
-        });
+        if (!CortexProfile.isTaskAssignable(data)) continue;
+        byUid[doc.id] = {
+          'userId': doc.id,
+          'name': CortexProfile.displayName(
+            data,
+            fallback: data['email'] as String? ?? doc.id,
+          ),
+          'role': UserRole.normalize(data['role'] as String?),
+        };
       }
     } catch (e) {
       debugPrint('TaskService: users list failed: $e');
+    }
+
+    try {
+      final snap = await _firestore.collection('usernames').get();
+      for (final mapped in _mapAssigneeDocs(snap.docs, currentUid)) {
+        byUid.putIfAbsent(
+          mapped['userId'] as String,
+          () => mapped,
+        );
+      }
+    } catch (e) {
+      debugPrint('TaskService: usernames list failed: $e');
     }
 
     final assignees = byUid.values.toList()
@@ -212,8 +214,10 @@ class TaskService {
             .compareTo((b['name'] as String).toLowerCase()),
       );
 
-    _assigneesCache = assignees;
-    _assigneesCachedAt = DateTime.now();
+    if (assignees.isNotEmpty) {
+      _assigneesCache = assignees;
+      _assigneesCachedAt = DateTime.now();
+    }
     return assignees;
   }
 
@@ -226,7 +230,7 @@ class TaskService {
           final data = doc.data();
           final userId = data['userId'] as String? ?? '';
           if (userId.isEmpty || userId == currentUid) return null;
-          if (!CortexProfile.isEdgeListed(data)) return null;
+          if (!CortexProfile.isTaskAssignable(data)) return null;
           return {
             'userId': userId,
             'name': CortexProfile.displayName(data, fallback: doc.id),

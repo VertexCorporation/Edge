@@ -41,7 +41,7 @@ class _TasksScreenState extends State<TasksScreen>
     super.initState();
     _tasksStream = _taskService.watchTasks(isAdmin: widget.canManageTasks);
     if (widget.canManageTasks) {
-      _taskService.listAssignees();
+      _taskService.listAssignees(forceRefresh: true);
     }
   }
 
@@ -52,7 +52,7 @@ class _TasksScreenState extends State<TasksScreen>
       _tasksStream = _taskService.watchTasks(isAdmin: widget.canManageTasks);
     }
     if (widget.canManageTasks && !oldWidget.canManageTasks) {
-      _taskService.listAssignees();
+      _taskService.listAssignees(forceRefresh: true);
     }
   }
 
@@ -701,7 +701,7 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
   @override
   void initState() {
     super.initState();
-    _assigneesFuture = widget.taskService.listAssignees();
+    _assigneesFuture = widget.taskService.listAssignees(forceRefresh: true);
   }
 
   @override
@@ -837,7 +837,7 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
                     border: OutlineInputBorder(),
                   ),
                   hint: assignees.isEmpty
-                      ? const Text('Oturum açmış kullanıcı yok')
+                      ? const Text('Atanabilir kullanıcı bulunamadı')
                       : const Text('Kişi seç'),
                   items: assignees
                       .map(

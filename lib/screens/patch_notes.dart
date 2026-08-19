@@ -10,6 +10,13 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.23',
+      date: '19 Ağustos 2026',
+      highlights: [
+        'Görev atama: kullanıcı listesi tüm Edge kullanıcılarını gösterir, boş liste cache\'lenmez',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.22',
       date: '19 Ağustos 2026',
       highlights: [
