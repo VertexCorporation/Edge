@@ -7,7 +7,7 @@ const BOOTSTRAP_ADMIN_EMAILS = [
   "rel0adneverdone@gmail.com",
   "mustawtfa@gmail.com",
   "egemen.topcuoglu6740@gmail.com",
-  "egeme@vertexishere.com",
+  "egemen@vertexishere.com",
 ];
 
 exports.sendNotificationOnMessage = functions.firestore

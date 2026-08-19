@@ -124,7 +124,7 @@ class AuthService {
     'rel0adneverdone@gmail.com',
     'mustawtfa@gmail.com',
     'egemen.topcuoglu6740@gmail.com',
-    'egeme@vertexishere.com',
+    'egemen@vertexishere.com',
   };
 
   static bool isBootstrapAdminEmail(String? email) {
