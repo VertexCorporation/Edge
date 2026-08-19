@@ -121,8 +121,10 @@ class ThemedSkyShell extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        if (AppColors.hasThemedSky)
-          const IgnorePointer(child: _ThemeSky()),
+        // Overlay is cheap on non-web (repaints every animation tick),
+        // and static on web (we pass t=0). This ensures all themes get the
+        // charcoal texture.
+        const IgnorePointer(child: _ThemeSky()),
         child,
       ],
     );
@@ -199,14 +201,207 @@ class _ThemeSkyState extends State<_ThemeSky>
     required Color gold,
     required bool isDark,
   }) {
+    return _CharcoalAndThemePainter(
+      t: t,
+      theme: theme,
+      isDarkLove: isDarkLove,
+      gold: gold,
+      isDark: isDark,
+    );
+  }
+}
+
+/// Draws a subtle "charcoal" texture for all themes.
+/// - For `deepSpace` / `love` / `porcelain` we keep the existing pixel sky effects.
+/// - For `mint` (Adaçayı) we add green leaf shapes.
+class _CharcoalAndThemePainter extends CustomPainter {
+  final double t;
+  final String theme;
+  final bool isDarkLove;
+  final Color gold;
+  final bool isDark;
+
+  _CharcoalAndThemePainter({
+    required this.t,
+    required this.theme,
+    required this.isDarkLove,
+    required this.gold,
+    required this.isDark,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+
+    // 1) Charcoal base (always).
+    _CharcoalTexturePainter.draw(canvas, size, t: t, isDark: isDark);
+
+    // 2) Optional mint leaves.
+    if (theme == 'mint') {
+      _MintLeavesPainter.draw(canvas, size, t: t, leafColor: gold, isDark: isDark);
+    }
+
+    // 3) Existing themed pixel sky.
     if (theme == 'love') {
-      return _PixelHeartsPainter(t, isDark: isDarkLove);
+      _PixelHeartsPainter(t, isDark: isDarkLove).paint(canvas, size);
+      return;
     }
     if (theme == 'porcelain') {
-      return _PorcelainShardsPainter(t, gold: gold, isDark: isDark);
+      _PorcelainShardsPainter(t, gold: gold, isDark: isDark).paint(canvas, size);
+      return;
     }
-    // deepSpace + default fallback
-    return _PixelSpacePainter(t);
+    if (theme == 'deepSpace') {
+      _PixelSpacePainter(t).paint(canvas, size);
+      return;
+    }
+    // For all other themes we only show charcoal (+ optional mint leaves above).
+  }
+
+  @override
+  bool shouldRepaint(covariant _CharcoalAndThemePainter oldDelegate) =>
+      oldDelegate.t != t ||
+      oldDelegate.theme != theme ||
+      oldDelegate.isDarkLove != isDarkLove ||
+      oldDelegate.gold != gold ||
+      oldDelegate.isDark != isDark;
+}
+
+class _CharcoalTexturePainter {
+  static void draw(Canvas canvas, Size size, {required double t, required bool isDark}) {
+    final w = size.width;
+    final h = size.height;
+    final rect = Rect.fromLTWH(0, 0, w, h);
+
+    // Vignette.
+    final vignette = RadialGradient(
+      center: const Alignment(0.5, 0.35),
+      radius: 1.1,
+      colors: [
+        Colors.transparent,
+        (isDark ? Colors.black : Colors.black).withValues(alpha: 0.28),
+      ],
+      stops: const [0.55, 1.0],
+    ).createShader(rect);
+    canvas.drawRect(rect, Paint()..shader = vignette);
+
+    // Charcoal smudges (seeded, deterministic).
+    for (var i = 0; i < 18; i++) {
+      final r = Random(i * 31 + 7);
+      final x = r.nextDouble() * w;
+      final y = r.nextDouble() * h;
+      final base = 40.0 + r.nextDouble() * 120.0;
+
+      final drift = isDark ? 1.0 : 0.8;
+      final dx = sin(t * pi * 2 + i) * base * 0.003 * drift;
+      final dy = cos(t * pi * 2 + i) * base * 0.002 * drift;
+
+      final paint = Paint()
+        ..color = Colors.black.withValues(alpha: (isDark ? 0.06 : 0.04) + r.nextDouble() * 0.05)
+        ..blendMode = BlendMode.srcOver;
+
+      canvas.drawCircle(Offset(x + dx, y + dy), base * (0.4 + r.nextDouble() * 0.3), paint);
+    }
+
+    // Fine grain / specks.
+    for (var i = 0; i < 85; i++) {
+      final r = Random(i * 19 + 3);
+      final x = r.nextDouble() * w;
+      final y = r.nextDouble() * h;
+      final s = 0.8 + r.nextDouble() * 2.2;
+      final a = (isDark ? 0.05 : 0.035) + r.nextDouble() * 0.05;
+      final paint = Paint()..color = Colors.black.withValues(alpha: a);
+      canvas.drawRect(
+        Rect.fromCenter(center: Offset(x, y), width: s, height: s),
+        paint,
+      );
+    }
+
+    // Subtle diagonal streaks.
+    final streakPaint = Paint()
+      ..color = Colors.black.withValues(alpha: isDark ? 0.05 : 0.035)
+      ..strokeWidth = 2;
+    final streakCount = 7;
+    for (var i = 0; i < streakCount; i++) {
+      final r = Random(i * 13 + 1);
+      final y = r.nextDouble() * h;
+      final offset = sin(t * pi * 2 + i) * 12;
+      canvas.drawLine(
+        Offset(-w * 0.1, y + offset),
+        Offset(w * 1.1, y - offset),
+        streakPaint,
+      );
+    }
+  }
+}
+
+class _MintLeavesPainter {
+  static final _leaves = List.generate(22, (i) {
+    final r = Random(i * 91 + 17);
+    return (
+      x: r.nextDouble(),
+      y: r.nextDouble(),
+      scale: 0.55 + r.nextDouble() * 0.9,
+      rot: (r.nextDouble() - 0.5) * 1.6,
+      phase: r.nextDouble() * pi * 2,
+      sway: 0.75 + r.nextDouble() * 1.6,
+      alpha: 0.12 + r.nextDouble() * 0.16,
+      big: r.nextBool(),
+    );
+  });
+
+  static void draw(
+    Canvas canvas,
+    Size size, {
+    required double t,
+    required Color leafColor,
+    required bool isDark,
+  }) {
+    final w = size.width;
+    final h = size.height;
+
+    final base = leafColor.withValues(alpha: isDark ? 0.32 : 0.28);
+
+    for (var i = 0; i < _leaves.length; i++) {
+      final l = _leaves[i];
+      final x = l.x * w;
+      final y = l.y * h;
+
+      final sway = sin(t * pi * 2 * 0.22 + l.phase) * (6.0 * l.sway);
+      final dx = sin(t * pi * 2 * 0.28 + l.rot) * (10.0 * l.sway);
+
+      final scale = l.scale * (l.big ? 1.05 : 0.95);
+      final rot = l.rot + sin(t * pi * 2 * 0.14 + l.phase) * 0.18;
+
+      canvas.save();
+      canvas.translate(x + dx, y + sway);
+      canvas.rotate(rot);
+
+      final leafW = 22.0 * scale;
+      final leafH = (36.0 + (l.big ? 6.0 : 0.0)) * scale;
+      final alpha = l.alpha;
+      final fill = base.withValues(alpha: alpha);
+
+      final path = Path()
+        ..moveTo(0, 0)
+        ..quadraticBezierTo(leafW * 0.5, -leafH * 0.55, leafW, 0)
+        ..quadraticBezierTo(leafW * 0.5, leafH * 0.55, 0, 0)
+        ..close();
+
+      canvas.drawPath(path, Paint()..color = fill);
+
+      // Vein.
+      final vein = leafColor.withValues(alpha: alpha * 0.55);
+      canvas.drawLine(
+        Offset(leafW * 0.5, 0),
+        Offset(leafW * 0.5, leafH * 0.35),
+        Paint()
+          ..color = vein
+          ..strokeWidth = 1.5
+          ..strokeCap = StrokeCap.round,
+      );
+
+      canvas.restore();
+    }
   }
 }
 
