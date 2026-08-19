@@ -34,13 +34,27 @@ class AuthService {
   static Future<void> completeWebRedirectSignIn() async {
     if (!kIsWeb) return;
     try {
-      final result = await FirebaseAuth.instance.getRedirectResult();
+      final result = await FirebaseAuth.instance
+          .getRedirectResult()
+          .timeout(const Duration(seconds: 10));
       final user = result.user;
+      if (user != null) {
+        debugPrint('OAuth redirect completed for ${user.email}');
+        await AuthService()._handleOAuthLogin(user);
+      }
+    } on TimeoutException {
+      debugPrint('OAuth redirect timed out — checking currentUser fallback');
+      final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         await AuthService()._handleOAuthLogin(user);
       }
     } catch (e) {
       debugPrint('OAuth redirect result failed: $e');
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        debugPrint('Redirect failed but currentUser exists: ${user.email}');
+        await AuthService()._handleOAuthLogin(user);
+      }
     }
   }
 
@@ -306,7 +320,7 @@ class AuthService {
     }
   }
 
-  /// Sign in with Google — on web, redirects this tab to Google accounts.
+  /// Sign in with Google — web uses popup, mobile uses native flow.
   Future<AuthResult> signInWithGoogle() async {
     try {
       User? user;
@@ -319,8 +333,14 @@ class AuthService {
             'prompt': 'select_account',
             'access_type': 'online',
           });
-        await _auth.signInWithRedirect(authProvider);
-        return AuthResult.redirecting();
+        try {
+          final result = await _auth.signInWithPopup(authProvider);
+          user = result.user;
+        } catch (popupErr) {
+          debugPrint('Google popup failed, trying redirect: $popupErr');
+          await _auth.signInWithRedirect(authProvider);
+          return AuthResult.redirecting();
+        }
       } else {
         final googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
         try {
