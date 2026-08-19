@@ -55,24 +55,38 @@ class _HomeShellState extends State<HomeShell> {
       isVertex: widget.isVertex,
     );
 
+    final showTasks = widget.isVertex;
+    final tabs = showTasks ? <Widget>[tasksTab, chatsTab] : <Widget>[chatsTab];
+
+    // When tasks tab is hidden, always keep selectedIndex aligned with the
+    // remaining tabs list.
+    if (!showTasks && _index != 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _index = 0);
+      });
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: ThemedSkyShell(
         child: kIsWeb
-            ? (_index == 0 ? tasksTab : chatsTab)
+            ? tabs[_index]
             : IndexedStack(
                 index: _index,
                 sizing: StackFit.expand,
-                children: [
-                  IgnorePointer(
-                    ignoring: _index != 0,
-                    child: TickerMode(enabled: _index == 0, child: tasksTab),
-                  ),
-                  IgnorePointer(
-                    ignoring: _index != 1,
-                    child: TickerMode(enabled: _index == 1, child: chatsTab),
-                  ),
-                ],
+                children: tabs
+                    .asMap()
+                    .entries
+                    .map(
+                      (e) => IgnorePointer(
+                        ignoring: _index != e.key,
+                        child: TickerMode(
+                          enabled: _index == e.key,
+                          child: e.value,
+                        ),
+                      ),
+                    )
+                    .toList(),
               ),
       ),
       bottomNavigationBar: NavigationBar(
@@ -82,14 +96,16 @@ class _HomeShellState extends State<HomeShell> {
         indicatorColor: AppColors.senaryColor.withValues(alpha: 0.2),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         destinations: [
-          NavigationDestination(
-            icon: const Icon(Icons.task_alt_outlined),
-            selectedIcon: Icon(Icons.task_alt, color: AppColors.senaryColor),
-            label: AppLocalizations.of(context)!.tasks,
-          ),
+          if (showTasks)
+            NavigationDestination(
+              icon: const Icon(Icons.task_alt_outlined),
+              selectedIcon: Icon(Icons.task_alt, color: AppColors.senaryColor),
+              label: AppLocalizations.of(context)!.tasks,
+            ),
           NavigationDestination(
             icon: const Icon(Icons.chat_bubble_outline),
-            selectedIcon: Icon(Icons.chat_bubble, color: AppColors.senaryColor),
+            selectedIcon:
+                Icon(Icons.chat_bubble, color: AppColors.senaryColor),
             label: AppLocalizations.of(context)!.chats,
           ),
         ],
