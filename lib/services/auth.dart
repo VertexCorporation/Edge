@@ -247,7 +247,8 @@ class AuthService {
     }
   }
 
-  /// Create a new user with email and password
+  /// Create a new user with email and password.
+  /// Vertex Auth accounts already exist — if email is taken, sign in instead.
   Future<AuthResult> createUser(String email, String password, String name) async {
     try {
       final credential = await _auth.createUserWithEmailAndPassword(
@@ -295,6 +296,10 @@ class AuthService {
         role: UserRole.normalize(userData?['role'] as String? ?? 'Üye'),
       );
     } on FirebaseAuthException catch (e) {
+      // Vertex hesabı zaten Auth'ta — Edge kaydı gerekmez, aynı şifreyle gir.
+      if (e.code == 'email-already-in-use') {
+        return signIn(email, password);
+      }
       return AuthResult.error(_getAuthErrorMessage(e.code));
     } catch (e) {
       return AuthResult.error('Beklenmeyen bir hata oluştu: $e');
@@ -801,19 +806,19 @@ class AuthService {
   String _getAuthErrorMessage(String code) {
     switch (code) {
       case 'user-not-found':
-        return 'Bu e-posta adresine sahip bir hesap bulunamadı.';
+        return 'Bu e-posta ile Vertex hesabı bulunamadı. Önce Vertex’te kayıt ol veya Google ile dene.';
+      case 'email-already-in-use':
+        return 'Bu e-posta Vertex’te zaten var. Giriş sekmesinden aynı şifreyle dene.';
       case 'wrong-password':
-        return 'Şifre yanlış. Vertex hesabın Google ile açıldıysa Edge’de de Google ile giriş yap.';
+        return 'Şifre yanlış. Vertex’teki şifreni kullan; Google ile açtıysan Edge’de Google ile gir.';
+      case 'invalid-credential':
+        return 'E-posta veya şifre hatalı. Vertex hesabın varsa aynı mail+şifre ile Giriş yap (Kayıt değil).';
       case 'invalid-email':
         return 'Geçersiz e-posta adresi.';
       case 'user-disabled':
         return 'Bu hesap devre dışı bırakılmış.';
       case 'too-many-requests':
         return 'Çok fazla başarısız deneme. Lütfen daha sonra tekrar deneyin.';
-      case 'invalid-credential':
-        return 'E-posta veya şifre hatalı. Vertex’te Google kullandıysan Edge’de Google ile dene.';
-      case 'email-already-in-use':
-        return 'Bu e-posta zaten kayıtlı. Giriş sekmesinden dene (şifre veya Google).';
       case 'network-request-failed':
         return 'İnternet bağlantınızı kontrol edin.';
       case 'popup-closed-by-user':

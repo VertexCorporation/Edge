@@ -10,6 +10,14 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.26',
+      date: '19 Ağustos 2026',
+      highlights: [
+        'Vertex e-posta hesabı olan herkes Edge’e kayıt olmadan Giriş ile girebilir',
+        'Kayıt’ta e-posta zaten varsa otomatik Giriş’e düşer',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.25',
       date: '19 Ağustos 2026',
       highlights: [

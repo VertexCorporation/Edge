@@ -504,8 +504,8 @@ class _LoginScreenState extends State<LoginScreen>
                 const SizedBox(height: 4),
                 Text(
                   _isLogin
-                      ? 'E-posta veya Cortex kullanıcı adınla giriş yap.'
-                      : 'Adın, e-posta ve şifre ile kayıt ol.',
+                      ? 'Vertex e-posta veya Cortex kullanıcı adınla giriş yap. Ayrı kayıt gerekmez.'
+                      : 'Yeni hesap için ad, e-posta ve şifre. Vertex hesabın varsa Giriş sekmesini kullan.',
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     color: AppColors.tertiaryColor,
