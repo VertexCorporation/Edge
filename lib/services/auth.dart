@@ -205,7 +205,10 @@ class AuthService {
     try {
       final email = await _resolveSignInEmail(identifier);
       if (email == null) {
-        return AuthResult.error('Kullanıcı bulunamadı.');
+        return AuthResult.error(
+          'Vertex / Cortex kullanıcı adı bulunamadı. '
+          'E-posta ile dene veya Google ile giriş yap.',
+        );
       }
 
       final credential = await _auth.signInWithEmailAndPassword(
@@ -492,6 +495,7 @@ class AuthService {
     if (trimmed.isEmpty) return null;
     if (trimmed.contains('@')) return trimmed.toLowerCase();
 
+    // Prefer server resolve (works even with locked-down Firestore).
     try {
       final result = await FirebaseFunctions.instance
           .httpsCallable('resolveLoginEmail')
@@ -508,16 +512,24 @@ class AuthService {
       debugPrint('resolveLoginEmail CF failed: $e');
     }
 
-    try {
-      final key = _sanitizeUsername(trimmed);
-      final usernameDoc =
-          await _firestore.collection('usernames').doc(key).get();
-      final fromUsername = usernameDoc.data()?['email']?.toString();
-      if (fromUsername != null && fromUsername.contains('@')) {
-        return fromUsername.trim().toLowerCase();
+    // Client fallback for Cortex/Vertex username → email.
+    final keys = <String>{
+      trimmed,
+      trimmed.toLowerCase(),
+      _sanitizeUsername(trimmed),
+    }.where((k) => k.isNotEmpty);
+
+    for (final key in keys) {
+      try {
+        final usernameDoc =
+            await _firestore.collection('usernames').doc(key).get();
+        final fromUsername = usernameDoc.data()?['email']?.toString();
+        if (fromUsername != null && fromUsername.contains('@')) {
+          return fromUsername.trim().toLowerCase();
+        }
+      } catch (e) {
+        debugPrint('Username email lookup failed ($key): $e');
       }
-    } catch (e) {
-      debugPrint('Username email lookup failed: $e');
     }
 
     try {
@@ -535,6 +547,23 @@ class AuthService {
       }
     } catch (e) {
       debugPrint('Cortex username lookup failed: $e');
+    }
+
+    // Last resort requires list permission (signed-in only); skip if denied.
+    try {
+      final snap = await _firestore
+          .collection('usernames')
+          .where('username', isEqualTo: trimmed.toLowerCase())
+          .limit(1)
+          .get();
+      if (snap.docs.isNotEmpty) {
+        final email = snap.docs.first.data()['email']?.toString();
+        if (email != null && email.contains('@')) {
+          return email.trim().toLowerCase();
+        }
+      }
+    } catch (e) {
+      debugPrint('Username field lookup failed: $e');
     }
 
     return null;
@@ -774,7 +803,7 @@ class AuthService {
       case 'user-not-found':
         return 'Bu e-posta adresine sahip bir hesap bulunamadı.';
       case 'wrong-password':
-        return 'Şifre yanlış. Lütfen tekrar deneyin.';
+        return 'Şifre yanlış. Vertex hesabın Google ile açıldıysa Edge’de de Google ile giriş yap.';
       case 'invalid-email':
         return 'Geçersiz e-posta adresi.';
       case 'user-disabled':
@@ -782,7 +811,9 @@ class AuthService {
       case 'too-many-requests':
         return 'Çok fazla başarısız deneme. Lütfen daha sonra tekrar deneyin.';
       case 'invalid-credential':
-        return 'E-posta veya şifre hatalı.';
+        return 'E-posta veya şifre hatalı. Vertex’te Google kullandıysan Edge’de Google ile dene.';
+      case 'email-already-in-use':
+        return 'Bu e-posta zaten kayıtlı. Giriş sekmesinden dene (şifre veya Google).';
       case 'network-request-failed':
         return 'İnternet bağlantınızı kontrol edin.';
       case 'popup-closed-by-user':

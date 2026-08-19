@@ -306,7 +306,9 @@ exports.resolveLoginEmail = functions.https.onCall(async (data) => {
   }
 
   const db = admin.firestore();
-  const candidates = Array.from(new Set([raw, raw.toLowerCase()]));
+  const sanitized = raw.toLowerCase().replace(/[^a-z0-9_]/g, "");
+  const candidates = Array.from(new Set([raw, raw.toLowerCase(), sanitized]
+      .filter(Boolean)));
 
   for (const candidate of candidates) {
     const byUsername = await db.collection("users")
@@ -319,9 +321,8 @@ exports.resolveLoginEmail = functions.https.onCall(async (data) => {
     }
   }
 
-  const sanitized = raw.toLowerCase().replace(/[^a-z0-9_]/g, "");
-  if (sanitized) {
-    const usernameDoc = await db.collection("usernames").doc(sanitized).get();
+  for (const key of candidates) {
+    const usernameDoc = await db.collection("usernames").doc(key).get();
     if (usernameDoc.exists) {
       const email = (usernameDoc.data().email || "").trim().toLowerCase();
       if (email.includes("@")) return {email};

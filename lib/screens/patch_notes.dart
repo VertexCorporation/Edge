@@ -10,6 +10,14 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.25',
+      date: '19 Ağustos 2026',
+      highlights: [
+        'Vertex/Cortex kullanıcı adı ile Edge girişi: username→email çözümleme düzeltildi',
+        'Google ile açılmış Vertex hesapları için net hata mesajı',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.24',
       date: '19 Ağustos 2026',
       highlights: [
