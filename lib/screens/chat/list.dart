@@ -474,7 +474,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                         color: AppColors.tertiaryColor,
                       ),
                       filled: true,
-                      fillColor: isDark ? Colors.white10 : Colors.black12,
+                      fillColor: AppColors.secondaryColor,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
                         borderSide: BorderSide.none,
