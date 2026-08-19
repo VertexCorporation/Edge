@@ -186,6 +186,8 @@ class ChatService {
     }
 
     if (encryptedMessage == null || encryptedKey == null) {
+      final plaintext = data['text'] as String?;
+      if (plaintext != null && plaintext.isNotEmpty) return plaintext;
       return '[Mesaj]';
     }
 
@@ -877,31 +879,51 @@ class ChatService {
         'type': type,
       };
     } else {
-      // 1-to-1 E2EE Logic
+      // 1-to-1: try E2EE, fall back to plaintext when keys are missing.
       if (receiverId == null) throw Exception('Alıcı ID gerekli.');
       await initializeKeys();
-      
-      final receiverQuery = await _firestore.collection('usernames').where('userId', isEqualTo: receiverId).limit(1).get();
-      if (receiverQuery.docs.isEmpty) throw Exception('Alıcı bulunamadı.');
-      final receiverPublicKey = receiverQuery.docs.first.data()['publicKey'];
-      if (receiverPublicKey == null) throw Exception('Alıcının genel anahtarı (Public Key) bulunamadı.');
+
+      String? receiverPublicKey;
+      try {
+        final receiverQuery = await _firestore
+            .collection('usernames')
+            .where('userId', isEqualTo: receiverId)
+            .limit(1)
+            .get();
+        if (receiverQuery.docs.isNotEmpty) {
+          receiverPublicKey =
+              receiverQuery.docs.first.data()['publicKey'] as String?;
+        }
+      } catch (_) {}
 
       final myPublicKey = await _cryptoService.getPublicKey();
-      if (myPublicKey == null) throw Exception('Kendi genel anahtarımız bulunamadı.');
 
-      final encryptedForReceiver = await _cryptoService.encryptMessage(text, receiverPublicKey);
-      final encryptedForSelf = await _cryptoService.encryptMessage(text, myPublicKey);
+      if (receiverPublicKey != null && myPublicKey != null) {
+        final encryptedForReceiver =
+            await _cryptoService.encryptMessage(text, receiverPublicKey);
+        final encryptedForSelf =
+            await _cryptoService.encryptMessage(text, myPublicKey);
 
-      messageData = {
-        'senderId': currentUserId,
-        'receiverId': receiverId,
-        'encryptedMessage': encryptedForReceiver['message'],
-        'encryptedKey': encryptedForReceiver['key'],
-        'selfEncryptedMessage': encryptedForSelf['message'],
-        'selfEncryptedKey': encryptedForSelf['key'],
-        'timestamp': FieldValue.serverTimestamp(),
-        'type': type,
-      };
+        messageData = {
+          'senderId': currentUserId,
+          'receiverId': receiverId,
+          'encryptedMessage': encryptedForReceiver['message'],
+          'encryptedKey': encryptedForReceiver['key'],
+          'selfEncryptedMessage': encryptedForSelf['message'],
+          'selfEncryptedKey': encryptedForSelf['key'],
+          'timestamp': FieldValue.serverTimestamp(),
+          'type': type,
+        };
+      } else {
+        // Key(s) missing — send plaintext so the conversation isn't blocked.
+        messageData = {
+          'senderId': currentUserId,
+          'receiverId': receiverId,
+          'text': text,
+          'timestamp': FieldValue.serverTimestamp(),
+          'type': type,
+        };
+      }
     }
 
     await _firestore.collection('chats').doc(chatId).collection('messages').add(messageData);
