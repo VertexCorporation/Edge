@@ -417,7 +417,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
   }) {
     final fg = filled
         ? ThemeAvatar.onAccent()
-        : (isDark ? Colors.white : Colors.black);
+        : AppColors.tertiaryColor;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -426,7 +426,11 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
           shape: BoxShape.circle,
           color: filled
               ? AppColors.senaryColor
-              : (isDark ? Colors.white10 : Colors.black12),
+              : AppColors.background,
+          border: Border.all(
+            color: filled ? Colors.transparent : AppColors.border,
+            width: 1.2,
+          ),
         ),
         child: Icon(icon, color: fg, size: 22),
       ),
