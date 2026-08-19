@@ -675,12 +675,18 @@ class _MessageInputBar extends StatelessWidget {
               builder: (context, value, _) {
                 final hasText = value.text.trim().isNotEmpty;
                 return IconButton(
-                  icon: Icon(
-                    Icons.send_rounded,
-                    color: hasText
-                        ? AppColors.senaryColor
-                        : AppColors.tertiaryColor.withValues(alpha: 0.5),
-                    size: 24,
+                  icon: ColorFiltered(
+                    colorFilter: ColorFilter.mode(
+                      hasText
+                          ? AppColors.senaryColor
+                          : AppColors.tertiaryColor.withValues(alpha: 0.5),
+                      BlendMode.srcIn,
+                    ),
+                    child: Image.asset(
+                      'assets/icons/edge/transparent.png',
+                      width: 24,
+                      height: 24,
+                    ),
                   ),
                   onPressed: onSend,
                 );

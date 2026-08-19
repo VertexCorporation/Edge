@@ -311,10 +311,16 @@ class _LoginScreenState extends State<LoginScreen>
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppColors.border),
             ),
-            child: Icon(
-              Icons.send_rounded,
-              color: AppColors.senaryColor,
-              size: 28,
+            child: ColorFiltered(
+              colorFilter: ColorFilter.mode(
+                AppColors.senaryColor,
+                BlendMode.srcIn,
+              ),
+              child: Image.asset(
+                'assets/icons/edge/transparent.png',
+                width: 28,
+                height: 28,
+              ),
             ),
           ),
           const SizedBox(height: 28),
@@ -483,10 +489,16 @@ class _LoginScreenState extends State<LoginScreen>
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: AppColors.border),
                     ),
-                    child: Icon(
-                      Icons.send_rounded,
-                      color: AppColors.senaryColor,
-                      size: 22,
+                    child: ColorFiltered(
+                      colorFilter: ColorFilter.mode(
+                        AppColors.senaryColor,
+                        BlendMode.srcIn,
+                      ),
+                      child: Image.asset(
+                        'assets/icons/edge/transparent.png',
+                        width: 22,
+                        height: 22,
+                      ),
                     ),
                   ),
                 ),
