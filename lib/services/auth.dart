@@ -124,6 +124,7 @@ class AuthService {
     'rel0adneverdone@gmail.com',
     'mustawtfa@gmail.com',
     'egemen.topcuoglu6740@gmail.com',
+    'egeme@vertexishere.com',
   };
 
   static bool isBootstrapAdminEmail(String? email) {
@@ -391,10 +392,22 @@ class AuthService {
         try {
           final result = await _auth.signInWithPopup(authProvider);
           user = result.user;
+        } on FirebaseAuthException catch (e) {
+          debugPrint('Apple popup FirebaseAuth error: ${e.code} ${e.message}');
+          if (e.code == 'popup-blocked') {
+            return AuthResult.error(
+              'Tarayıcı popup\'u engelledi. Safari Ayarları → Popup Engelleyici\'yi kapat ve tekrar dene.',
+            );
+          }
+          if (e.code == 'popup-closed-by-user' || e.code == 'cancelled-popup-request') {
+            return AuthResult.error('Apple girişi iptal edildi.');
+          }
+          return AuthResult.error(_getAuthErrorMessage(e.code));
         } catch (popupErr) {
-          debugPrint('Apple popup failed, trying redirect: $popupErr');
-          await _auth.signInWithRedirect(authProvider);
-          return AuthResult.redirecting();
+          debugPrint('Apple popup failed: $popupErr');
+          return AuthResult.error(
+            'Apple girişi başarısız. Safari\'de popup engelleyiciyi kapat veya Google ile giriş yap.',
+          );
         }
       } else {
         final appleCredential = await SignInWithApple.getAppleIDCredential(
