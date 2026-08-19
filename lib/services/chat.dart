@@ -58,9 +58,12 @@ class ChatService {
     final existingPublicKey = await _getExistingPublicKeyFromFirestore();
     if (existingPublicKey != null) {
       debugPrint(
-        'E2EE: Local keys missing and no cloud backup found. '
-        'Open Vertex Edge on your primary device once to sync encryption keys.',
+        'E2EE: Found cloud public key but local keys are missing and no cloud backup was found. '
+        'Generating new local keys so sending works. Old messages may not be decryptable.',
       );
+      final publicKey = await _cryptoService.generateAndStoreKeys();
+      await _syncPublicKey(publicKey);
+      await _ensureKeyBackup();
       return;
     }
 

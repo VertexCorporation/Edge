@@ -10,6 +10,14 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.22',
+      date: '19 Ağustos 2026',
+      highlights: [
+        'E2EE: yerel şifreleme anahtarı yoksa yenisi üretilir, mesaj gönderimi çalışır',
+        'Yönetici Paneli: bootstrap admin rolü CF\'de görünmezse otomatik düzeltilip tekrar dener',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.21',
       date: '18 Ağustos 2026',
       highlights: [

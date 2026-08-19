@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../models/role.dart';
+import 'auth.dart';
 import 'cortex_profile.dart';
 
 class AdminUser {
@@ -97,6 +99,8 @@ class AdminService {
       throw ArgumentError('Kullanıcı bulunamadı.');
     }
 
+    // Try CF first
+    var cfPermissionDenied = false;
     try {
       await FirebaseFunctions.instance.httpsCallable('assignUserRole').call({
         if (normalizedEmail.isNotEmpty) 'email': normalizedEmail,
@@ -114,18 +118,44 @@ class AdminService {
       }
       return;
     } on FirebaseFunctionsException catch (e) {
-      debugPrint('assignUserRole CF failed, using Firestore: ${e.code} ${e.message}');
-      if (e.code == 'permission-denied') {
-        throw StateError('Rol atamak için Yönetici veya Mod olmalısın.');
-      }
+      debugPrint('assignUserRole CF failed: ${e.code} ${e.message}');
+      cfPermissionDenied = e.code == 'permission-denied';
     } catch (e) {
-      debugPrint('assignUserRole CF failed, using Firestore: $e');
-      final text = e.toString();
-      if (text.contains('permission-denied')) {
-        throw StateError('Rol atamak için Yönetici veya Mod olmalısın.');
+      debugPrint('assignUserRole CF failed: $e');
+      cfPermissionDenied = e.toString().contains('permission-denied');
+    }
+
+    // If CF said permission-denied, the caller's users doc may still say Üye.
+    // Bootstrap admins fix their own role first, then retry CF once.
+    if (cfPermissionDenied) {
+      final auth = FirebaseAuth.instance;
+      final me = auth.currentUser;
+      if (me != null && AuthService.isBootstrapAdminEmail(me.email)) {
+        debugPrint('assignUserRole: bootstrap admin retrying after self-fix');
+        await AuthService().tryClaimBootstrapAdmin(me);
+        try {
+          await FirebaseFunctions.instance.httpsCallable('assignUserRole').call({
+            if (normalizedEmail.isNotEmpty) 'email': normalizedEmail,
+            'role': normalizedRole,
+            if (userId != null && userId.isNotEmpty) 'uid': userId,
+          });
+          try {
+            await _writeRoleToFirestore(
+              email: normalizedEmail,
+              role: normalizedRole,
+              userId: userId,
+            );
+          } catch (e) {
+            debugPrint('Role Firestore sync after CF retry: $e');
+          }
+          return;
+        } catch (retryErr) {
+          debugPrint('assignUserRole CF retry also failed: $retryErr');
+        }
       }
     }
 
+    // Fallback: write directly to Firestore
     await _writeRoleToFirestore(
       email: normalizedEmail,
       role: normalizedRole,
