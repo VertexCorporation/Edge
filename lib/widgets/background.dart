@@ -252,7 +252,8 @@ class _PixelSpacePainter extends CustomPainter {
     if (size.isEmpty) return;
     final twinkle = (sin(t * pi * 2) + 1) / 2;
 
-    for (final star in _stars) {
+    final starCount = kIsWeb ? 55 : _stars.length;
+    for (final star in _stars.take(starCount)) {
       final pulse = star.twinkle ? (0.5 + 0.5 * twinkle) : 1.0;
       final paint = Paint()
         ..color = Color.fromRGBO(230, 235, 255, star.baseAlpha * pulse);
@@ -345,7 +346,8 @@ class _PixelHeartsPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
     final float = sin(t * pi * 2) * 6;
-    for (var i = 0; i < _positions.length; i++) {
+    final posCount = kIsWeb ? 8 : _positions.length;
+    for (var i = 0; i < posCount; i++) {
       final p = _positions[i];
       final x = p.x * size.width;
       final y = p.y * size.height + float * (0.4 + (i % 3) * 0.2);
@@ -398,7 +400,8 @@ class _PorcelainShardsPainter extends CustomPainter {
     if (size.isEmpty) return;
     final base = min(size.width, size.height);
     final wobble = sin(t * pi * 2) * 10;
-    for (var i = 0; i < _shards.length; i++) {
+    final shardCount = kIsWeb ? 24 : _shards.length;
+    for (var i = 0; i < shardCount; i++) {
       final s = _shards[i];
       final pos = Offset(s.x * size.width, s.y * size.height);
       final shardSize = s.scale * (base / 420);
@@ -465,7 +468,8 @@ class _MintLeavesPainter extends CustomPainter {
     final h = size.height;
     final base = leafColor.withValues(alpha: isDark ? 0.32 : 0.28);
 
-    for (var i = 0; i < _leaves.length; i++) {
+    final leafCount = kIsWeb ? 12 : _leaves.length;
+    for (var i = 0; i < leafCount; i++) {
       final l = _leaves[i];
       final sway = sin(t * pi * 2 * 0.22 + l.phase) * (6.0 * l.sway);
       final dx = sin(t * pi * 2 * 0.28 + l.rot) * (10.0 * l.sway);
@@ -532,8 +536,9 @@ class _SunsetPainter extends CustomPainter {
 
     // Sun disc (pixel-style: concentric squares).
     final sunColor = accent.withValues(alpha: isDark ? 0.45 : 0.40);
-    final px = sunR / 6;
-    for (var ring = 6; ring >= 0; ring--) {
+    final px = sunR / (kIsWeb ? 5 : 6);
+    final startRing = kIsWeb ? 5 : 6;
+    for (var ring = startRing; ring >= 0; ring--) {
       final alpha = (0.15 + (6 - ring) * 0.04).clamp(0.0, 1.0);
       final p = Paint()..color = sunColor.withValues(alpha: alpha);
       final side = px * ring * 2;
@@ -547,8 +552,9 @@ class _SunsetPainter extends CustomPainter {
     final rayPaint = Paint()
       ..color = accent.withValues(alpha: isDark ? 0.18 : 0.14)
       ..strokeWidth = 2;
-    for (var i = 0; i < 8; i++) {
-      final angle = (i / 8) * pi * 2 + t * pi * 0.3;
+    final rayCount = kIsWeb ? 6 : 8;
+    for (var i = 0; i < rayCount; i++) {
+      final angle = (i / rayCount) * pi * 2 + t * pi * 0.3;
       final inner = sunR * 1.3;
       final outer = sunR * (2.0 + sin(t * pi * 2 + i) * 0.4);
       canvas.drawLine(
@@ -559,7 +565,8 @@ class _SunsetPainter extends CustomPainter {
     }
 
     // Horizon line bands.
-    for (var i = 0; i < 5; i++) {
+    final bandCount = kIsWeb ? 3 : 5;
+    for (var i = 0; i < bandCount; i++) {
       final bandY = h * (0.75 + i * 0.05);
       final bandAlpha = (0.06 - i * 0.01).clamp(0.0, 1.0);
       canvas.drawRect(
@@ -590,7 +597,8 @@ class _OceanWavesPainter extends CustomPainter {
     final h = size.height;
 
     // Draw 4 wave layers from bottom.
-    for (var layer = 0; layer < 4; layer++) {
+    final layers = kIsWeb ? 3 : 4;
+    for (var layer = 0; layer < layers; layer++) {
       final baseY = h * (0.55 + layer * 0.12);
       final amp = 12.0 - layer * 2;
       final freq = 3.0 + layer * 0.5;
@@ -612,7 +620,8 @@ class _OceanWavesPainter extends CustomPainter {
     final foamY = h * 0.55;
     final foamPhase = t * pi * 2 * 0.2;
     final foamPaint = Paint()..color = Colors.white.withValues(alpha: isDark ? 0.08 : 0.06);
-    for (var i = 0; i < 30; i++) {
+    final foamCount = kIsWeb ? 18 : 30;
+    for (var i = 0; i < foamCount; i++) {
       final r = Random(i * 53 + 9);
       final fx = r.nextDouble() * w;
       final fy = foamY + sin(fx / w * pi * 3 + foamPhase) * 12 - 4 + r.nextDouble() * 6;
@@ -621,7 +630,8 @@ class _OceanWavesPainter extends CustomPainter {
 
     // Subtle reflection sparkles.
     final sparkle = (sin(t * pi * 2 * 1.5) + 1) / 2;
-    for (var i = 0; i < 12; i++) {
+    final sparkCount = kIsWeb ? 8 : 12;
+    for (var i = 0; i < sparkCount; i++) {
       final r = Random(i * 71 + 3);
       final sx = r.nextDouble() * w;
       final sy = h * (0.6 + r.nextDouble() * 0.35);
@@ -664,7 +674,9 @@ class _NatureTreesPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
 
-    for (var i = 0; i < _trees.length; i++) {
+    final treeCount = kIsWeb ? 6 : _trees.length;
+    final crownLayers = kIsWeb ? 2 : 3;
+    for (var i = 0; i < treeCount; i++) {
       final tr = _trees[i];
       final baseX = tr.x * w;
       final treeH = tr.height * h;
@@ -682,7 +694,7 @@ class _NatureTreesPainter extends CustomPainter {
 
       // Crown: 3 stacked triangles (pixel-ish).
       final crownColor = accent.withValues(alpha: isDark ? 0.22 : 0.18);
-      for (var layer = 0; layer < 3; layer++) {
+      for (var layer = 0; layer < crownLayers; layer++) {
         final layerY = baseY - treeH + layer * treeH * 0.15;
         final layerW = tr.crownW * w * (1.0 - layer * 0.2);
         final layerH = treeH * 0.45;
@@ -732,7 +744,8 @@ class _AuroraPainter extends CustomPainter {
       Color.lerp(accent, Colors.purple, 0.3)!,
     ];
 
-    for (var band = 0; band < 3; band++) {
+    final bandCount = kIsWeb ? 2 : 3;
+    for (var band = 0; band < bandCount; band++) {
       final baseY = h * (0.15 + band * 0.12);
       final phase = t * pi * 2 * (0.12 + band * 0.04) + band * 2.1;
       final amp = 30.0 + band * 10;
@@ -760,7 +773,8 @@ class _AuroraPainter extends CustomPainter {
 
       // Shimmer along the top edge.
       final shimmer = (sin(t * pi * 2 * 0.8 + band) + 1) / 2;
-      for (var i = 0; i < 15; i++) {
+      final shimmerCount = kIsWeb ? 10 : 15;
+      for (var i = 0; i < shimmerCount; i++) {
         final r = Random(i * 37 + band * 99);
         final sx = r.nextDouble() * w;
         final sy = baseY + sin(sx / w * pi * 2 + phase) * amp - 2;
@@ -804,7 +818,8 @@ class _NordIcePainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
 
-    for (var i = 0; i < _crystals.length; i++) {
+    final crystalCount = kIsWeb ? 18 : _crystals.length;
+    for (var i = 0; i < crystalCount; i++) {
       final c = _crystals[i];
       final cx = c.x * w;
       final cy = c.y * h;
@@ -851,7 +866,8 @@ class _NordIcePainter extends CustomPainter {
 
     // Frost edge along the bottom.
     final frostPaint = Paint()..color = accent.withValues(alpha: isDark ? 0.08 : 0.06);
-    for (var i = 0; i < 40; i++) {
+    final frostCount = kIsWeb ? 25 : 40;
+    for (var i = 0; i < frostCount; i++) {
       final r = Random(i * 29 + 5);
       final fx = r.nextDouble() * w;
       final fy = h - r.nextDouble() * h * 0.06;
