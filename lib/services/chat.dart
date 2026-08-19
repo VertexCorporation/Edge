@@ -248,7 +248,13 @@ class ChatService {
     final uid = _auth.currentUser?.uid;
 
     try {
-      final snap = await _firestore.collection('usernames').limit(150).get();
+      // Order by lastSeen so we don't randomly miss eligible users.
+      // (Previously `limit(150)` could return a slice without the users you expect.)
+      final snap = await _firestore
+          .collection('usernames')
+          .orderBy('lastSeen', descending: true)
+          .limit(500)
+          .get();
       for (final mapped in _mapGroupUserDocs(snap.docs, uid)) {
         byUid[mapped['userId'] as String] = mapped;
       }
@@ -257,11 +263,15 @@ class ChatService {
     }
 
     try {
-      final snap = await _firestore.collection('users').limit(150).get();
+      final snap = await _firestore
+          .collection('users')
+          .orderBy('lastSeen', descending: true)
+          .limit(500)
+          .get();
       for (final doc in snap.docs) {
         if (doc.id == uid) continue;
         final data = doc.data();
-        if (!CortexProfile.isEdgeListed(data)) continue;
+        if (!CortexProfile.isTaskAssignable(data)) continue;
         final name = CortexProfile.displayName(data, fallback: doc.id);
         byUid.putIfAbsent(doc.id, () {
           return {
@@ -295,7 +305,7 @@ class ChatService {
           final data = doc.data();
           final userId = data['userId']?.toString() ?? '';
           if (userId.isEmpty || userId == currentUid) return null;
-          if (!CortexProfile.isEdgeListed(data)) return null;
+          if (!CortexProfile.isTaskAssignable(data)) return null;
           return {
             'id': userId,
             'userId': userId,

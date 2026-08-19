@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import '../theme.dart';
 
@@ -158,17 +159,54 @@ class _ThemeSkyState extends State<_ThemeSky>
   Widget build(BuildContext context) {
     final theme = AppColors.currentTheme;
     final isDarkLove = AppColors.darkMode && theme == 'love';
+
+    // Web'de animasyonu kapatınca site kasılmasını ciddi azaltıyoruz.
+    // (Animasyonun kendisi CustomPaint'i her frame yeniden çizdiriyor.)
+    if (kIsWeb) {
+      return CustomPaint(
+        painter: _pickSkyPainter(
+          t: 0,
+          theme: theme,
+          isDarkLove: isDarkLove,
+          gold: AppColors.senaryColor,
+          isDark: AppColors.isDarkUi,
+        ),
+        size: Size.infinite,
+      );
+    }
+
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
         return CustomPaint(
-          painter: theme == 'love'
-              ? _PixelHeartsPainter(_controller.value, isDark: isDarkLove)
-              : _PixelSpacePainter(_controller.value),
+          painter: _pickSkyPainter(
+            t: _controller.value,
+            theme: theme,
+            isDarkLove: isDarkLove,
+            gold: AppColors.senaryColor,
+            isDark: AppColors.isDarkUi,
+          ),
           size: Size.infinite,
         );
       },
     );
+  }
+
+  CustomPainter _pickSkyPainter({
+    required double t,
+    required String theme,
+    required bool isDarkLove,
+    required Color gold,
+    required bool isDark,
+  }) {
+    if (theme == 'love') {
+      return _PixelHeartsPainter(t, isDark: isDarkLove);
+    }
+    if (theme == 'porcelain') {
+      return _PorcelainShardsPainter(t, gold: gold, isDark: isDark);
+    }
+    // deepSpace + default fallback
+    return _PixelSpacePainter(t);
   }
 }
 
@@ -176,7 +214,7 @@ class _PixelSpacePainter extends CustomPainter {
   final double t;
   _PixelSpacePainter(this.t);
 
-  static final _stars = List.generate(140, (i) {
+  static final _stars = List.generate(90, (i) {
     final r = Random(i * 17 + 42);
     return _Star(
       x: r.nextDouble(),
@@ -308,7 +346,7 @@ class _PixelHeartsPainter extends CustomPainter {
     [0, 0, 0, 1, 0, 0, 0],
   ];
 
-  static final _positions = List.generate(16, (i) {
+  static final _positions = List.generate(12, (i) {
     final r = Random(i * 31 + 24);
     return (
       x: r.nextDouble(),
@@ -356,4 +394,99 @@ class _PixelHeartsPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _PixelHeartsPainter oldDelegate) =>
       oldDelegate.t != t || oldDelegate.isDark != isDark;
+}
+
+class _PorcelainShardsPainter extends CustomPainter {
+  final double t;
+  final Color gold;
+  final bool isDark;
+
+  _PorcelainShardsPainter(this.t, {required this.gold, required this.isDark});
+
+  static final _shards = List.generate(48, (i) {
+    final r = Random(i * 97 + 11);
+    final points = List.generate(5, (p) {
+      // Normalized jagged polygon points around (0,0)
+      final x = (r.nextDouble() - 0.5) * 1.1;
+      final y = (r.nextDouble() - 0.5) * 1.1;
+      return Offset(x, y);
+    });
+    return (
+      x: r.nextDouble(),
+      y: r.nextDouble(),
+      scale: 14.0 + r.nextDouble() * 22.0,
+      rot: (r.nextDouble() - 0.5) * 3.14,
+      alpha: 0.10 + r.nextDouble() * 0.20,
+      phase: r.nextDouble() * pi * 2,
+      points: points,
+    );
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+
+    final base = min(size.width, size.height);
+    final wobble = sin(t * pi * 2) * 10;
+
+    for (var i = 0; i < _shards.length; i++) {
+      final s = _shards[i];
+      final pos = Offset(s.x * size.width, s.y * size.height);
+      final shardSize = s.scale * (base / 420);
+
+      final dx = sin(t * pi * 2 + s.phase) * (1.0 + (i % 4) * 0.5);
+      final dy = cos(t * pi * 2 + s.phase) * (1.0 + (i % 3) * 0.6);
+
+      canvas.save();
+      canvas.translate(pos.dx + dx, pos.dy + dy + wobble * 0.02);
+      canvas.rotate(s.rot + dx * 0.003);
+
+      final fillPaint = Paint()
+        ..style = PaintingStyle.fill
+        ..color = gold.withValues(alpha: (isDark ? 0.08 : 0.10) + s.alpha);
+
+      final outlinePaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0
+        ..color = gold.withValues(alpha: (isDark ? 0.18 : 0.24) + s.alpha * 0.4);
+
+      final points = s.points;
+      final path = Path();
+      for (var p = 0; p < points.length; p++) {
+        final pt = points[p];
+        final local = Offset(pt.dx * shardSize, pt.dy * shardSize);
+        if (p == 0) {
+          path.moveTo(local.dx, local.dy);
+        } else {
+          path.lineTo(local.dx, local.dy);
+        }
+      }
+      path.close();
+
+      canvas.drawPath(path, fillPaint);
+      canvas.drawPath(path, outlinePaint);
+
+      // Thin "crack" lines for a porcelain-break look.
+      final crackPaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.8
+        ..color = gold.withValues(alpha: (isDark ? 0.10 : 0.14) + s.alpha * 0.25);
+
+      if (points.length >= 4) {
+        final p0 = Offset(points[0].dx * shardSize, points[0].dy * shardSize);
+        final p2 = Offset(points[2].dx * shardSize, points[2].dy * shardSize);
+        final p3 = Offset(points[3].dx * shardSize, points[3].dy * shardSize);
+        canvas.drawLine(p0, p2, crackPaint);
+        canvas.drawLine(p2, p3, crackPaint);
+      }
+
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _PorcelainShardsPainter oldDelegate) =>
+      oldDelegate.t != t ||
+      oldDelegate.gold != gold ||
+      oldDelegate.isDark != isDark;
 }

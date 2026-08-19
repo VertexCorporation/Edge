@@ -10,6 +10,15 @@ class PatchNotesScreen extends StatelessWidget {
 
   static const _notes = [
     _PatchNote(
+      version: '1.0.24',
+      date: '19 Ağustos 2026',
+      highlights: [
+        'Sohbet: kullanıcı listesi (grup/davet) limit yüzünden boş dönmüyor',
+        'Porselen tema: arka plana kırık porselen altın parçalar eklendi',
+        'Web: arka plan animasyonu statik modda (daha az kasılma)',
+      ],
+    ),
+    _PatchNote(
       version: '1.0.23',
       date: '19 Ağustos 2026',
       highlights: [

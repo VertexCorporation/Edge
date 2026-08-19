@@ -582,7 +582,7 @@ class AppColors {
 
   /// Uzay and Aşk show pixel sky decorations behind transparent surfaces.
   static bool get hasThemedSky =>
-      _accentTheme == 'deepSpace' || _accentTheme == 'love';
+      _accentTheme == 'deepSpace' || _accentTheme == 'love' || _accentTheme == 'porcelain';
 
   /// Scroll/list backdrop — transparent when sky decorations are active.
   static Color get fogColor => hasThemedSky ? Colors.transparent : background;
