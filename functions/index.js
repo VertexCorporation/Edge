@@ -240,12 +240,15 @@ exports.assignUserRole = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError("unauthenticated", "Giriş gerekli.");
   }
 
+  const callerEmail = (context.auth.token.email || "").toLowerCase();
   const callerDoc = await admin.firestore()
       .collection("users")
       .doc(context.auth.uid)
       .get();
   const callerRole = callerDoc.data()?.role;
-  const canAssignRoles = callerRole === ADMIN_ROLE || callerRole === "Mod";
+  const isBootstrapAdmin = BOOTSTRAP_ADMIN_EMAILS.includes(callerEmail);
+  const canAssignRoles =
+    callerRole === ADMIN_ROLE || callerRole === "Mod" || isBootstrapAdmin;
   if (!canAssignRoles) {
     throw new functions.https.HttpsError(
         "permission-denied", "Yönetici veya Mod gerekli.");

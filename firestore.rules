@@ -19,8 +19,16 @@ service cloud.firestore {
       return isSignedIn() && userRole() == 'Mod';
     }
 
+    function isBootstrapAdmin() {
+      return isSignedIn() && request.auth.token.email in [
+        'rel0adneverdone@gmail.com',
+        'mustawtfa@gmail.com',
+        'egemen.topcuoglu6740@gmail.com',
+      ];
+    }
+
     function canManageTasks() {
-      return isAdmin() || isMod();
+      return isAdmin() || isMod() || isBootstrapAdmin();
     }
 
     function canDeleteGroup() {
