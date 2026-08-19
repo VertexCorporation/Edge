@@ -12,8 +12,8 @@ import '../utils/ios.dart';
 import '../version.dart';
 import 'package:edge/l10n/app_localizations.dart';
 
-/// Login screen with Vertex branding
-/// Features: geo background, glassmorphic card, gradient text, animated logo
+/// Login screen with Vertex branding.
+/// Features: geo background, glassmorphic card, gradient text, animated logo.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -733,8 +733,7 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildOAuthButton({

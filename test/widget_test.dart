@@ -9,18 +9,21 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  test('ThemeProvider loads and persists theme changes', () async {
-    final provider = ThemeProvider('light');
-    expect(provider.currentTheme, 'light');
-    expect(AppColors.currentTheme, 'light');
+  test('ThemeProvider loads and persists accent/darkMode changes', () async {
+    final provider = ThemeProvider(accentTheme: 'default', darkMode: false);
+    expect(provider.accentTheme, 'default');
+    expect(provider.darkMode, false);
 
-    provider.changeTheme('dark');
+    provider.changeAccent('love');
     await Future<void>.delayed(Duration.zero);
+    expect(provider.accentTheme, 'love');
 
-    expect(provider.currentTheme, 'dark');
-    expect(AppColors.currentTheme, 'dark');
+    provider.setDarkMode(true);
+    await Future<void>.delayed(Duration.zero);
+    expect(provider.darkMode, true);
 
     final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getString('selectedTheme'), 'dark');
+    expect(prefs.getString('accentTheme'), 'love');
+    expect(prefs.getBool('darkMode'), true);
   });
 }
