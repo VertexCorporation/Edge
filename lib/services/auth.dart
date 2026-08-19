@@ -388,8 +388,14 @@ class AuthService {
           ..addScope('email')
           ..addScope('name')
           ..setCustomParameters({'locale': 'tr_TR'});
-        await _auth.signInWithRedirect(authProvider);
-        return AuthResult.redirecting();
+        try {
+          final result = await _auth.signInWithPopup(authProvider);
+          user = result.user;
+        } catch (popupErr) {
+          debugPrint('Apple popup failed, trying redirect: $popupErr');
+          await _auth.signInWithRedirect(authProvider);
+          return AuthResult.redirecting();
+        }
       } else {
         final appleCredential = await SignInWithApple.getAppleIDCredential(
           scopes: [
