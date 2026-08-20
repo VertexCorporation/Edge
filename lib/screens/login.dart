@@ -807,6 +807,7 @@ class _LoginScreenState extends State<LoginScreen>
     final result = await _authService.signInWithGoogle();
 
     if (!mounted) return;
+    if (result.isRedirecting) return;
 
     if (!result.isSuccess) {
       _fillController.reverse();
@@ -836,6 +837,7 @@ class _LoginScreenState extends State<LoginScreen>
     final result = await _authService.signInWithApple();
 
     if (!mounted) return;
+    if (result.isRedirecting) return;
 
     if (!result.isSuccess) {
       _fillController.reverse();

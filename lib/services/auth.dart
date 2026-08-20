@@ -334,6 +334,11 @@ class AuthService {
             'prompt': 'select_account',
             'access_type': 'online',
           });
+        // iOS Safari blocks popups and loses redirect state across firebaseapp.com.
+        if (isIosDevice()) {
+          await _auth.signInWithRedirect(authProvider);
+          return AuthResult.redirecting();
+        }
         try {
           final result = await _auth.signInWithPopup(authProvider);
           user = result.user;
@@ -389,25 +394,29 @@ class AuthService {
           ..addScope('email')
           ..addScope('name')
           ..setCustomParameters({'locale': 'tr_TR'});
+        // iOS Safari: full-page redirect (popup fails / missing initial state).
+        if (isIosDevice()) {
+          await _auth.signInWithRedirect(authProvider);
+          return AuthResult.redirecting();
+        }
         try {
           final result = await _auth.signInWithPopup(authProvider);
           user = result.user;
         } on FirebaseAuthException catch (e) {
           debugPrint('Apple popup FirebaseAuth error: ${e.code} ${e.message}');
           if (e.code == 'popup-blocked') {
-            return AuthResult.error(
-              'Tarayıcı popup\'u engelledi. Safari Ayarları → Popup Engelleyici\'yi kapat ve tekrar dene.',
-            );
+            await _auth.signInWithRedirect(authProvider);
+            return AuthResult.redirecting();
           }
-          if (e.code == 'popup-closed-by-user' || e.code == 'cancelled-popup-request') {
+          if (e.code == 'popup-closed-by-user' ||
+              e.code == 'cancelled-popup-request') {
             return AuthResult.error('Apple girişi iptal edildi.');
           }
           return AuthResult.error(_getAuthErrorMessage(e.code));
         } catch (popupErr) {
-          debugPrint('Apple popup failed: $popupErr');
-          return AuthResult.error(
-            'Apple girişi başarısız. Safari\'de popup engelleyiciyi kapat veya Google ile giriş yap.',
-          );
+          debugPrint('Apple popup failed, trying redirect: $popupErr');
+          await _auth.signInWithRedirect(authProvider);
+          return AuthResult.redirecting();
         }
       } else {
         final appleCredential = await SignInWithApple.getAppleIDCredential(
@@ -878,6 +887,7 @@ class AuthService {
 /// Result class for authentication operations
 class AuthResult {
   final bool isSuccess;
+  final bool isRedirecting;
   final String? errorMessage;
   final User? user;
   final String? name;
@@ -885,6 +895,7 @@ class AuthResult {
 
   AuthResult._({
     required this.isSuccess,
+    this.isRedirecting = false,
     this.errorMessage,
     this.user,
     this.name,
@@ -892,7 +903,7 @@ class AuthResult {
   });
 
   factory AuthResult.redirecting() {
-    return AuthResult._(isSuccess: true);
+    return AuthResult._(isSuccess: true, isRedirecting: true);
   }
 
   factory AuthResult.success({

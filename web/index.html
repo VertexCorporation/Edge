@@ -116,16 +116,32 @@
       if (loading) loading.remove();
     });
 
-    // Safari / Mac PWA keeps an old Flutter service worker.
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function (regs) {
-        return Promise.all(regs.map(function (r) { return r.unregister(); }));
-      }).then(function () {
-        if (!window.caches) return;
-        return caches.keys().then(function (keys) {
-          return Promise.all(keys.map(function (k) { return caches.delete(k); }));
-        });
-      }).catch(function () {});
+    function isOAuthReturn() {
+      var href = window.location.href;
+      if (href.indexOf('__/auth/') !== -1) return true;
+      var q = window.location.search || '';
+      return /[?&](apiKey|mode|oobCode|code|state)=/.test(q);
+    }
+
+    function clearStaleCaches() {
+      if (isOAuthReturn()) return;
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          return Promise.all(regs.map(function (r) { return r.unregister(); }));
+        }).then(function () {
+          if (!window.caches) return;
+          return caches.keys().then(function (keys) {
+            return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+          });
+        }).catch(function () {});
+      }
+    }
+
+    // Don't wipe caches before Firebase redirect sign-in completes (Safari ITP).
+    if (!isOAuthReturn()) {
+      window.addEventListener('flutter-first-frame', function () {
+        setTimeout(clearStaleCaches, 8000);
+      });
     }
 
     // Fallback if Flutter fails to boot on slow mobile networks
