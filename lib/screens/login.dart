@@ -471,47 +471,41 @@ class _LoginScreenState extends State<LoginScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: ColorFiltered(
-                      colorFilter: ColorFilter.mode(
-                        AppColors.senaryColor,
-                        BlendMode.srcIn,
-                      ),
-                      child: Image.asset(
-                        'assets/icons/edge/transparent.png',
-                        width: 22,
-                        height: 22,
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: Text(
+                      key: ValueKey<bool>(_isLogin),
+                      _isLogin ? 'Tekrar hoş geldin' : 'Hesap oluştur',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: isDark
+                            ? AppColors.primaryColor.inverted
+                            : AppColors.primaryColor.inverted,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 18),
-                Text(
-                  _isLogin ? 'Tekrar hoş geldin' : 'Hesap oluştur',
-                  style: GoogleFonts.inter(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: isDark
-                        ? AppColors.primaryColor.inverted
-                        : AppColors.primaryColor.inverted,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _isLogin
-                      ? 'Vertex e-posta veya Cortex kullanıcı adınla giriş yap. Ayrı kayıt gerekmez.'
-                      : 'Yeni hesap için ad, e-posta ve şifre. Vertex hesabın varsa Giriş sekmesini kullan.',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: AppColors.tertiaryColor,
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: Text(
+                      key: ValueKey<bool>(_isLogin),
+                      _isLogin
+                          ? 'Vertex e-posta veya Cortex kullanıcı adınla giriş yap. Ayrı kayıt gerekmez.'
+                          : 'Yeni hesap için ad, e-posta ve şifre. Vertex hesabın varsa Giriş sekmesini kullan.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: AppColors.tertiaryColor,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -652,18 +646,6 @@ class _LoginScreenState extends State<LoginScreen>
                 // Login/Register button
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
-                  transitionBuilder: (Widget child, Animation<double> animation) {
-                    return FadeTransition(
-                      opacity: animation,
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0.0, 0.2),
-                          end: Offset.zero,
-                        ).animate(animation),
-                        child: child,
-                      ),
-                    );
-                  },
                   child: SizedBox(
                     width: double.infinity,
                     child: _buildOAuthButton(
@@ -707,6 +689,7 @@ class _LoginScreenState extends State<LoginScreen>
                       width: double.infinity,
                       child: _buildOAuthButton(
                         icon: FontAwesomeIcons.apple,
+                        iconSize: 24, // Matched visual weight with Google
                         label: AppLocalizations.of(context)!.continueWithApple,
                         isLoading: _isLoadingApple,
                         onPressed: _handleAppleSignIn,
@@ -750,6 +733,7 @@ class _LoginScreenState extends State<LoginScreen>
     required bool isLoading,
     required VoidCallback onPressed,
     required Brightness brightness,
+    double iconSize = 20,
   }) {
     final isDark = brightness == Brightness.dark;
     return Material(
@@ -774,7 +758,7 @@ class _LoginScreenState extends State<LoginScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     if (icon != null) ...[
-                      FaIcon(icon, size: 20, color: isDark ? Colors.white : Colors.black),
+                      FaIcon(icon, size: iconSize, color: isDark ? Colors.white : Colors.black),
                       const SizedBox(width: 8),
                     ],
                     Flexible(
