@@ -273,22 +273,6 @@ class _LoginScreenState extends State<LoginScreen>
           },
           child: _buildLoginCard(brightness, isDark),
         ),
-        const SizedBox(height: 24),
-        Text(
-          'v$kAppVersion',
-          style: GoogleFonts.inter(
-            fontSize: 11,
-            color: AppColors.tertiaryColor.withValues(alpha: 0.45),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          AppLocalizations.of(context)!.copyRightText,
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            color: AppColors.tertiaryColor.withValues(alpha: 0.5),
-          ),
-        ),
       ],
     );
   }
@@ -549,7 +533,7 @@ class _LoginScreenState extends State<LoginScreen>
                       ? 'E-posta veya kullanıcı adı'
                       : AppLocalizations.of(context)!.email,
                   hint: _isLogin
-                      ? 'e-posta veya Cortex kullanıcı adı'
+                      ? 'E-posta veya Vertex kullanıcı adı'
                       : AppLocalizations.of(context)!.exampleEmail,
                   controller: _emailController,
                   keyboardType: _isLogin
