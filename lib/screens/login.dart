@@ -917,21 +917,24 @@ class _AnimatedNeonBorderState extends State<AnimatedNeonBorder>
               child: AnimatedBuilder(
                 animation: _controller,
                 builder: (context, child) {
-                  return Transform.rotate(
-                    angle: _controller.value * 2 * math.pi,
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        gradient: SweepGradient(
-                          colors: [
-                            Colors.transparent,
-                            Colors.transparent,
-                            Color(0xFF00C6FF), // Neon Space Blue
-                            Color(0xFF0072FF),
-                            Color(0xFF00C6FF),
-                            Colors.transparent,
-                            Colors.transparent,
-                          ],
-                          stops: [0.0, 0.4, 0.48, 0.5, 0.52, 0.6, 1.0],
+                  return Transform.scale(
+                    scale: 4.0, // Prevent clipping during rotation for tall rectangles
+                    child: Transform.rotate(
+                      angle: _controller.value * 2 * math.pi,
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          gradient: SweepGradient(
+                            colors: [
+                              Colors.transparent,
+                              Colors.transparent,
+                              Color(0xFF00C6FF), // Neon Space Blue
+                              Color(0xFF0072FF),
+                              Color(0xFF00C6FF),
+                              Colors.transparent,
+                              Colors.transparent,
+                            ],
+                            stops: [0.0, 0.4, 0.48, 0.5, 0.52, 0.6, 1.0],
+                          ),
                         ),
                       ),
                     ),
