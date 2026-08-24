@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
 import '../../theme.dart';
@@ -367,7 +368,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
             ),
       actions: [
         _circleIcon(
-          icon: _isSearching ? Icons.close : Icons.search,
+          icon: _isSearching ? 'assets/icons/outlined/close.svg' : 'assets/icons/outlined/search.svg',
           filled: false,
           isDark: isDark,
           onTap: () {
@@ -382,7 +383,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
         if (_canCreateGroups) ...[
           const SizedBox(width: 10),
           _circleIcon(
-            icon: Icons.groups_outlined,
+            icon: 'assets/icons/outlined/user.svg',
             filled: false,
             isDark: isDark,
             onTap: () {
@@ -394,7 +395,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
           ),
           const SizedBox(width: 10),
           _circleIcon(
-            icon: Icons.add,
+            icon: 'assets/icons/solid/plus.svg',
             filled: true,
             isDark: isDark,
             onTap: () {
@@ -410,7 +411,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
   }
 
   Widget _circleIcon({
-    required IconData icon,
+    required dynamic icon,
     required bool filled,
     required bool isDark,
     required VoidCallback onTap,
@@ -432,7 +433,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
             width: 1.2,
           ),
         ),
-        child: Icon(icon, color: fg, size: 22),
+        child: icon is IconData ? Icon(icon, color: fg, size: 22) : SvgPicture.asset(icon, colorFilter: ColorFilter.mode(fg, BlendMode.srcIn), width: 22, height: 22),
       ),
     );
   }

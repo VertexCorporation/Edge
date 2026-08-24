@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../theme.dart';
 import '../models/role.dart';
 import '../services/auth.dart';
@@ -98,14 +99,13 @@ class _HomeShellState extends State<HomeShell> {
         destinations: [
           if (showTasks)
             NavigationDestination(
-              icon: const Icon(Icons.task_alt_outlined),
-              selectedIcon: Icon(Icons.task_alt, color: AppColors.senaryColor),
+              icon: SvgPicture.asset('assets/icons/outlined/check.svg', width: 24, height: 24, colorFilter: ColorFilter.mode(AppColors.tertiaryColor, BlendMode.srcIn)),
+              selectedIcon: SvgPicture.asset('assets/icons/solid/check.svg', width: 24, height: 24, colorFilter: ColorFilter.mode(AppColors.senaryColor, BlendMode.srcIn)),
               label: AppLocalizations.of(context)!.tasks,
             ),
           NavigationDestination(
-            icon: const Icon(Icons.chat_bubble_outline),
-            selectedIcon:
-                Icon(Icons.chat_bubble, color: AppColors.senaryColor),
+            icon: SvgPicture.asset('assets/icons/outlined/mail.svg', width: 24, height: 24, colorFilter: ColorFilter.mode(AppColors.tertiaryColor, BlendMode.srcIn)),
+            selectedIcon: SvgPicture.asset('assets/icons/solid/mail.svg', width: 24, height: 24, colorFilter: ColorFilter.mode(AppColors.senaryColor, BlendMode.srcIn)),
             label: AppLocalizations.of(context)!.chats,
           ),
         ],

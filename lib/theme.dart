@@ -37,13 +37,13 @@ class ThemeProvider extends ChangeNotifier {
     final savedAccent = prefs.getString('accentTheme');
     final savedDark = prefs.getBool('themeDarkMode');
     if (savedAccent != null) {
-      return (accent: savedAccent, dark: savedDark ?? false);
+      return (accent: savedAccent, dark: savedDark ?? true);
     }
 
-    final legacy = prefs.getString('selectedTheme') ?? 'light';
+    final legacy = prefs.getString('selectedTheme') ?? 'dark';
     if (legacy == 'light') return (accent: 'default', dark: false);
     if (legacy == 'dark') return (accent: 'default', dark: true);
-    return (accent: legacy, dark: false);
+    return (accent: legacy, dark: true);
   }
 
   void changeAccent(String theme) async {
@@ -128,7 +128,7 @@ class ThemeColors {
 
 class AppColors {
   static String _accentTheme = 'default';
-  static bool _darkMode = false;
+  static bool _darkMode = true;
 
   static String get accentTheme => _accentTheme;
 
@@ -145,20 +145,20 @@ class AppColors {
 
   static final Map<String, ThemeColors> _themeDefinitions = {
     'light': ThemeColors(
-      primaryColor: Colors.white,
-      secondaryColor: const Color(0xFFF4F6F8),
-      tertiaryColor: const Color(0xFF5C6370),
-      quaternaryColor: const Color(0xFFE8ECF1),
-      quinaryColor: const Color(0xA8000000),
-      senaryColor: const Color(0xFF2563EB),
-      septenaryColor: const Color(0xFFDC2626),
-      background: const Color(0xFFFFFFFF),
-      border: const Color(0xFFD0D7E2),
-      premium: const Color(0xFF7C3AED),
-      navigationBarColor: Colors.white,
-      statusBarColor: Colors.transparent,
-      navigationBarIconBrightness: Brightness.dark,
-      statusBarIconBrightness: Brightness.dark,
+      primaryColor: Colors.black,
+      secondaryColor: const Color(0xFF1C1C1F),
+      tertiaryColor: const Color(0xFFA1A1AA),
+      quaternaryColor: const Color(0xFF141416),
+      quinaryColor: Colors.white70,
+      senaryColor: const Color(0xFF60A5FA),
+      septenaryColor: const Color(0xFFF87171),
+      background: const Color(0xFF0B0B0C),
+      border: const Color(0xFF2E2E33),
+      premium: const Color(0xFFC4B5FD),
+      navigationBarColor: const Color(0xFF0B0B0C),
+      statusBarColor: const Color(0xFF0B0B0C),
+      navigationBarIconBrightness: Brightness.light,
+      statusBarIconBrightness: Brightness.light,
     ),
     'dark': ThemeColors(
       primaryColor: Colors.black,
