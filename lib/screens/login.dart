@@ -464,19 +464,17 @@ class _LoginScreenState extends State<LoginScreen>
 
 
   Widget _buildLoginCard(Brightness brightness, bool isDark) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: AppColors.secondaryColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: AppColors.border,
+    return AnimatedNeonBorder(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: AppColors.secondaryColor,
+              borderRadius: BorderRadius.circular(16),
             ),
-          ),
-          child: Form(
-            key: _formKey,
+            child: Form(
+              key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -869,6 +867,87 @@ class ImageFilterWidget extends StatelessWidget {
       child: BackdropFilter(
         filter: ui.ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
         child: child,
+      ),
+    );
+  }
+}
+
+class AnimatedNeonBorder extends StatefulWidget {
+  final Widget child;
+
+  const AnimatedNeonBorder({super.key, required this.child});
+
+  @override
+  State<AnimatedNeonBorder> createState() => _AnimatedNeonBorderState();
+}
+
+class _AnimatedNeonBorderState extends State<AnimatedNeonBorder>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(1.5), // Border thickness
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          color: Colors.transparent,
+        ),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  return Transform.rotate(
+                    angle: _controller.value * 2 * math.pi,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: SweepGradient(
+                          colors: [
+                            Colors.transparent,
+                            Colors.transparent,
+                            Color(0xFF00C6FF), // Neon Space Blue
+                            Color(0xFF0072FF),
+                            Color(0xFF00C6FF),
+                            Colors.transparent,
+                            Colors.transparent,
+                          ],
+                          stops: [0.0, 0.4, 0.48, 0.5, 0.52, 0.6, 1.0],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            // Inner content
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: AppColors.background,
+              ),
+              child: widget.child,
+            ),
+          ],
+        ),
       ),
     );
   }
