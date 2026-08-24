@@ -891,7 +891,7 @@ class _AnimatedNeonBorderState extends State<AnimatedNeonBorder>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 10), // Slowed down from 4s
+      duration: const Duration(seconds: 8), // Adjusted to 8 seconds for perfect constant speed
     )..repeat();
   }
 
@@ -903,56 +903,106 @@ class _AnimatedNeonBorderState extends State<AnimatedNeonBorder>
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        padding: const EdgeInsets.all(1.5), // Border thickness
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          color: Colors.transparent,
+    return Stack(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: AppColors.background,
+          ),
+          child: widget.child,
         ),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: AnimatedBuilder(
-                animation: _controller,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: 4.0, // Prevent clipping during rotation for tall rectangles
-                    child: Transform.rotate(
-                      angle: _controller.value * 2 * math.pi,
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          gradient: SweepGradient(
-                            colors: [
-                              Colors.transparent,
-                              Colors.transparent,
-                              Color(0xFF00C6FF), // Neon Space Blue
-                              Color(0xFF0072FF),
-                              Color(0xFF00C6FF),
-                              Colors.transparent,
-                              Colors.transparent,
-                            ],
-                            stops: [0.0, 0.4, 0.48, 0.5, 0.52, 0.6, 1.0],
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                return CustomPaint(
+                  painter: NeonBorderPainter(_controller.value),
+                );
+              },
             ),
-            // Inner content
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: AppColors.background,
-              ),
-              child: widget.child,
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
+}
+
+class NeonBorderPainter extends CustomPainter {
+  final double progress;
+
+  NeonBorderPainter(this.progress);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final RRect rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      const Radius.circular(16),
+    );
+
+    final Path path = Path()..addRRect(rrect);
+    final ui.PathMetrics pathMetrics = path.computeMetrics();
+    if (pathMetrics.isEmpty) return;
+    
+    final ui.PathMetric metric = pathMetrics.first;
+    
+    final double length = metric.length;
+    final double trailLength = length * 0.4; // Light length is 40% of perimeter
+    
+    final double headPoint = length * progress;
+    final double tailPoint = headPoint - trailLength;
+
+    final Paint paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0
+      ..strokeCap = StrokeCap.round;
+
+    final Paint glowPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6.0
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8.0);
+
+    // Draw fading segments to create the comet tail effect
+    final int segments = 40;
+    for (int i = 0; i < segments; i++) {
+      double pStart = tailPoint + (i * trailLength / segments);
+      double pEnd = pStart + (trailLength / segments);
+      
+      Path segment = Path();
+      
+      void addSeg(double s, double e) {
+        if (s < 0 && e < 0) {
+           segment.addPath(metric.extractPath(s + length, e + length), Offset.zero);
+        } else if (s < 0 && e >= 0) {
+           segment.addPath(metric.extractPath(s + length, length), Offset.zero);
+           segment.addPath(metric.extractPath(0, e), Offset.zero);
+        } else if (s > length && e > length) {
+           segment.addPath(metric.extractPath(s - length, e - length), Offset.zero);
+        } else if (s <= length && e > length) {
+           segment.addPath(metric.extractPath(s, length), Offset.zero);
+           segment.addPath(metric.extractPath(0, e - length), Offset.zero);
+        } else {
+           segment.addPath(metric.extractPath(s, e), Offset.zero);
+        }
+      }
+      
+      addSeg(pStart, pEnd);
+
+      double opacity = (i / segments); // 0.0 to 1.0
+      opacity = opacity * opacity; // Non-linear fade for realistic tail
+      
+      Color baseColor = Color.lerp(const Color(0xFF0072FF), const Color(0xFF00C6FF), opacity)!;
+      
+      paint.color = baseColor.withValues(alpha: opacity);
+      glowPaint.color = baseColor.withValues(alpha: opacity * 0.6);
+      
+      canvas.drawPath(segment, glowPaint);
+      canvas.drawPath(segment, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(NeonBorderPainter oldDelegate) => oldDelegate.progress != progress;
 }
