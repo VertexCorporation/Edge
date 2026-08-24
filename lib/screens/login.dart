@@ -936,6 +936,8 @@ class NeonBorderPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+
     final RRect rrect = RRect.fromRectAndRadius(
       Offset.zero & size,
       const Radius.circular(16),
@@ -943,9 +945,12 @@ class NeonBorderPainter extends CustomPainter {
 
     final Path path = Path()..addRRect(rrect);
     final ui.PathMetrics pathMetrics = path.computeMetrics();
-    if (pathMetrics.isEmpty) return;
     
-    final ui.PathMetric metric = pathMetrics.first;
+    // Convert to list to safely check and get the first element
+    final metricsList = pathMetrics.toList();
+    if (metricsList.isEmpty) return;
+    
+    final ui.PathMetric metric = metricsList.first;
     
     final double length = metric.length;
     final double trailLength = length * 0.4; // Light length is 40% of perimeter
