@@ -464,17 +464,10 @@ class _LoginScreenState extends State<LoginScreen>
 
 
   Widget _buildLoginCard(Brightness brightness, bool isDark) {
-    return AnimatedNeonBorder(
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: AppColors.secondaryColor,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Form(
-              key: _formKey,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Form(
+        key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -671,13 +664,16 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                     );
                   },
-                  child: VertexButton(
-                    key: ValueKey<bool>(_isLogin),
-                    label: _isLogin ? AppLocalizations.of(context)!.login : AppLocalizations.of(context)!.signUp,
-                    onPressed: _handleAuth,
-                    isLoading: _isLoading && !_isLoadingGoogle && !_isLoadingApple,
+                  child: SizedBox(
                     width: double.infinity,
-                    icon: _isLogin ? Icons.arrow_forward_rounded : Icons.person_add_rounded,
+                    child: _buildOAuthButton(
+                      key: ValueKey<bool>(_isLogin),
+                      icon: null, // No icon for the main login button, like in the image
+                      label: _isLogin ? AppLocalizations.of(context)!.login : AppLocalizations.of(context)!.signUp,
+                      onPressed: _handleAuth,
+                      isLoading: _isLoading && !_isLoadingGoogle && !_isLoadingApple,
+                      brightness: brightness,
+                    ),
                   ),
                 ),
                 
@@ -705,24 +701,26 @@ class _LoginScreenState extends State<LoginScreen>
                 const SizedBox(height: 24),
 
                 // OAuth Buttons
-                Row(
+                Column(
                   children: [
-                    Expanded(
-                      child: _buildOAuthButton(
-                        icon: FontAwesomeIcons.google,
-                        label: AppLocalizations.of(context)!.continueWithGoogle,
-                        isLoading: _isLoadingGoogle,
-                        onPressed: _handleGoogleSignIn,
-                        brightness: brightness,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
+                    SizedBox(
+                      width: double.infinity,
                       child: _buildOAuthButton(
                         icon: FontAwesomeIcons.apple,
                         label: AppLocalizations.of(context)!.continueWithApple,
                         isLoading: _isLoadingApple,
                         onPressed: _handleAppleSignIn,
+                        brightness: brightness,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: _buildOAuthButton(
+                        icon: FontAwesomeIcons.google,
+                        label: AppLocalizations.of(context)!.continueWithGoogle,
+                        isLoading: _isLoadingGoogle,
+                        onPressed: _handleGoogleSignIn,
                         brightness: brightness,
                       ),
                     ),
@@ -741,13 +739,12 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
               ],
             ),
-          ),
-        ),
       ),
     );
   }
 
   Widget _buildOAuthButton({
+    Key? key,
     required dynamic icon,
     required String label,
     required bool isLoading,
@@ -756,16 +753,17 @@ class _LoginScreenState extends State<LoginScreen>
   }) {
     final isDark = brightness == Brightness.dark;
     return Material(
-      color: AppColors.secondaryColor,
+      key: key,
+      color: Colors.transparent,
       shape: RoundedRectangleBorder(
-        side: BorderSide(color: AppColors.border),
+        side: BorderSide(color: AppColors.border, width: 1.0),
         borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
         onTap: isLoading || _isLoading ? null : onPressed,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 14),
           child: isLoading
               ? const SizedBox(
                   height: 24,
@@ -775,17 +773,21 @@ class _LoginScreenState extends State<LoginScreen>
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    FaIcon(icon, size: 20, color: isDark ? Colors.white : Colors.black),
-                    const SizedBox(width: 8),
+                    if (icon != null) ...[
+                      FaIcon(icon, size: 20, color: isDark ? Colors.white : Colors.black),
+                      const SizedBox(width: 8),
+                    ],
                     Flexible(
-                      child: Text(
-                        label,
-                        style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                          color: isDark ? Colors.white : Colors.black,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          label,
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
