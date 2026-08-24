@@ -464,6 +464,7 @@ class _LoginScreenState extends State<LoginScreen>
 
 
   Widget _buildLoginCard(Brightness brightness, bool isDark) {
+    final vh = MediaQuery.sizeOf(context).height;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Form(
@@ -489,7 +490,7 @@ class _LoginScreenState extends State<LoginScreen>
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: vh * 0.01),
                 SizedBox(
                   width: double.infinity,
                   child: AnimatedSwitcher(
@@ -507,9 +508,9 @@ class _LoginScreenState extends State<LoginScreen>
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: vh * 0.025),
                 _buildModeTabs(),
-                const SizedBox(height: 24),
+                SizedBox(height: vh * 0.03),
 
                 // Name input (only for Sign Up) with smooth animation
                 AnimatedSize(
@@ -573,7 +574,7 @@ class _LoginScreenState extends State<LoginScreen>
                     return null;
                   },
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: vh * 0.025),
 
                 // Password input
                 VertexInput(
@@ -608,7 +609,7 @@ class _LoginScreenState extends State<LoginScreen>
 
                 // Error message
                 if (_errorMessage != null) ...[
-                  const SizedBox(height: 16),
+                  SizedBox(height: vh * 0.02),
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -640,7 +641,7 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                 ],
 
-                const SizedBox(height: 28),
+                SizedBox(height: vh * 0.035),
 
                 // Login/Register button
                 AnimatedSwitcher(
@@ -658,7 +659,7 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                 ),
                 
-                const SizedBox(height: 24),
+                SizedBox(height: vh * 0.03),
                 
                 // OAuth Dividers
                 Row(
@@ -679,7 +680,7 @@ class _LoginScreenState extends State<LoginScreen>
                   ],
                 ),
                 
-                const SizedBox(height: 24),
+                SizedBox(height: vh * 0.03),
 
                 // OAuth Buttons
                 Column(
@@ -695,7 +696,7 @@ class _LoginScreenState extends State<LoginScreen>
                         brightness: brightness,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: vh * 0.015),
                     SizedBox(
                       width: double.infinity,
                       child: _buildOAuthButton(
@@ -709,15 +710,7 @@ class _LoginScreenState extends State<LoginScreen>
                   ],
                 ),
 
-                const SizedBox(height: 16),
-                Text(
-                  'Sunucu yalnızca şifreli veri tutar. Şifreni kaybedersen eski mesajlar geri gelmez.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    height: 1.4,
-                    color: AppColors.tertiaryColor.withValues(alpha: 0.8),
-                  ),
+                  ],
                 ),
               ],
             ),
