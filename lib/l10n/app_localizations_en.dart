@@ -261,8 +261,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createNewCommunity => 'Create New Community';
 
   @override
-  String get notJoinedAnyCommunity =>
-      'Henüz hiçbir topluluğa katılmadınız, hemen yeni bir topluluğa katılın.';
+  String get notJoinedAnyCommunity => 'You haven\'t joined any community yet.';
 
   @override
   String get enterGroupName => 'Please enter a group name';

@@ -273,6 +273,22 @@ class _LoginScreenState extends State<LoginScreen>
           },
           child: _buildLoginCard(brightness, isDark),
         ),
+        const SizedBox(height: 24),
+        Text(
+          'v$kAppVersion',
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            color: AppColors.tertiaryColor.withValues(alpha: 0.45),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          AppLocalizations.of(context)!.copyRightText,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            color: AppColors.tertiaryColor.withValues(alpha: 0.5),
+          ),
+        ),
       ],
     );
   }
@@ -448,53 +464,68 @@ class _LoginScreenState extends State<LoginScreen>
 
 
   Widget _buildLoginCard(Brightness brightness, bool isDark) {
-    final vh = MediaQuery.sizeOf(context).height;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-                SizedBox(
-                  width: double.infinity,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: Text(
-                      key: ValueKey<bool>(_isLogin),
-                      _isLogin ? 'Tekrar hoş geldin' : 'Hesap oluştur',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: isDark
-                            ? AppColors.primaryColor.inverted
-                            : AppColors.primaryColor.inverted,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: AppColors.secondaryColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.border,
+            ),
+          ),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: ColorFiltered(
+                      colorFilter: ColorFilter.mode(
+                        AppColors.senaryColor,
+                        BlendMode.srcIn,
+                      ),
+                      child: Image.asset(
+                        'assets/icons/edge/transparent.png',
+                        width: 22,
+                        height: 22,
                       ),
                     ),
                   ),
                 ),
-                SizedBox(height: vh * 0.01),
-                SizedBox(
-                  width: double.infinity,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: Text(
-                      key: ValueKey<bool>(_isLogin),
-                      _isLogin
-                          ? 'Vertex e-posta veya Cortex kullanıcı adınla giriş yap. Ayrı kayıt gerekmez.'
-                          : 'Yeni hesap için ad, e-posta ve şifre. Vertex hesabın varsa Giriş sekmesini kullan.',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: AppColors.tertiaryColor,
-                      ),
-                    ),
+                const SizedBox(height: 18),
+                Text(
+                  _isLogin ? 'Tekrar hoş geldin' : 'Hesap oluştur',
+                  style: GoogleFonts.inter(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: isDark
+                        ? AppColors.primaryColor.inverted
+                        : AppColors.primaryColor.inverted,
                   ),
                 ),
-                SizedBox(height: vh * 0.025),
+                const SizedBox(height: 4),
+                Text(
+                  _isLogin
+                      ? 'Vertex e-posta veya Cortex kullanıcı adınla giriş yap. Ayrı kayıt gerekmez.'
+                      : 'Yeni hesap için ad, e-posta ve şifre. Vertex hesabın varsa Giriş sekmesini kullan.',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: AppColors.tertiaryColor,
+                  ),
+                ),
+                const SizedBox(height: 20),
                 _buildModeTabs(),
-                SizedBox(height: vh * 0.03),
+                const SizedBox(height: 24),
 
                 // Name input (only for Sign Up) with smooth animation
                 AnimatedSize(
@@ -533,7 +564,7 @@ class _LoginScreenState extends State<LoginScreen>
                       ? 'E-posta veya kullanıcı adı'
                       : AppLocalizations.of(context)!.email,
                   hint: _isLogin
-                      ? 'E-posta veya Vertex kullanıcı adı'
+                      ? 'e-posta veya Cortex kullanıcı adı'
                       : AppLocalizations.of(context)!.exampleEmail,
                   controller: _emailController,
                   keyboardType: _isLogin
@@ -558,7 +589,7 @@ class _LoginScreenState extends State<LoginScreen>
                     return null;
                   },
                 ),
-                SizedBox(height: vh * 0.025),
+                const SizedBox(height: 20),
 
                 // Password input
                 VertexInput(
@@ -593,7 +624,7 @@ class _LoginScreenState extends State<LoginScreen>
 
                 // Error message
                 if (_errorMessage != null) ...[
-                  SizedBox(height: vh * 0.02),
+                  const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -625,25 +656,34 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                 ],
 
-                SizedBox(height: vh * 0.035),
+                const SizedBox(height: 28),
 
                 // Login/Register button
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
-                  child: SizedBox(
+                  transitionBuilder: (Widget child, Animation<double> animation) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0.0, 0.2),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: VertexButton(
+                    key: ValueKey<bool>(_isLogin),
+                    label: _isLogin ? AppLocalizations.of(context)!.login : AppLocalizations.of(context)!.signUp,
+                    onPressed: _handleAuth,
+                    isLoading: _isLoading && !_isLoadingGoogle && !_isLoadingApple,
                     width: double.infinity,
-                    child: _buildOAuthButton(
-                      key: ValueKey<bool>(_isLogin),
-                      icon: null, // No icon for the main login button, like in the image
-                      label: _isLogin ? AppLocalizations.of(context)!.login : AppLocalizations.of(context)!.signUp,
-                      onPressed: _handleAuth,
-                      isLoading: _isLoading && !_isLoadingGoogle && !_isLoadingApple,
-                      brightness: brightness,
-                    ),
+                    icon: _isLogin ? Icons.arrow_forward_rounded : Icons.person_add_rounded,
                   ),
                 ),
                 
-                SizedBox(height: vh * 0.03),
+                const SizedBox(height: 24),
                 
                 // OAuth Dividers
                 Row(
@@ -664,25 +704,12 @@ class _LoginScreenState extends State<LoginScreen>
                   ],
                 ),
                 
-                SizedBox(height: vh * 0.03),
+                const SizedBox(height: 24),
 
                 // OAuth Buttons
-                Column(
+                Row(
                   children: [
-                    SizedBox(
-                      width: double.infinity,
-                      child: _buildOAuthButton(
-                        icon: FontAwesomeIcons.apple,
-                        iconSize: 24, // Matched visual weight with Google
-                        label: AppLocalizations.of(context)!.continueWithApple,
-                        isLoading: _isLoadingApple,
-                        onPressed: _handleAppleSignIn,
-                        brightness: brightness,
-                      ),
-                    ),
-                    SizedBox(height: vh * 0.015),
-                    SizedBox(
-                      width: double.infinity,
+                    Expanded(
                       child: _buildOAuthButton(
                         icon: FontAwesomeIcons.google,
                         label: AppLocalizations.of(context)!.continueWithGoogle,
@@ -691,36 +718,55 @@ class _LoginScreenState extends State<LoginScreen>
                         brightness: brightness,
                       ),
                     ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildOAuthButton(
+                        icon: FontAwesomeIcons.apple,
+                        label: AppLocalizations.of(context)!.continueWithApple,
+                        isLoading: _isLoadingApple,
+                        onPressed: _handleAppleSignIn,
+                        brightness: brightness,
+                      ),
+                    ),
                   ],
+                ),
+
+                const SizedBox(height: 16),
+                Text(
+                  'Sunucu yalnızca şifreli veri tutar. Şifreni kaybedersen eski mesajlar geri gelmez.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    height: 1.4,
+                    color: AppColors.tertiaryColor.withValues(alpha: 0.8),
+                  ),
                 ),
               ],
             ),
-      ),
-    );
+          ),
+        ),
+      );
   }
 
   Widget _buildOAuthButton({
-    Key? key,
     required dynamic icon,
     required String label,
     required bool isLoading,
     required VoidCallback onPressed,
     required Brightness brightness,
-    double iconSize = 20,
   }) {
     final isDark = brightness == Brightness.dark;
     return Material(
-      key: key,
-      color: Colors.transparent,
+      color: AppColors.secondaryColor,
       shape: RoundedRectangleBorder(
-        side: BorderSide(color: AppColors.border, width: 1.0),
+        side: BorderSide(color: AppColors.border),
         borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
         onTap: isLoading || _isLoading ? null : onPressed,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           child: isLoading
               ? const SizedBox(
                   height: 24,
@@ -730,21 +776,17 @@ class _LoginScreenState extends State<LoginScreen>
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    if (icon != null) ...[
-                      FaIcon(icon, size: iconSize, color: isDark ? Colors.white : Colors.black),
-                      const SizedBox(width: 8),
-                    ],
+                    FaIcon(icon, size: 20, color: isDark ? Colors.white : Colors.black),
+                    const SizedBox(width: 8),
                     Flexible(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          label,
-                          style: GoogleFonts.inter(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                            color: isDark ? Colors.white : Colors.black,
-                          ),
+                      child: Text(
+                        label,
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                          color: isDark ? Colors.white : Colors.black,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -830,143 +872,4 @@ class ImageFilterWidget extends StatelessWidget {
       ),
     );
   }
-}
-
-class AnimatedNeonBorder extends StatefulWidget {
-  final Widget child;
-
-  const AnimatedNeonBorder({super.key, required this.child});
-
-  @override
-  State<AnimatedNeonBorder> createState() => _AnimatedNeonBorderState();
-}
-
-class _AnimatedNeonBorderState extends State<AnimatedNeonBorder>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 8), // Adjusted to 8 seconds for perfect constant speed
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: AppColors.background,
-          ),
-          child: widget.child,
-        ),
-        Positioned.fill(
-          child: IgnorePointer(
-            child: AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) {
-                return CustomPaint(
-                  painter: NeonBorderPainter(_controller.value),
-                );
-              },
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class NeonBorderPainter extends CustomPainter {
-  final double progress;
-
-  NeonBorderPainter(this.progress);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (size.isEmpty) return;
-
-    final RRect rrect = RRect.fromRectAndRadius(
-      Offset.zero & size,
-      const Radius.circular(16),
-    );
-
-    final Path path = Path()..addRRect(rrect);
-    final ui.PathMetrics pathMetrics = path.computeMetrics();
-    
-    // Convert to list to safely check and get the first element
-    final metricsList = pathMetrics.toList();
-    if (metricsList.isEmpty) return;
-    
-    final ui.PathMetric metric = metricsList.first;
-    
-    final double length = metric.length;
-    final double trailLength = length * 0.4; // Light length is 40% of perimeter
-    
-    final double headPoint = length * progress;
-    final double tailPoint = headPoint - trailLength;
-
-    final Paint paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
-      ..strokeCap = StrokeCap.round;
-
-    final Paint glowPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 6.0
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8.0);
-
-    // Draw fading segments to create the comet tail effect
-    final int segments = 40;
-    for (int i = 0; i < segments; i++) {
-      double pStart = tailPoint + (i * trailLength / segments);
-      double pEnd = pStart + (trailLength / segments);
-      
-      Path segment = Path();
-      
-      void addSeg(double s, double e) {
-        if (s < 0 && e < 0) {
-           segment.addPath(metric.extractPath(s + length, e + length), Offset.zero);
-        } else if (s < 0 && e >= 0) {
-           segment.addPath(metric.extractPath(s + length, length), Offset.zero);
-           segment.addPath(metric.extractPath(0, e), Offset.zero);
-        } else if (s > length && e > length) {
-           segment.addPath(metric.extractPath(s - length, e - length), Offset.zero);
-        } else if (s <= length && e > length) {
-           segment.addPath(metric.extractPath(s, length), Offset.zero);
-           segment.addPath(metric.extractPath(0, e - length), Offset.zero);
-        } else {
-           segment.addPath(metric.extractPath(s, e), Offset.zero);
-        }
-      }
-      
-      addSeg(pStart, pEnd);
-
-      double opacity = (i / segments); // 0.0 to 1.0
-      opacity = opacity * opacity; // Non-linear fade for realistic tail
-      
-      Color baseColor = Color.lerp(const Color(0xFF0072FF), const Color(0xFF00C6FF), opacity)!;
-      
-      paint.color = baseColor.withValues(alpha: opacity);
-      glowPaint.color = baseColor.withValues(alpha: opacity * 0.6);
-      
-      canvas.drawPath(segment, glowPaint);
-      canvas.drawPath(segment, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(NeonBorderPainter oldDelegate) => oldDelegate.progress != progress;
 }

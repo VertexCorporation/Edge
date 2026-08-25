@@ -27,7 +27,10 @@ class ChatService {
 
   String get currentUserId {
     final uid = _auth.currentUser?.uid;
-    return uid ?? 'dummy_user';
+    if (uid == null || uid.isEmpty) {
+      throw StateError('Oturum bulunamadı. Tekrar giriş yap.');
+    }
+    return uid;
   }
 
   /// Ensure the current user has keys generated and public key is in Firestore

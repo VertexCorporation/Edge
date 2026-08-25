@@ -569,7 +569,7 @@ abstract class AppLocalizations {
   /// No description provided for @notJoinedAnyCommunity.
   ///
   /// In tr, this message translates to:
-  /// **'Henüz hiçbir topluluğa katılmadınız, hemen yeni bir topluluğa katılın.'**
+  /// **'Henüz hiçbir topluluğa katılmadınız.'**
   String get notJoinedAnyCommunity;
 
   /// No description provided for @enterGroupName.

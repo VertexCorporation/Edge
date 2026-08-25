@@ -78,7 +78,7 @@
   "fileSendError": "File send error",
   "imageLoadFailed": "Image could not be loaded",
   "createNewCommunity": "Create New Community",
-  "notJoinedAnyCommunity": "Henüz hiçbir topluluğa katılmadınız, hemen yeni bir topluluğa katılın.",
+  "notJoinedAnyCommunity": "You haven't joined any community yet.",
   "enterGroupName": "Please enter a group name",
   "selectAtLeastOnePerson": "You must select at least 1 person",
   "groupCreationError": "Group could not be created",
