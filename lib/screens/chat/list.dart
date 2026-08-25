@@ -368,7 +368,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
             ),
       actions: [
         _circleIcon(
-          icon: _isSearching ? 'assets/icons/outlined/close.svg' : 'assets/icons/outlined/search.svg',
+          icon: _isSearching ? Icons.close : Icons.search,
           filled: false,
           isDark: isDark,
           onTap: () {
@@ -383,7 +383,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
         if (_canCreateGroups) ...[
           const SizedBox(width: 10),
           _circleIcon(
-            icon: 'assets/icons/outlined/user.svg',
+            icon: Icons.person_add_outlined,
             filled: false,
             isDark: isDark,
             onTap: () {
@@ -395,7 +395,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
           ),
           const SizedBox(width: 10),
           _circleIcon(
-            icon: 'assets/icons/solid/plus.svg',
+            icon: Icons.add,
             filled: true,
             isDark: isDark,
             onTap: () {
@@ -666,9 +666,16 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
               final comms = snapshot.data ?? [];
               if (comms.isEmpty) {
                 return Center(
-                  child: Text(
-                    AppLocalizations.of(context)!.notJoinedAnyCommunity,
-                    style: TextStyle(color: AppColors.tertiaryColor, fontStyle: FontStyle.italic),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Text(
+                      AppLocalizations.of(context)!.notJoinedAnyCommunity,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        color: AppColors.tertiaryColor,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
                   ),
                 );
               }
@@ -744,14 +751,18 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
     final chats = _recentChats;
     if (chats.isEmpty) {
       if (_suggestedUsers.isEmpty && !_isLoadingUsers) {
-        return SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
-            child: Text(
-              'Henüz kimseyle konuşmadınız, hemen sohbete başlayın.',
-              style: GoogleFonts.inter(
-                color: AppColors.tertiaryColor,
-                fontStyle: FontStyle.italic,
+        return SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
+              child: Text(
+                'Henüz kimseyle konuşmadınız, hemen sohbete başlayın.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  color: AppColors.tertiaryColor,
+                  fontStyle: FontStyle.italic,
+                ),
               ),
             ),
           ),

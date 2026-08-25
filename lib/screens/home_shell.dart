@@ -99,13 +99,13 @@ class _HomeShellState extends State<HomeShell> {
         destinations: [
           if (showTasks)
             NavigationDestination(
-              icon: SvgPicture.asset('assets/icons/outlined/check.svg', width: 24, height: 24, colorFilter: ColorFilter.mode(AppColors.tertiaryColor, BlendMode.srcIn)),
-              selectedIcon: SvgPicture.asset('assets/icons/solid/check.svg', width: 24, height: 24, colorFilter: ColorFilter.mode(AppColors.senaryColor, BlendMode.srcIn)),
+              icon: Icon(Icons.check_circle_outline, color: AppColors.tertiaryColor),
+              selectedIcon: Icon(Icons.check_circle, color: AppColors.senaryColor),
               label: AppLocalizations.of(context)!.tasks,
             ),
           NavigationDestination(
-            icon: SvgPicture.asset('assets/icons/outlined/mail.svg', width: 24, height: 24, colorFilter: ColorFilter.mode(AppColors.tertiaryColor, BlendMode.srcIn)),
-            selectedIcon: SvgPicture.asset('assets/icons/solid/mail.svg', width: 24, height: 24, colorFilter: ColorFilter.mode(AppColors.senaryColor, BlendMode.srcIn)),
+            icon: Icon(Icons.chat_bubble_outline, color: AppColors.tertiaryColor),
+            selectedIcon: Icon(Icons.chat_bubble, color: AppColors.senaryColor),
             label: AppLocalizations.of(context)!.chats,
           ),
         ],
