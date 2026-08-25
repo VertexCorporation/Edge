@@ -113,7 +113,7 @@
   "fileSendError": "Dosya gönderim hatası",
   "imageLoadFailed": "Görsel yüklenemedi",
   "createNewCommunity": "Yeni Topluluk Kur",
-  "notJoinedAnyCommunity": "Henüz hiçbir topluluğa katılmadınız.",
+  "notJoinedAnyCommunity": "Henüz hiçbir topluluğa katılmadınız, hemen yeni bir topluluğa katılın.",
   "enterGroupName": "Lütfen bir grup adı girin",
   "selectAtLeastOnePerson": "En az 1 kişi seçmelisiniz",
   "groupCreationError": "Grup oluşturulamadı",

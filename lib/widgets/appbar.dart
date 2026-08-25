@@ -3,6 +3,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:provider/provider.dart';
 import '../theme.dart';
@@ -389,10 +390,14 @@ class _BackButton extends StatelessWidget {
       onTap: onPressed,
       child: Transform.rotate(
         angle: rotationAngle,
-        child: Icon(
-          Icons.arrow_back_ios_new_rounded,
-          size: iconSize,
-          color: AppColors.primaryColor.inverted,
+        child: SvgPicture.asset(
+          'assets/icons/outlined/left.svg',
+          width: iconSize,
+          height: iconSize,
+          colorFilter: ColorFilter.mode(
+            AppColors.primaryColor.inverted,
+            BlendMode.srcIn,
+          ),
         ),
       ),
     );

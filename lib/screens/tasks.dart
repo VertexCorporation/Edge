@@ -175,7 +175,10 @@ class _TasksScreenState extends State<TasksScreen>
         );
 
         return SizedBox.expand(
-          child: widget.isEmbedded ? content : SafeArea(child: content),
+          child: SafeArea(
+            bottom: false,
+            child: content,
+          ),
         );
       },
     );

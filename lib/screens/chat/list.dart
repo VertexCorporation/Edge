@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
 import '../../theme.dart';
@@ -382,7 +383,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
         if (_canCreateGroups) ...[
           const SizedBox(width: 10),
           _circleIcon(
-            icon: Icons.groups_outlined,
+            icon: Icons.person_add_outlined,
             filled: false,
             isDark: isDark,
             onTap: () {
@@ -410,7 +411,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
   }
 
   Widget _circleIcon({
-    required IconData icon,
+    required dynamic icon,
     required bool filled,
     required bool isDark,
     required VoidCallback onTap,
@@ -432,7 +433,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
             width: 1.2,
           ),
         ),
-        child: Icon(icon, color: fg, size: 22),
+        child: icon is IconData ? Icon(icon, color: fg, size: 22) : SvgPicture.asset(icon, colorFilter: ColorFilter.mode(fg, BlendMode.srcIn), width: 22, height: 22),
       ),
     );
   }
@@ -665,9 +666,16 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
               final comms = snapshot.data ?? [];
               if (comms.isEmpty) {
                 return Center(
-                  child: Text(
-                    AppLocalizations.of(context)!.notJoinedAnyCommunity,
-                    style: TextStyle(color: AppColors.tertiaryColor, fontStyle: FontStyle.italic),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Text(
+                      AppLocalizations.of(context)!.notJoinedAnyCommunity,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        color: AppColors.tertiaryColor,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
                   ),
                 );
               }
@@ -743,14 +751,18 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
     final chats = _recentChats;
     if (chats.isEmpty) {
       if (_suggestedUsers.isEmpty && !_isLoadingUsers) {
-        return SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
-            child: Text(
-              'Henüz kimseyle konuşmadınız, hemen sohbete başlayın.',
-              style: GoogleFonts.inter(
-                color: AppColors.tertiaryColor,
-                fontStyle: FontStyle.italic,
+        return SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
+              child: Text(
+                'Henüz kimseyle konuşmadınız, hemen sohbete başlayın.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  color: AppColors.tertiaryColor,
+                  fontStyle: FontStyle.italic,
+                ),
               ),
             ),
           ),

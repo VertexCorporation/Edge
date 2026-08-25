@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../theme.dart';
 import '../models/role.dart';
 import '../services/auth.dart';
@@ -98,14 +99,13 @@ class _HomeShellState extends State<HomeShell> {
         destinations: [
           if (showTasks)
             NavigationDestination(
-              icon: const Icon(Icons.task_alt_outlined),
-              selectedIcon: Icon(Icons.task_alt, color: AppColors.senaryColor),
+              icon: Icon(Icons.check_circle_outline, color: AppColors.tertiaryColor),
+              selectedIcon: Icon(Icons.check_circle, color: AppColors.senaryColor),
               label: AppLocalizations.of(context)!.tasks,
             ),
           NavigationDestination(
-            icon: const Icon(Icons.chat_bubble_outline),
-            selectedIcon:
-                Icon(Icons.chat_bubble, color: AppColors.senaryColor),
+            icon: Icon(Icons.chat_bubble_outline, color: AppColors.tertiaryColor),
+            selectedIcon: Icon(Icons.chat_bubble, color: AppColors.senaryColor),
             label: AppLocalizations.of(context)!.chats,
           ),
         ],

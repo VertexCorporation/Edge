@@ -166,7 +166,7 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
       primaryColor: themeColors.primaryColor,
       colorScheme: ColorScheme.fromSeed(
         seedColor: themeColors.senaryColor,
-        brightness: isDarkUi ? Brightness.dark : Brightness.light,
+        brightness: brightness,
         surface: surface,
       ),
     );
