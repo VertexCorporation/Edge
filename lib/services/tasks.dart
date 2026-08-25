@@ -109,7 +109,7 @@ class TaskService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  String get _uid => _auth.currentUser?.uid ?? 'dummy_user';
+  String get _uid => _auth.currentUser!.uid;
 
   /// Tasks assigned to the current user, or all tasks if admin.
   Stream<List<VertexTask>> watchTasks({required bool isAdmin}) {
