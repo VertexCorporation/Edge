@@ -99,9 +99,26 @@ class VertexInput extends StatelessWidget {
       suffixIcon: suffixIcon,
       prefixIcon: prefixIcon,
       filled: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       fillColor: isDark
-          ? AppColors.background.withValues(alpha: 0.6)
+          ? const Color(0xFF161618) // Match the dark gray background in the image
           : AppColors.secondaryColor,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: AppColors.senaryColor.withValues(alpha: 0.5), width: 1),
+      ),
+      hintStyle: GoogleFonts.inter(
+        color: AppColors.tertiaryColor,
+        fontSize: 14,
+      ),
     );
   }
 }

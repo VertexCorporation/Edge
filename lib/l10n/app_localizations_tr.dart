@@ -260,7 +260,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get createNewCommunity => 'Yeni Topluluk Kur';
 
   @override
-  String get notJoinedAnyCommunity => 'Henüz hiçbir topluluğa katılmadınız.';
+  String get notJoinedAnyCommunity =>
+      'Henüz hiçbir topluluğa katılmadınız, hemen yeni bir topluluğa katılın.';
 
   @override
   String get enterGroupName => 'Lütfen bir grup adı girin';
