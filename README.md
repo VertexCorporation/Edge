@@ -1,4 +1,4 @@
-# edge
+# Edge
 
 The edge that connects Vertex.
 
