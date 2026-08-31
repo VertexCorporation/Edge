@@ -160,5 +160,10 @@
   "youSentFile": "Dosya gönderdin",
   "noGroupsYet": "Henüz grup veya topluluk bulunmuyor.",
   "sentYouMessage": "Sana bir mesaj gönderildi",
-  "sentYouFile": "Sana bir dosya gönderildi"
+  "sentYouFile": "Sana bir dosya gönderildi",
+  "groupDeleted": "Grup silindi.",
+  "groupDeleteError": "Grup silinemedi",
+  "selectChat": "Bir sohbet seçin",
+  "selectChatDesc": "Soldan bir kişiye tıklayınca sohbet burada açılır.",
+  "unnamedGroup": "İsimsiz Grup"
 }

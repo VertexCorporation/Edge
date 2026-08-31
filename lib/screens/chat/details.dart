@@ -177,7 +177,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Dosya gönderim hatası: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('\: \$e')));
       }
     }
   }
@@ -250,11 +250,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         Navigator.pop(context);
       }
       messenger.showSnackBar(
-        const SnackBar(content: Text('Grup silindi.')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.groupDeleted)),
       );
     } catch (e) {
       messenger.showSnackBar(
-        SnackBar(content: Text('Grup silinemedi: $e')),
+        SnackBar(content: Text('\: \$e')),
       );
     }
   }

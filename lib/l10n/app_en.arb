@@ -78,7 +78,7 @@
   "fileSendError": "File send error",
   "imageLoadFailed": "Image could not be loaded",
   "createNewCommunity": "Create New Community",
-  "notJoinedAnyCommunity": "Henüz hiçbir topluluğa katılmadınız, hemen yeni bir topluluğa katılın.",
+  "notJoinedAnyCommunity": "You haven't joined any community yet, join one now.",
   "enterGroupName": "Please enter a group name",
   "selectAtLeastOnePerson": "You must select at least 1 person",
   "groupCreationError": "Group could not be created",
@@ -125,5 +125,10 @@
   "youSentFile": "You sent a file",
   "noGroupsYet": "No groups or communities found.",
   "sentYouMessage": "Sent you a message",
-  "sentYouFile": "Sent you a file"
+  "sentYouFile": "Sent you a file",
+  "groupDeleted": "Group deleted.",
+  "groupDeleteError": "Failed to delete group",
+  "selectChat": "Select a chat",
+  "selectChatDesc": "Click a contact on the left to open the chat here.",
+  "unnamedGroup": "Unnamed Group"
 }

@@ -126,11 +126,11 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
       await _chatService.deleteGroupChat(chatId);
       if (!mounted) return;
       messenger.showSnackBar(
-        const SnackBar(content: Text('Grup silindi.')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.groupDeleted)),
       );
     } catch (e) {
       messenger.showSnackBar(
-        SnackBar(content: Text('Grup silinemedi: $e')),
+        SnackBar(content: Text('\: \$e')),
       );
     }
   }
@@ -577,7 +577,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
               ),
               const SizedBox(height: 16),
               Text(
-                'Bir sohbet seç',
+                AppLocalizations.of(context)!.selectChat,
                 style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -586,7 +586,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
               ),
               const SizedBox(height: 6),
               Text(
-                'Soldan bir kişiye tıklayınca sohbet burada açılır.',
+                AppLocalizations.of(context)!.selectChatDesc,
                 style: GoogleFonts.inter(
                   fontSize: 13,
                   color: AppColors.tertiaryColor,
@@ -849,7 +849,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
     String displayName = (user['name'] ?? '').toString().trim();
     if (displayName.isEmpty) {
       displayName = isGroup
-          ? 'İsimsiz Grup'
+          ? AppLocalizations.of(context)!.unnamedGroup
           : (user['username'] ??
                   user['email'] ??
                   AppLocalizations.of(context)!.anonymousUser)
