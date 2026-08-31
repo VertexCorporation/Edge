@@ -7,6 +7,8 @@ import '../widgets/text.dart';
 import '../widgets/fog.dart';
 import '../services/tasks.dart';
 import 'package:edge/l10n/app_localizations.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'account.dart';
 
 /// Tasks screen — Görevler tab with Firestore-backed task list.
 class TasksScreen extends StatefulWidget {
@@ -150,7 +152,7 @@ class _TasksScreenState extends State<TasksScreen>
                   hasScrollBody: false,
                   child: Center(
                     child: Text(
-                      'Henüz görev yok',
+                      AppLocalizations.of(context)!.noTasksYet,
                       style: GoogleFonts.inter(
                         color: AppColors.tertiaryColor,
                       ),
@@ -186,70 +188,82 @@ class _TasksScreenState extends State<TasksScreen>
 
   Widget _buildWelcomeCard(bool isDark, List<VertexTask> tasks) {
     final open = tasks.where((t) => t.status != TaskStatus.done).length;
-    return VertexCard(
-      padding: const EdgeInsets.all(28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.1)
-                      : Colors.black.withValues(alpha: 0.05),
-                ),
-                child: Center(
-                  child: Text(
-                    widget.userName.isNotEmpty
-                        ? widget.userName[0].toUpperCase()
-                        : 'V',
-                    style: GoogleFonts.inter(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primaryColor.inverted,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => AccountPage(
+            userName: widget.userName,
+            userRole: widget.userRole,
+            userEmail: FirebaseAuth.instance.currentUser?.email ?? '',
+          )),
+        );
+      },
+      child: VertexCard(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.1)
+                        : Colors.black.withValues(alpha: 0.05),
+                  ),
+                  child: Center(
+                    child: Text(
+                      widget.userName.isNotEmpty
+                          ? widget.userName[0].toUpperCase()
+                          : 'V',
+                      style: GoogleFonts.inter(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryColor.inverted,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    GradientText(
-                      'Merhaba, ${widget.userName}! 👋',
-                      style: GoogleFonts.inter(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      GradientText(
+                        AppLocalizations.of(context)!.helloUser(widget.userName),
+                        style: GoogleFonts.inter(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      widget.userRole,
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: AppColors.tertiaryColor,
+                      const SizedBox(height: 4),
+                      Text(
+                        widget.userRole == 'Üye' ? AppLocalizations.of(context)!.member : widget.userRole,
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: AppColors.tertiaryColor,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            AppLocalizations.of(context)!.uncompletedTasksToday(open),
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: AppColors.tertiaryColor,
-              height: 1.5,
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Text(
+              AppLocalizations.of(context)!.uncompletedTasksToday(open),
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: AppColors.tertiaryColor,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

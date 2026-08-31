@@ -631,6 +631,228 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Duyurular'**
   String get announcements;
+
+  /// No description provided for @noTasksYet.
+  ///
+  /// In tr, this message translates to:
+  /// **'Henüz görev yok'**
+  String get noTasksYet;
+
+  /// No description provided for @role.
+  ///
+  /// In tr, this message translates to:
+  /// **'Rol'**
+  String get role;
+
+  /// No description provided for @status.
+  ///
+  /// In tr, this message translates to:
+  /// **'Durum'**
+  String get status;
+
+  /// No description provided for @verifiedMember.
+  ///
+  /// In tr, this message translates to:
+  /// **'Doğrulanmış Üye'**
+  String get verifiedMember;
+
+  /// No description provided for @settings.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ayarlar'**
+  String get settings;
+
+  /// No description provided for @notifications.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bildirimler'**
+  String get notifications;
+
+  /// No description provided for @on.
+  ///
+  /// In tr, this message translates to:
+  /// **'Açık'**
+  String get on;
+
+  /// No description provided for @off.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kapalı'**
+  String get off;
+
+  /// No description provided for @language.
+  ///
+  /// In tr, this message translates to:
+  /// **'Dil'**
+  String get language;
+
+  /// No description provided for @theme.
+  ///
+  /// In tr, this message translates to:
+  /// **'Tema'**
+  String get theme;
+
+  /// No description provided for @darkMode.
+  ///
+  /// In tr, this message translates to:
+  /// **'Koyu mod'**
+  String get darkMode;
+
+  /// No description provided for @about.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hakkında'**
+  String get about;
+
+  /// No description provided for @application.
+  ///
+  /// In tr, this message translates to:
+  /// **'Uygulama'**
+  String get application;
+
+  /// No description provided for @themeDefault.
+  ///
+  /// In tr, this message translates to:
+  /// **'Varsayılan'**
+  String get themeDefault;
+
+  /// No description provided for @themeLight.
+  ///
+  /// In tr, this message translates to:
+  /// **'Açık'**
+  String get themeLight;
+
+  /// No description provided for @themeDark.
+  ///
+  /// In tr, this message translates to:
+  /// **'Koyu'**
+  String get themeDark;
+
+  /// No description provided for @themeLove.
+  ///
+  /// In tr, this message translates to:
+  /// **'Aşk'**
+  String get themeLove;
+
+  /// No description provided for @themeNature.
+  ///
+  /// In tr, this message translates to:
+  /// **'Doğa'**
+  String get themeNature;
+
+  /// No description provided for @themePurple.
+  ///
+  /// In tr, this message translates to:
+  /// **'Mor'**
+  String get themePurple;
+
+  /// No description provided for @themeGray.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gri'**
+  String get themeGray;
+
+  /// No description provided for @themeOcean.
+  ///
+  /// In tr, this message translates to:
+  /// **'Okyanus'**
+  String get themeOcean;
+
+  /// No description provided for @themeScarlet.
+  ///
+  /// In tr, this message translates to:
+  /// **'Scarlet'**
+  String get themeScarlet;
+
+  /// No description provided for @themeCyberpunk.
+  ///
+  /// In tr, this message translates to:
+  /// **'Cyberpunk'**
+  String get themeCyberpunk;
+
+  /// No description provided for @themeSunset.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gün Batımı'**
+  String get themeSunset;
+
+  /// No description provided for @themeCoffee.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kahve'**
+  String get themeCoffee;
+
+  /// No description provided for @themeSpace.
+  ///
+  /// In tr, this message translates to:
+  /// **'Uzay'**
+  String get themeSpace;
+
+  /// No description provided for @themeMint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Adaçayı'**
+  String get themeMint;
+
+  /// No description provided for @themeAurora.
+  ///
+  /// In tr, this message translates to:
+  /// **'Aurora'**
+  String get themeAurora;
+
+  /// No description provided for @themeNord.
+  ///
+  /// In tr, this message translates to:
+  /// **'Nord'**
+  String get themeNord;
+
+  /// No description provided for @themeEmber.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kor'**
+  String get themeEmber;
+
+  /// No description provided for @themePorcelain.
+  ///
+  /// In tr, this message translates to:
+  /// **'Porselen'**
+  String get themePorcelain;
+
+  /// No description provided for @communities.
+  ///
+  /// In tr, this message translates to:
+  /// **'Topluluklar'**
+  String get communities;
+
+  /// No description provided for @youSentMessage.
+  ///
+  /// In tr, this message translates to:
+  /// **'Mesaj gönderdin'**
+  String get youSentMessage;
+
+  /// No description provided for @youSentFile.
+  ///
+  /// In tr, this message translates to:
+  /// **'Dosya gönderdin'**
+  String get youSentFile;
+
+  /// No description provided for @noGroupsYet.
+  ///
+  /// In tr, this message translates to:
+  /// **'Henüz grup veya topluluk bulunmuyor.'**
+  String get noGroupsYet;
+
+  /// No description provided for @sentYouMessage.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sana bir mesaj gönderildi'**
+  String get sentYouMessage;
+
+  /// No description provided for @sentYouFile.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sana bir dosya gönderildi'**
+  String get sentYouFile;
 }
 
 class _AppLocalizationsDelegate

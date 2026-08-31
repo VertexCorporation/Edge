@@ -388,17 +388,10 @@ class _BackButton extends StatelessWidget {
     return AppBarButton(
       size: buttonSize,
       onTap: onPressed,
-      child: Transform.rotate(
-        angle: rotationAngle,
-        child: SvgPicture.asset(
-          'assets/icons/outlined/left.svg',
-          width: iconSize,
-          height: iconSize,
-          colorFilter: ColorFilter.mode(
-            AppColors.primaryColor.inverted,
-            BlendMode.srcIn,
-          ),
-        ),
+      child: Icon(
+        Icons.arrow_back_ios_new_rounded,
+        size: iconSize,
+        color: AppColors.primaryColor.inverted,
       ),
     );
   }

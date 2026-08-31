@@ -78,7 +78,7 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    context.watch<ThemeProvider>();
+    final themeProvider = context.watch<ThemeProvider>();
     final isDarkUi = AppColors.isDarkUi;
 
     return MaterialApp(
@@ -97,6 +97,7 @@ class _EdgeAppState extends State<EdgeApp> with WidgetsBindingObserver {
         Locale('en'),
         Locale('tr'),
       ],
+      locale: Locale(themeProvider.localeCode),
       builder: (context, child) => InboxNoticeLayer(
         child: child ?? const SizedBox.shrink(),
       ),

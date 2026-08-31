@@ -293,4 +293,115 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get announcements => 'Announcements';
+
+  @override
+  String get noTasksYet => 'No tasks yet';
+
+  @override
+  String get role => 'Role';
+
+  @override
+  String get status => 'Status';
+
+  @override
+  String get verifiedMember => 'Verified Member';
+
+  @override
+  String get settings => 'Settings';
+
+  @override
+  String get notifications => 'Notifications';
+
+  @override
+  String get on => 'On';
+
+  @override
+  String get off => 'Off';
+
+  @override
+  String get language => 'Language';
+
+  @override
+  String get theme => 'Theme';
+
+  @override
+  String get darkMode => 'Dark mode';
+
+  @override
+  String get about => 'About';
+
+  @override
+  String get application => 'Application';
+
+  @override
+  String get themeDefault => 'Default';
+
+  @override
+  String get themeLight => 'Light';
+
+  @override
+  String get themeDark => 'Dark';
+
+  @override
+  String get themeLove => 'Love';
+
+  @override
+  String get themeNature => 'Nature';
+
+  @override
+  String get themePurple => 'Purple';
+
+  @override
+  String get themeGray => 'Gray';
+
+  @override
+  String get themeOcean => 'Ocean';
+
+  @override
+  String get themeScarlet => 'Scarlet';
+
+  @override
+  String get themeCyberpunk => 'Cyberpunk';
+
+  @override
+  String get themeSunset => 'Sunset';
+
+  @override
+  String get themeCoffee => 'Coffee';
+
+  @override
+  String get themeSpace => 'Space';
+
+  @override
+  String get themeMint => 'Mint';
+
+  @override
+  String get themeAurora => 'Aurora';
+
+  @override
+  String get themeNord => 'Nord';
+
+  @override
+  String get themeEmber => 'Ember';
+
+  @override
+  String get themePorcelain => 'Porcelain';
+
+  @override
+  String get communities => 'Communities';
+
+  @override
+  String get youSentMessage => 'You sent a message';
+
+  @override
+  String get youSentFile => 'You sent a file';
+
+  @override
+  String get noGroupsYet => 'No groups or communities found.';
+
+  @override
+  String get sentYouMessage => 'Sent you a message';
+
+  @override
+  String get sentYouFile => 'Sent you a file';
 }

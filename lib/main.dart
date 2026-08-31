@@ -14,9 +14,11 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    ).timeout(const Duration(seconds: 15));
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      ).timeout(const Duration(seconds: 15));
+    }
   } on TimeoutException {
     throw Exception('Firebase başlatılamadı. İnternet bağlantınızı kontrol edin.');
   }
@@ -37,6 +39,7 @@ void main() async {
       create: (_) => ThemeProvider(
         accentTheme: saved.accent,
         darkMode: saved.dark,
+        localeCode: saved.localeCode,
       ),
       child: const EdgeApp(),
     ),

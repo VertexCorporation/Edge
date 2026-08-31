@@ -159,7 +159,7 @@ class _AccountScreenState extends State<AccountScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 GradientText(
-                  'Hesap',
+                  AppLocalizations.of(context)!.account,
                   style: GoogleFonts.inter(
                     fontSize: 28,
                     fontWeight: FontWeight.w800,
@@ -234,7 +234,7 @@ class _AccountScreenState extends State<AccountScreen>
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    _liveRole,
+                    _liveRole == 'Üye' ? AppLocalizations.of(context)!.member : _liveRole,
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -301,14 +301,14 @@ class _AccountScreenState extends State<AccountScreen>
           _sectionDivider(),
           _buildInfoRow(
             icon: Icons.badge_outlined,
-            label: 'Rol',
-            value: _liveRole,
+            label: AppLocalizations.of(context)!.role,
+            value: _liveRole == 'Üye' ? AppLocalizations.of(context)!.member : _liveRole,
           ),
           _sectionDivider(),
           _buildInfoRow(
             icon: Icons.verified_outlined,
-            label: 'Durum',
-            value: 'Doğrulanmış Üye',
+            label: AppLocalizations.of(context)!.status,
+            value: AppLocalizations.of(context)!.verifiedMember,
             valueColor: Colors.green,
           ),
         ],
@@ -359,7 +359,7 @@ class _AccountScreenState extends State<AccountScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Ayarlar',
+            AppLocalizations.of(context)!.settings,
             style: GoogleFonts.inter(
               fontSize: 15,
               fontWeight: FontWeight.w600,
@@ -367,12 +367,14 @@ class _AccountScreenState extends State<AccountScreen>
             ),
           ),
           const SizedBox(height: 16),
+          _buildLanguagePicker(),
+          _sectionDivider(padding: const EdgeInsets.symmetric(vertical: 8)),
           _buildThemePicker(),
           _sectionDivider(padding: const EdgeInsets.symmetric(vertical: 8)),
           _buildSettingsTile(
             icon: Icons.notifications_none_rounded,
-            title: 'Bildirimler',
-            subtitle: _notificationsEnabled ? 'Açık' : 'Kapalı',
+            title: AppLocalizations.of(context)!.notifications,
+            subtitle: _notificationsEnabled ? AppLocalizations.of(context)!.on : AppLocalizations.of(context)!.off,
             trailing: Switch.adaptive(
               value: _notificationsEnabled,
               activeThumbColor: AppColors.senaryColor,
@@ -410,6 +412,30 @@ class _AccountScreenState extends State<AccountScreen>
     );
   }
 
+  Widget _buildLanguagePicker() {
+    final provider = context.watch<ThemeProvider>();
+    return _buildSettingsTile(
+      icon: Icons.language,
+      title: AppLocalizations.of(context)!.language,
+      subtitle: provider.localeCode == 'en' ? 'English' : 'Türkçe',
+      trailing: DropdownButton<String>(
+        value: provider.localeCode,
+        dropdownColor: AppColors.secondaryColor,
+        underline: const SizedBox.shrink(),
+        style: GoogleFonts.inter(fontSize: 14, color: AppColors.primaryColor.inverted),
+        items: const [
+          DropdownMenuItem(value: 'tr', child: Text('Türkçe')),
+          DropdownMenuItem(value: 'en', child: Text('English')),
+        ],
+        onChanged: (val) {
+          if (val != null) {
+            context.read<ThemeProvider>().changeLocale(val);
+          }
+        },
+      ),
+    );
+  }
+
   Widget _buildThemePicker() {
     final provider = context.watch<ThemeProvider>();
     return Column(
@@ -420,7 +446,7 @@ class _AccountScreenState extends State<AccountScreen>
             Icon(Icons.palette_outlined, size: 20, color: AppColors.senaryColor),
             const SizedBox(width: 14),
             Text(
-              'Tema',
+              AppLocalizations.of(context)!.theme,
               style: GoogleFonts.inter(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -441,7 +467,7 @@ class _AccountScreenState extends State<AccountScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Koyu mod',
+                    AppLocalizations.of(context)!.darkMode,
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -515,7 +541,7 @@ class _AccountScreenState extends State<AccountScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Hakkında',
+            AppLocalizations.of(context)!.about,
             style: GoogleFonts.inter(
               fontSize: 15,
               fontWeight: FontWeight.w600,
@@ -525,7 +551,7 @@ class _AccountScreenState extends State<AccountScreen>
           const SizedBox(height: 16),
           _buildInfoRow(
             icon: Icons.info_outline_rounded,
-            label: 'Uygulama',
+            label: AppLocalizations.of(context)!.application,
             value: 'Vertex Edge v$kAppVersion',
           ),
           _sectionDivider(),

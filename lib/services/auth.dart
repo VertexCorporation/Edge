@@ -348,7 +348,10 @@ class AuthService {
           return AuthResult.redirecting();
         }
       } else {
-        final googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
+        final googleSignIn = GoogleSignIn(
+          scopes: ['email', 'profile'],
+          serverClientId: '561391430514-nqjp6jl1s9oqi8ddg2fhm83lbvg94qca.apps.googleusercontent.com',
+        );
         try {
           await googleSignIn.disconnect();
         } catch (_) {
@@ -842,7 +845,9 @@ class AuthService {
   Future<void> signOut() async {
     try {
       if (!kIsWeb) {
-        await GoogleSignIn().signOut();
+        await GoogleSignIn(
+          serverClientId: '561391430514-nqjp6jl1s9oqi8ddg2fhm83lbvg94qca.apps.googleusercontent.com',
+        ).signOut();
       }
     } catch (e) {
       debugPrint('Google sign out failed: $e');

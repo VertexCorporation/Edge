@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:edge/l10n/app_localizations.dart';
 
 extension ColorExtension on Color {
   Color get inverted => Color.fromARGB(
@@ -14,12 +15,15 @@ extension ColorExtension on Color {
 class ThemeProvider extends ChangeNotifier {
   String _accentTheme;
   bool _darkMode;
+  String _localeCode;
 
   ThemeProvider({
     required String accentTheme,
     required bool darkMode,
+    required String localeCode,
   })  : _accentTheme = accentTheme,
-        _darkMode = darkMode {
+        _darkMode = darkMode,
+        _localeCode = localeCode {
     AppColors.applyTheme(_accentTheme, _darkMode);
     updateSystemUIOverlayStyle();
   }
@@ -30,20 +34,24 @@ class ThemeProvider extends ChangeNotifier {
   /// Separate light/dark toggle layered on top of the accent palette.
   bool get darkMode => _darkMode;
 
+  /// App locale code (e.g. 'en', 'tr').
+  String get localeCode => _localeCode;
+
   /// Backward-compatible alias used by older widgets.
   String get currentTheme => _accentTheme;
 
-  static ({String accent, bool dark}) loadSavedTheme(SharedPreferences prefs) {
+  static ({String accent, bool dark, String localeCode}) loadSavedTheme(SharedPreferences prefs) {
+    final savedLocale = prefs.getString('appLocale') ?? 'tr'; // Default to Turkish per user request
     final savedAccent = prefs.getString('accentTheme');
     final savedDark = prefs.getBool('themeDarkMode');
     if (savedAccent != null) {
-      return (accent: savedAccent, dark: savedDark ?? true);
+      return (accent: savedAccent, dark: savedDark ?? true, localeCode: savedLocale);
     }
 
     final legacy = prefs.getString('selectedTheme') ?? 'dark';
-    if (legacy == 'light') return (accent: 'default', dark: false);
-    if (legacy == 'dark') return (accent: 'default', dark: true);
-    return (accent: legacy, dark: true);
+    if (legacy == 'light') return (accent: 'default', dark: false, localeCode: savedLocale);
+    if (legacy == 'dark') return (accent: 'default', dark: true, localeCode: savedLocale);
+    return (accent: legacy, dark: true, localeCode: savedLocale);
   }
 
   void changeAccent(String theme) async {
@@ -63,6 +71,13 @@ class ThemeProvider extends ChangeNotifier {
     await _persist();
   }
 
+  void changeLocale(String locale) async {
+    if (_localeCode == locale) return;
+    _localeCode = locale;
+    notifyListeners();
+    await _persist();
+  }
+
   void _applyAndNotify() {
     AppColors.applyTheme(_accentTheme, _darkMode);
     updateSystemUIOverlayStyle();
@@ -71,17 +86,14 @@ class ThemeProvider extends ChangeNotifier {
 
   void updateSystemUIOverlayStyle() {
     final themeColors = AppColors.resolvedColors;
-
-    SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle(
-        systemNavigationBarColor: Colors.transparent,
-        systemNavigationBarDividerColor: Colors.transparent,
-        statusBarColor: Colors.transparent,
-        systemNavigationBarIconBrightness:
-            themeColors.navigationBarIconBrightness,
-        statusBarIconBrightness: themeColors.statusBarIconBrightness,
-      ),
-    );
+    final isDark = _darkMode;
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+      systemNavigationBarColor: themeColors.background,
+      systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+    ));
   }
 
   Future<void> _persist() async {
@@ -89,6 +101,7 @@ class ThemeProvider extends ChangeNotifier {
     await prefs.setString('accentTheme', _accentTheme);
     await prefs.setBool('themeDarkMode', _darkMode);
     await prefs.setString('selectedTheme', _accentTheme);
+    await prefs.setString('appLocale', _localeCode);
   }
 }
 
@@ -551,29 +564,30 @@ class AppColors {
 
   static Map<String, ThemeColors> get themeDefinitions => _themeDefinitions;
 
-  static const Map<String, String> themeDisplayNames = {
-    'default': 'Varsayılan',
-    'light': 'Açık',
-    'dark': 'Koyu',
-    'love': 'Aşk',
-    'nature': 'Doğa',
-    'behindTheSlaughter': 'Mor',
-    'grayscale': 'Gri',
-    'ocean': 'Okyanus',
-    'scarletSnow': 'Scarlet',
-    'cyberpunk': 'Cyberpunk',
-    'sunset': 'Gün Batımı',
-    'coffee': 'Kahve',
-    'deepSpace': 'Uzay',
-    'mint': 'Adaçayı',
-    'aurora': 'Aurora',
-    'nord': 'Nord',
-    'ember': 'Kor',
-    'porcelain': 'Porselen',
-  };
-
-  static String themeDisplayName(String theme) =>
-      themeDisplayNames[theme] ?? theme;
+    static String themeDisplayName(BuildContext context, String theme) {
+    final loc = AppLocalizations.of(context)!;
+    switch(theme) {
+      case 'default': return loc.themeDefault;
+      case 'light': return loc.themeLight;
+      case 'dark': return loc.themeDark;
+      case 'love': return loc.themeLove;
+      case 'nature': return loc.themeNature;
+      case 'behindTheSlaughter': return loc.themePurple;
+      case 'grayscale': return loc.themeGray;
+      case 'ocean': return loc.themeOcean;
+      case 'scarletSnow': return loc.themeScarlet;
+      case 'cyberpunk': return loc.themeCyberpunk;
+      case 'sunset': return loc.themeSunset;
+      case 'coffee': return loc.themeCoffee;
+      case 'deepSpace': return loc.themeSpace;
+      case 'mint': return loc.themeMint;
+      case 'aurora': return loc.themeAurora;
+      case 'nord': return loc.themeNord;
+      case 'ember': return loc.themeEmber;
+      case 'porcelain': return loc.themePorcelain;
+      default: return theme;
+    }
+  }
 
   static bool get isDarkUi => background.computeLuminance() < 0.5;
 

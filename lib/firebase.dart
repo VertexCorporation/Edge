@@ -47,8 +47,8 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBEp_LYyZWnvdhdJzvRf_h8U6rEEq2Iyp4', // Needs a real Android API Key if restricted
-    appId: '1:561391430514:android:5f06c6a84539ecffb10beb', // Fake structural ID to prevent native crash
+    apiKey: 'AIzaSyAaNXY_dmb7cV9iFWffX-2B6e13Tbichx0',
+    appId: '1:561391430514:android:9bd4d7ef1e5c04f4b10beb',
     messagingSenderId: '561391430514',
     projectId: 'vertex-ai-1618',
     databaseURL: 'https://vertex-ai-1618-default-rtdb.europe-west1.firebasedatabase.app',

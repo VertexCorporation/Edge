@@ -497,9 +497,9 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                 labelColor: AppColors.senaryColor,
                 unselectedLabelColor: AppColors.tertiaryColor,
                 indicatorColor: AppColors.senaryColor,
-                tabs: const [
-                  Tab(text: 'Sohbetler'),
-                  Tab(text: 'Topluluklar'),
+                tabs: [
+                  Tab(text: AppLocalizations.of(context)!.chats),
+                  Tab(text: AppLocalizations.of(context)!.communities),
                 ],
               ),
               Expanded(
@@ -757,7 +757,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
               child: Text(
-                'Henüz kimseyle konuşmadınız, hemen sohbete başlayın.',
+                AppLocalizations.of(context)!.noChatsYet,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
                   color: AppColors.tertiaryColor,
@@ -823,9 +823,9 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
     final mine = chat['lastSenderId'] == AuthService().currentUser?.uid;
     final type = (chat['lastMessageType'] as String?) ?? 'text';
     if (mine) {
-      return type == 'text' ? 'Mesaj gönderdin' : 'Dosya gönderdin';
+      return type == 'text' ? AppLocalizations.of(context)!.youSentMessage : AppLocalizations.of(context)!.youSentFile;
     }
-    return type == 'text' ? 'Sana bir mesaj gönderildi' : 'Sana bir dosya gönderildi';
+    return type == 'text' ? AppLocalizations.of(context)!.sentYouMessage : AppLocalizations.of(context)!.sentYouFile;
   }
 
   Future<Map<String, dynamic>> _profileForChatPartner(String userId) async {

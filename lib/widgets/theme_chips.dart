@@ -35,7 +35,7 @@ class ThemeChips extends StatelessWidget {
               ),
             ),
             child: Text(
-              AppColors.themeDisplayName(themeKey),
+              AppColors.themeDisplayName(context, themeKey),
               style: GoogleFonts.inter(
                 fontSize: 12,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.w500,

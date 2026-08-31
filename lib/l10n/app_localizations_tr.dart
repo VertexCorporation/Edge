@@ -292,4 +292,115 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get announcements => 'Duyurular';
+
+  @override
+  String get noTasksYet => 'Henüz görev yok';
+
+  @override
+  String get role => 'Rol';
+
+  @override
+  String get status => 'Durum';
+
+  @override
+  String get verifiedMember => 'Doğrulanmış Üye';
+
+  @override
+  String get settings => 'Ayarlar';
+
+  @override
+  String get notifications => 'Bildirimler';
+
+  @override
+  String get on => 'Açık';
+
+  @override
+  String get off => 'Kapalı';
+
+  @override
+  String get language => 'Dil';
+
+  @override
+  String get theme => 'Tema';
+
+  @override
+  String get darkMode => 'Koyu mod';
+
+  @override
+  String get about => 'Hakkında';
+
+  @override
+  String get application => 'Uygulama';
+
+  @override
+  String get themeDefault => 'Varsayılan';
+
+  @override
+  String get themeLight => 'Açık';
+
+  @override
+  String get themeDark => 'Koyu';
+
+  @override
+  String get themeLove => 'Aşk';
+
+  @override
+  String get themeNature => 'Doğa';
+
+  @override
+  String get themePurple => 'Mor';
+
+  @override
+  String get themeGray => 'Gri';
+
+  @override
+  String get themeOcean => 'Okyanus';
+
+  @override
+  String get themeScarlet => 'Scarlet';
+
+  @override
+  String get themeCyberpunk => 'Cyberpunk';
+
+  @override
+  String get themeSunset => 'Gün Batımı';
+
+  @override
+  String get themeCoffee => 'Kahve';
+
+  @override
+  String get themeSpace => 'Uzay';
+
+  @override
+  String get themeMint => 'Adaçayı';
+
+  @override
+  String get themeAurora => 'Aurora';
+
+  @override
+  String get themeNord => 'Nord';
+
+  @override
+  String get themeEmber => 'Kor';
+
+  @override
+  String get themePorcelain => 'Porselen';
+
+  @override
+  String get communities => 'Topluluklar';
+
+  @override
+  String get youSentMessage => 'Mesaj gönderdin';
+
+  @override
+  String get youSentFile => 'Dosya gönderdin';
+
+  @override
+  String get noGroupsYet => 'Henüz grup veya topluluk bulunmuyor.';
+
+  @override
+  String get sentYouMessage => 'Sana bir mesaj gönderildi';
+
+  @override
+  String get sentYouFile => 'Sana bir dosya gönderildi';
 }
