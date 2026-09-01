@@ -704,7 +704,6 @@ isVertex: widget.isVertex,
                               community: comm,
                               userRole: widget.userRole,
                               userEmail: widget.userEmail,
-isVertex: widget.isVertex,
                             ),
                           ),
                         );

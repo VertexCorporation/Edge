@@ -977,7 +977,7 @@ class TasksPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: VertexAppBar(
-        title: AppLocalizations.of(context)!.tasks,
+        title: Text(AppLocalizations.of(context)!.tasks),
         leadingMode: VertexLeadingMode.back,
       ),
       body: TasksScreen(
