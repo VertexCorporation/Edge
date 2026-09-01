@@ -85,7 +85,13 @@ class _VertexCardState extends State<VertexCard>
                   offset: const Offset(0, 8),
                 ),
               ]
-            : [],
+            : (isDarkUi ? [] : [
+                BoxShadow(
+                  color: AppColors.primaryColor.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ]),
       ),
       child: ClipRRect(
         borderRadius: borderRadius,
