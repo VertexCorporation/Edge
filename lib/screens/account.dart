@@ -154,10 +154,7 @@ class _AccountScreenState extends State<AccountScreen>
       child: ColoredBox(
         color: AppColors.hasThemedSky ? Colors.transparent : AppColors.background,
         child: SafeArea(
-        child: ScrollFog(
-          scrollController: _scrollController,
-          color: AppColors.fogColor,
-          child: SingleChildScrollView(
+        child: SingleChildScrollView(
             controller: _scrollController,
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
             child: Column(
@@ -391,33 +388,31 @@ class _AccountScreenState extends State<AccountScreen>
             ),
           ),
           
-            if (widget.isVertex) ...[
-              _sectionDivider(padding: const EdgeInsets.symmetric(vertical: 8)),
-              InkWell(
-                onTap: () {
-                  final canManageTasks = UserRole.canManageTasks(UserRole.normalize(widget.userRole)) || AuthService.isBootstrapAdminEmail(widget.userEmail) || widget.isVertex;
-                  Navigator.push(
-                    context,
-                    SlideRightRoute(page: TasksPage(
-                      userName: widget.userName,
-                      userRole: widget.userRole,
-                      canManageTasks: canManageTasks,
-                    )),
-                  );
-                },
-                borderRadius: BorderRadius.circular(8),
-                child: _buildSettingsTile(
-                  icon: Icons.check_circle_outline,
-                  title: AppLocalizations.of(context)!.tasks,
-                  subtitle: AppLocalizations.of(context)!.tasks, // or some description
-                  trailing: Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 14,
-                    color: AppColors.tertiaryColor,
-                  ),
+            _sectionDivider(padding: const EdgeInsets.symmetric(vertical: 8)),
+            InkWell(
+              onTap: () {
+                final canManageTasks = UserRole.canManageTasks(UserRole.normalize(widget.userRole)) || AuthService.isBootstrapAdminEmail(widget.userEmail) || widget.isVertex;
+                Navigator.push(
+                  context,
+                  SlideRightRoute(page: TasksPage(
+                    userName: widget.userName,
+                    userRole: widget.userRole,
+                    canManageTasks: canManageTasks,
+                  )),
+                );
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: _buildSettingsTile(
+                icon: Icons.check_circle_outline,
+                title: AppLocalizations.of(context)!.tasks,
+                subtitle: AppLocalizations.of(context)!.tasks, // or some description
+                trailing: Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: AppColors.tertiaryColor,
                 ),
               ),
-            ],
+            ),
 
             if (_showAdminPanel) ...[
             _sectionDivider(padding: const EdgeInsets.symmetric(vertical: 8)),
