@@ -207,16 +207,16 @@ class AppColors {
     ),
     'nature': ThemeColors(
       primaryColor: Colors.black,
-      secondaryColor: const Color(0xFF163324),
-      tertiaryColor: const Color(0xFFC5E1D2),
-      quaternaryColor: const Color(0xFF10261B),
+      secondaryColor: const Color(0xFF1B241E), // Softer, more neutral dark green-gray for cards
+      tertiaryColor: const Color(0xFF8F9E94), // Muted sage/mint for secondary text
+      quaternaryColor: const Color(0xFF151C17), // Deep surface
       quinaryColor: Colors.white70,
-      senaryColor: const Color(0xFF4ADE80),
-      septenaryColor: const Color(0xFFF87171),
-      background: const Color(0xFF0B1A12),
-      border: const Color(0xFF2D5A40),
-      premium: const Color(0xFF86EFAC),
-      navigationBarColor: const Color(0xFF0B1A12),
+      senaryColor: const Color(0xFF10B981), // Modern Emerald green accent
+      septenaryColor: const Color(0xFFF43F5E), // Modern rose red
+      background: const Color(0xFF101411), // Extremely sleek dark slate/forest background
+      border: const Color(0xFF2A362E), // Subtle elegant borders
+      premium: const Color(0xFF059669), // Deeper emerald
+      navigationBarColor: const Color(0xFF101411),
       statusBarColor: Colors.transparent,
       navigationBarIconBrightness: Brightness.light,
       statusBarIconBrightness: Brightness.light,
