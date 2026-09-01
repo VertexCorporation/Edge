@@ -18,6 +18,7 @@ import '../widgets/appbar.dart';
 import '../routes.dart';
 import 'patch_notes.dart';
 import 'admin_panel.dart';
+import 'tasks.dart';
 import '../models/role.dart';
 import '../version.dart';
 
@@ -26,12 +27,14 @@ class AccountScreen extends StatefulWidget {
   final String userName;
   final String userRole;
   final String userEmail;
+  final bool isVertex;
 
   const AccountScreen({
     super.key,
     required this.userName,
     required this.userRole,
     required this.userEmail,
+    this.isVertex = false,
   });
 
   @override
@@ -43,12 +46,14 @@ class AccountPage extends StatelessWidget {
   final String userName;
   final String userRole;
   final String userEmail;
+  final bool isVertex;
 
   const AccountPage({
     super.key,
     required this.userName,
     required this.userRole,
     required this.userEmail,
+    this.isVertex = false,
   });
 
   @override
@@ -385,7 +390,36 @@ class _AccountScreenState extends State<AccountScreen>
               },
             ),
           ),
-          if (_showAdminPanel) ...[
+          
+            if (widget.isVertex) ...[
+              _sectionDivider(padding: const EdgeInsets.symmetric(vertical: 8)),
+              InkWell(
+                onTap: () {
+                  final canManageTasks = UserRole.canManageTasks(UserRole.normalize(widget.userRole)) || AuthService.isBootstrapAdminEmail(widget.userEmail) || widget.isVertex;
+                  Navigator.push(
+                    context,
+                    SlideRightRoute(page: TasksPage(
+                      userName: widget.userName,
+                      userRole: widget.userRole,
+                      canManageTasks: canManageTasks,
+                    )),
+                  );
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: _buildSettingsTile(
+                  icon: Icons.check_circle_outline,
+                  title: AppLocalizations.of(context)!.tasks,
+                  subtitle: AppLocalizations.of(context)!.tasks, // or some description
+                  trailing: Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 14,
+                    color: AppColors.tertiaryColor,
+                  ),
+                ),
+              ),
+            ],
+
+            if (_showAdminPanel) ...[
             _sectionDivider(padding: const EdgeInsets.symmetric(vertical: 8)),
             InkWell(
               onTap: () {

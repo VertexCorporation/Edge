@@ -67,6 +67,7 @@ dependencies:
   flutter_local_notifications: ^22.3.0
   http: ^1.6.0
   flutter_svg: ^2.3.0
+  share_plus: ^13.3.0
 
 dev_dependencies:
   flutter_test:
@@ -129,10 +130,10 @@ flutter_launcher_icons:
   ios: true
   web:
     generate: true
-    image_path: "assets/icons/Edge_transparent.png"
-    background_color: "#222222"
-    theme_color: "#222222"
-  image_path: "assets/icons/Edge_transparent.png"
-  adaptive_icon_background: "#222222"
-  adaptive_icon_foreground: "assets/icons/Edge_transparent.png"
+    image_path: "assets/icons/edge/padded_transparent.png"
+    background_color: "#000000"
+    theme_color: "#000000"
+  image_path: "assets/icons/edge/padded_transparent.png"
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/icons/edge/padded_transparent.png"
   min_sdk_android: 21

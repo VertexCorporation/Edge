@@ -403,4 +403,20 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get sentYouFile => 'Sana bir dosya gönderildi';
+
+  @override
+  String get groupDeleted => 'Grup silindi.';
+
+  @override
+  String get groupDeleteError => 'Grup silinemedi';
+
+  @override
+  String get selectChat => 'Bir sohbet seçin';
+
+  @override
+  String get selectChatDesc =>
+      'Soldan bir kişiye tıklayınca sohbet burada açılır.';
+
+  @override
+  String get unnamedGroup => 'İsimsiz Grup';
 }

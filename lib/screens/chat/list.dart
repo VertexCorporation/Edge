@@ -446,6 +446,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
           userName: widget.userName,
           userRole: widget.userRole,
           userEmail: widget.userEmail,
+isVertex: widget.isVertex,
         ),
       ),
     );
@@ -703,6 +704,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                               community: comm,
                               userRole: widget.userRole,
                               userEmail: widget.userEmail,
+isVertex: widget.isVertex,
                             ),
                           ),
                         );

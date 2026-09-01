@@ -262,7 +262,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notJoinedAnyCommunity =>
-      'Henüz hiçbir topluluğa katılmadınız, hemen yeni bir topluluğa katılın.';
+      'You haven\'t joined any community yet, join one now.';
 
   @override
   String get enterGroupName => 'Please enter a group name';
@@ -404,4 +404,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sentYouFile => 'Sent you a file';
+
+  @override
+  String get groupDeleted => 'Group deleted.';
+
+  @override
+  String get groupDeleteError => 'Failed to delete group';
+
+  @override
+  String get selectChat => 'Select a chat';
+
+  @override
+  String get selectChatDesc =>
+      'Click a contact on the left to open the chat here.';
+
+  @override
+  String get unnamedGroup => 'Unnamed Group';
 }

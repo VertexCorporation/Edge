@@ -5,10 +5,12 @@ import '../theme.dart';
 import '../widgets/card.dart';
 import '../widgets/text.dart';
 import '../widgets/fog.dart';
+import '../widgets/appbar.dart';
 import '../services/tasks.dart';
 import 'package:edge/l10n/app_localizations.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'account.dart';
+import 'package:share_plus/share_plus.dart';
 
 /// Tasks screen — Görevler tab with Firestore-backed task list.
 class TasksScreen extends StatefulWidget {
@@ -952,6 +954,36 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Scaffold wrapper for TasksScreen when opened from Account settings.
+class TasksPage extends StatelessWidget {
+  final String userName;
+  final String userRole;
+  final bool canManageTasks;
+
+  const TasksPage({
+    super.key,
+    required this.userName,
+    required this.userRole,
+    this.canManageTasks = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: VertexAppBar(
+        title: AppLocalizations.of(context)!.tasks,
+        leadingMode: VertexLeadingMode.back,
+      ),
+      body: TasksScreen(
+        userName: userName,
+        userRole: userRole,
+        canManageTasks: canManageTasks,
       ),
     );
   }

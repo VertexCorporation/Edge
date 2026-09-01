@@ -853,6 +853,36 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Sana bir dosya gönderildi'**
   String get sentYouFile;
+
+  /// No description provided for @groupDeleted.
+  ///
+  /// In tr, this message translates to:
+  /// **'Grup silindi.'**
+  String get groupDeleted;
+
+  /// No description provided for @groupDeleteError.
+  ///
+  /// In tr, this message translates to:
+  /// **'Grup silinemedi'**
+  String get groupDeleteError;
+
+  /// No description provided for @selectChat.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bir sohbet seçin'**
+  String get selectChat;
+
+  /// No description provided for @selectChatDesc.
+  ///
+  /// In tr, this message translates to:
+  /// **'Soldan bir kişiye tıklayınca sohbet burada açılır.'**
+  String get selectChatDesc;
+
+  /// No description provided for @unnamedGroup.
+  ///
+  /// In tr, this message translates to:
+  /// **'İsimsiz Grup'**
+  String get unnamedGroup;
 }
 
 class _AppLocalizationsDelegate
