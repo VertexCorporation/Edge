@@ -106,15 +106,27 @@ class _TasksScreenState extends State<TasksScreen>
                               ),
                             ),
                           ),
-                          if (widget.canManageTasks)
                             IconButton(
-                              onPressed: () => _showCreateTaskSheet(context),
+                              onPressed: () {
+                                final lines = tasks.map((t) => '📌 ${t.title} - ${_statusLabel(t.status)}').join('\n');
+                                final text = 'İşte güncel görev listem:\n\n' + (lines.isEmpty ? 'Henüz görev yok' : lines);
+                                Share.share(text);
+                              },
                               icon: Icon(
-                                Icons.add_circle_outline,
-                                color: AppColors.senaryColor,
+                                Icons.ios_share_rounded,
+                                color: AppColors.tertiaryColor,
                               ),
-                              tooltip: 'Görev Ata',
+                              tooltip: 'Görevlerimi Paylaş',
                             ),
+                            if (widget.canManageTasks)
+                              IconButton(
+                                onPressed: () => _showCreateTaskSheet(context, isPersonal: false),
+                                icon: Icon(
+                                  Icons.add_circle_outline,
+                                  color: AppColors.senaryColor,
+                                ),
+                                tooltip: 'Görev Ata',
+                              ),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
@@ -184,11 +196,11 @@ class _TasksScreenState extends State<TasksScreen>
             bottom: false,
             child: content,
           ),
-          floatingActionButton: widget.canManageTasks ? FloatingActionButton(
-            onPressed: () => _showCreateTaskSheet(context),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () => _showCreateTaskSheet(context, isPersonal: true),
             backgroundColor: AppColors.senaryColor,
             child: const Icon(Icons.add, color: Colors.white),
-          ) : null,
+          ),
         );
       },
     );
@@ -676,7 +688,7 @@ class _TasksScreenState extends State<TasksScreen>
     );
   }
 
-  Future<void> _showCreateTaskSheet(BuildContext context) async {
+  Future<void> _showCreateTaskSheet(BuildContext context, {bool isPersonal = false}) async {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -687,6 +699,7 @@ class _TasksScreenState extends State<TasksScreen>
       builder: (ctx) => _CreateTaskSheet(
         taskService: _taskService,
         createdByName: widget.userName,
+        isPersonal: isPersonal,
       ),
     );
   }
@@ -703,10 +716,12 @@ class _TasksScreenState extends State<TasksScreen>
 class _CreateTaskSheet extends StatefulWidget {
   final TaskService taskService;
   final String createdByName;
+  final bool isPersonal;
 
   const _CreateTaskSheet({
     required this.taskService,
     required this.createdByName,
+    this.isPersonal = false,
   });
 
   @override
@@ -727,6 +742,11 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
   @override
   void initState() {
     super.initState();
+    if (widget.isPersonal) {
+      final user = FirebaseAuth.instance.currentUser;
+      _selectedUserId = user?.uid;
+      _selectedUserName = widget.createdByName;
+    }
     _assigneesFuture = widget.taskService.listAssignees(forceRefresh: true);
   }
 
@@ -821,7 +841,7 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
               ),
             ),
             const SizedBox(height: 12),
-            FutureBuilder<List<Map<String, dynamic>>>(
+            if (!widget.isPersonal) FutureBuilder<List<Map<String, dynamic>>>(
               future: _assigneesFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
