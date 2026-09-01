@@ -7,6 +7,7 @@ import '../widgets/text.dart';
 import '../widgets/fog.dart';
 import '../widgets/appbar.dart';
 import '../services/tasks.dart';
+import '../services/chat.dart';
 import 'package:edge/l10n/app_localizations.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'account.dart';
@@ -106,18 +107,6 @@ class _TasksScreenState extends State<TasksScreen>
                               ),
                             ),
                           ),
-                            IconButton(
-                              onPressed: () {
-                                final lines = tasks.map((t) => '📌 ${t.title} - ${_statusLabel(t.status)}').join('\n');
-                                final text = 'İşte güncel görev listem:\n\n' + (lines.isEmpty ? 'Henüz görev yok' : lines);
-                                Share.share(text);
-                              },
-                              icon: Icon(
-                                Icons.ios_share_rounded,
-                                color: AppColors.tertiaryColor,
-                              ),
-                              tooltip: 'Görevlerimi Paylaş',
-                            ),
                             if (widget.canManageTasks)
                               IconButton(
                                 onPressed: () => _showCreateTaskSheet(context, isPersonal: false),
@@ -400,9 +389,15 @@ class _TasksScreenState extends State<TasksScreen>
                   ),
                 ),
                 _priorityBadge(task.priority),
-              ],
-            ),
-            if (task.description.isNotEmpty) ...[
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: Icon(Icons.send_rounded, size: 18, color: AppColors.tertiaryColor),
+                    onPressed: () => _showShareTaskSheet(context, task),
+                  ),
+                ],
+              ),
+              if (task.description.isNotEmpty) ...[
               const SizedBox(height: 10),
               Text(
                 task.description,
@@ -435,6 +430,71 @@ class _TasksScreenState extends State<TasksScreen>
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _showShareTaskSheet(BuildContext context, VertexTask task) async {
+    final assignees = await _taskService.listAssignees();
+    if (!context.mounted) return;
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.secondaryColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              'Görevi Paylaş',
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primaryColor.inverted,
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: assignees.length,
+              itemBuilder: (context, index) {
+                final user = assignees[index];
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: AppColors.senaryColor.withValues(alpha: 0.2),
+                    child: Text(
+                      (user['name'] as String)[0].toUpperCase(),
+                      style: GoogleFonts.inter(
+                        color: AppColors.senaryColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  title: Text(
+                    user['name'] as String,
+                    style: GoogleFonts.inter(
+                      color: AppColors.primaryColor.inverted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onTap: () async {
+                    final text = '📌 ${task.title}\n📝 ${task.description}\nDurum: ${_statusLabel(task.status)}';
+                    await ChatService().sendMessage(text, receiverId: user['userId']);
+                    if (ctx.mounted) {
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Görev başarıyla gönderildi!')),
+                      );
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -815,9 +875,9 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Görev Ata',
-              style: GoogleFonts.inter(
-                fontSize: 20,
+                widget.isPersonal ? 'Görev Ekle' : 'Görev Ata',
+                style: GoogleFonts.inter(
+                  fontSize: 20,
                 fontWeight: FontWeight.w700,
                 color: AppColors.primaryColor.inverted,
               ),
@@ -980,7 +1040,7 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
                           color: Colors.white,
                         ),
                       )
-                    : const Text('Görev Oluştur'),
+                    : Text(widget.isPersonal ? 'Görev Ekle' : 'Görev Oluştur'),
               ),
             ),
           ],

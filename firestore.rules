@@ -41,7 +41,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == userId;
-      allow create: if canManageTasks();
+      allow create: if canManageTasks() || (isSignedIn() && request.resource.data.assigneeId == request.auth.uid);
       allow update: if isSignedIn() && request.auth.uid == userId;
       allow update: if canManageTasks();
     }
@@ -57,7 +57,7 @@ service cloud.firestore {
     match /tasks/{taskId} {
       allow read: if isSignedIn()
         && (resource.data.assigneeId == request.auth.uid || canManageTasks());
-      allow create: if canManageTasks();
+      allow create: if canManageTasks() || (isSignedIn() && request.resource.data.assigneeId == request.auth.uid);
       allow update: if isSignedIn()
         && (resource.data.assigneeId == request.auth.uid || canManageTasks());
       allow delete: if canManageTasks();
