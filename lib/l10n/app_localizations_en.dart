@@ -420,4 +420,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unnamedGroup => 'Unnamed Group';
+
+  @override
+  String get patchNotes => 'Patch Notes';
+
+  @override
+  String get updateHistory => 'Update History';
 }

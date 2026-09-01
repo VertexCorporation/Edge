@@ -130,5 +130,7 @@
   "groupDeleteError": "Failed to delete group",
   "selectChat": "Select a chat",
   "selectChatDesc": "Click a contact on the left to open the chat here.",
-  "unnamedGroup": "Unnamed Group"
+  "unnamedGroup": "Unnamed Group",
+  "patchNotes": "Patch Notes",
+  "updateHistory": "Update History"
 }

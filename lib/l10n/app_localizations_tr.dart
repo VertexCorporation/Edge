@@ -419,4 +419,10 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get unnamedGroup => 'İsimsiz Grup';
+
+  @override
+  String get patchNotes => 'Sürüm Notları';
+
+  @override
+  String get updateHistory => 'Güncelleme geçmişi';
 }

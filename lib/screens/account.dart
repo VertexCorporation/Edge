@@ -160,11 +160,12 @@ class _AccountScreenState extends State<AccountScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                GradientText(
+                Text(
                   AppLocalizations.of(context)!.account,
                   style: GoogleFonts.inter(
                     fontSize: 28,
                     fontWeight: FontWeight.w800,
+                    color: AppColors.senaryColor,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -613,7 +614,7 @@ class _AccountScreenState extends State<AccountScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Patch Notes',
+                          AppLocalizations.of(context)!.patchNotes,
                           style: GoogleFonts.inter(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -621,8 +622,8 @@ class _AccountScreenState extends State<AccountScreen>
                           ),
                         ),
                         Text(
-                          'Güncelleme geçmişi',
-                          style: GoogleFonts.inter(
+                            AppLocalizations.of(context)!.updateHistory,
+                            style: GoogleFonts.inter(
                             fontSize: 12,
                             color: AppColors.tertiaryColor,
                           ),

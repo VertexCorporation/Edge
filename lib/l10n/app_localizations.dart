@@ -883,6 +883,18 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'İsimsiz Grup'**
   String get unnamedGroup;
+
+  /// No description provided for @patchNotes.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sürüm Notları'**
+  String get patchNotes;
+
+  /// No description provided for @updateHistory.
+  ///
+  /// In tr, this message translates to:
+  /// **'Güncelleme geçmişi'**
+  String get updateHistory;
 }
 
 class _AppLocalizationsDelegate

@@ -165,5 +165,7 @@
   "groupDeleteError": "Grup silinemedi",
   "selectChat": "Bir sohbet seçin",
   "selectChatDesc": "Soldan bir kişiye tıklayınca sohbet burada açılır.",
-  "unnamedGroup": "İsimsiz Grup"
+  "unnamedGroup": "İsimsiz Grup",
+  "patchNotes": "Sürüm Notları",
+  "updateHistory": "Güncelleme geçmişi"
 }
