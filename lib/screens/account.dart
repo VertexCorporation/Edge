@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:edge/l10n/app_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';

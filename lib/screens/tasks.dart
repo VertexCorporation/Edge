@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme.dart';
@@ -739,6 +739,16 @@ class _TasksScreenState extends State<TasksScreen>
                     ),
                   );
                 }).toList(),
+              ),
+              const SizedBox(height: 24),
+              VertexButton.outline(
+                label: 'Görevi Sil',
+                icon: Icons.delete_outline_rounded,
+                width: double.infinity,
+                onPressed: () async {
+                  await _taskService.deleteTask(task.id);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
               ),
               const SizedBox(height: 16),
             ],

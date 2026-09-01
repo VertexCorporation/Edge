@@ -224,6 +224,12 @@ class TaskService {
     await _saveLocalTasks(tasks);
   }
 
+  Future<void> deleteTask(String taskId) async {
+    final tasks = await _getTasks();
+    tasks.removeWhere((t) => t.id == taskId);
+    await _saveLocalTasks(tasks);
+  }
+
   Future<void> updateStatus(String taskId, TaskStatus status) async {
     final tasks = await _getTasks();
     final index = tasks.indexWhere((t) => t.id == taskId);

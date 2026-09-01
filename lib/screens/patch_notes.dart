@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../theme.dart';
@@ -11,11 +11,11 @@ class PatchNotesScreen extends StatelessWidget {
   static const _notes = [
     _PatchNote(
       version: '1.0.31',
-      date: '1 EylÃ¼l 2026',
+      date: '1 Eylül 2026',
       highlights: [
-        'GÃ¶rev atama: Herkes kendi kendine gÃ¶rev ekleyebilir (Yerel Ã¶nbellek desteÄŸi)',
-        'GÃ¶rev paylaÅŸÄ±mÄ±: Uygulama iÃ§i gÃ¶revleri sohbetlere doÄŸrudan mesaj olarak gÃ¶nderme',
-        'GÃ¶rsel dÃ¼zeltmeler: Tema renk uyuÅŸmazlÄ±klarÄ± ve Ã§eÅŸitli UI iyileÅŸtirmeleri',
+        'Görev atama: Herkes kendi kendine görev ekleyebilir (Yerel önbellek desteği)',
+        'Görev paylaşımı: Uygulama içi görevleri sohbetlere doğrudan mesaj olarak gönderme',
+        'Görsel düzeltmeler: Tema renk uyuşmazlıkları ve çeşitli UI iyileştirmeleri',
       ],
     ),
     _PatchNote(
