@@ -241,11 +241,12 @@ class _TasksScreenState extends State<TasksScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      GradientText(
+                      Text(
                         AppLocalizations.of(context)!.helloUser(widget.userName),
                         style: GoogleFonts.inter(
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
+                          color: AppColors.senaryColor,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -857,6 +858,7 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
                     : null;
                 return DropdownButtonFormField<String>(
                   value: selectedId,
+                  isExpanded: true, // Prevents right overflow by truncating long text
                   decoration: const InputDecoration(
                     labelText: 'Kişi',
                     border: OutlineInputBorder(),
@@ -868,7 +870,10 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
                       .map(
                         (u) => DropdownMenuItem(
                           value: u['userId'] as String,
-                          child: Text(u['name'] as String),
+                          child: Text(
+                            u['name'] as String,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       )
                       .toList(),

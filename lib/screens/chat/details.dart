@@ -458,10 +458,7 @@ class _ChatMessagesList extends StatelessWidget {
       builder: (context, snapshot) {
         final messages = _mergeMessages(snapshot.data ?? []);
 
-        return ScrollFog(
-          scrollController: scrollController,
-          color: AppColors.fogColor,
-          child: ListView.builder(
+        return ListView.builder(
             controller: scrollController,
             reverse: true,
             padding: const EdgeInsets.all(16),
@@ -476,8 +473,7 @@ class _ChatMessagesList extends StatelessWidget {
                 isDark: isDark,
               );
             },
-          ),
-        );
+          );
       },
     );
   }

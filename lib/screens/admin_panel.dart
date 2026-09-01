@@ -155,10 +155,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
           style: GoogleFonts.inter(fontWeight: FontWeight.w700),
         ),
       ),
-      body: ScrollFog(
-        scrollController: _scrollController,
-        color: AppColors.background,
-        child: RefreshIndicator(
+      body: RefreshIndicator(
           onRefresh: _loadUsers,
           color: AppColors.senaryColor,
           child: ListView(
@@ -230,7 +227,6 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
             ],
           ),
         ),
-      ),
     );
   }
 

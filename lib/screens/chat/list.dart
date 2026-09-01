@@ -507,10 +507,7 @@ isVertex: widget.isVertex,
                 child: TabBarView(
                   controller: _tabController,
                   children: [
-                    ScrollFog(
-                      scrollController: _scrollController,
-                      color: AppColors.fogColor,
-                      child: CustomScrollView(
+                    CustomScrollView(
                         controller: _scrollController,
                         slivers: [
                           _buildRecentChatsSliver(brightness, isDark, split),
@@ -550,7 +547,6 @@ isVertex: widget.isVertex,
                           ),
                         ],
                       ),
-                    ),
                     _buildCommunitiesTab(brightness, isDark),
                   ],
                 ),
@@ -680,10 +676,7 @@ isVertex: widget.isVertex,
                   ),
                 );
               }
-              return ScrollFog(
-                scrollController: _communitiesScrollController,
-                color: AppColors.fogColor,
-                child: ListView.builder(
+              return ListView.builder(
                   controller: _communitiesScrollController,
                   itemCount: comms.length,
                   itemBuilder: (context, index) {
@@ -710,8 +703,7 @@ isVertex: widget.isVertex,
                       },
                     );
                   },
-                ),
-              );
+                );
             },
           ),
         ),
