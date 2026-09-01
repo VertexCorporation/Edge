@@ -390,13 +390,12 @@ class _AccountScreenState extends State<AccountScreen>
             _sectionDivider(padding: const EdgeInsets.symmetric(vertical: 8)),
             InkWell(
               onTap: () {
-                final canManageTasks = UserRole.canManageTasks(UserRole.normalize(widget.userRole)) || AuthService.isBootstrapAdminEmail(widget.userEmail) || widget.isVertex;
                 Navigator.push(
                   context,
                   SlideRightRoute(page: TasksPage(
                     userName: widget.userName,
                     userRole: widget.userRole,
-                    canManageTasks: canManageTasks,
+                    canManageTasks: true, // Everyone can manage tasks for now
                   )),
                 );
               },

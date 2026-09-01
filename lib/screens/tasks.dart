@@ -178,11 +178,17 @@ class _TasksScreenState extends State<TasksScreen>
           ),
         );
 
-        return SizedBox.expand(
-          child: SafeArea(
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          body: SafeArea(
             bottom: false,
             child: content,
           ),
+          floatingActionButton: widget.canManageTasks ? FloatingActionButton(
+            onPressed: () => _showCreateTaskSheet(context),
+            backgroundColor: AppColors.senaryColor,
+            child: const Icon(Icons.add, color: Colors.white),
+          ) : null,
         );
       },
     );
