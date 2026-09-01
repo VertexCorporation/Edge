@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:convert';
+import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/role.dart';
 import 'cortex_profile.dart';
 
@@ -50,6 +53,38 @@ class VertexTask {
       dueDate: (data['dueDate'] as Timestamp?)?.toDate(),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
     );
+  }
+
+  factory VertexTask.fromJson(Map<String, dynamic> json) {
+    return VertexTask(
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      assigneeId: json['assigneeId'] as String? ?? '',
+      assigneeName: json['assigneeName'] as String? ?? '',
+      createdBy: json['createdBy'] as String? ?? '',
+      createdByName: json['createdByName'] as String? ?? '',
+      status: _statusFromString(json['status'] as String?),
+      priority: _priorityFromString(json['priority'] as String?),
+      dueDate: json['dueDate'] != null ? DateTime.tryParse(json['dueDate']) : null,
+      createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt']) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'assigneeId': assigneeId,
+      'assigneeName': assigneeName,
+      'createdBy': createdBy,
+      'createdByName': createdByName,
+      'status': statusToString(status),
+      'priority': priorityToString(priority),
+      'dueDate': dueDate?.toIso8601String(),
+      'createdAt': createdAt?.toIso8601String(),
+    };
   }
 
   int? get daysRemaining {
@@ -111,21 +146,54 @@ class TaskService {
 
   String get _uid => _auth.currentUser?.uid ?? 'dummy_user';
 
-  /// Tasks assigned to the current user, or all tasks if admin.
-  Stream<List<VertexTask>> watchTasks({required bool isAdmin}) {
-    Query<Map<String, dynamic>> query = _firestore.collection('tasks');
-    if (!isAdmin) {
-      query = query.where('assigneeId', isEqualTo: _uid);
+  static final _taskController = StreamController<List<VertexTask>>.broadcast();
+  static const _localTasksKey = 'local_tasks_cache';
+  
+  Future<void> _loadLocalTasks() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = prefs.getString(_localTasksKey);
+    List<VertexTask> tasks = [];
+    if (jsonStr != null) {
+      try {
+        final List<dynamic> list = jsonDecode(jsonStr);
+        tasks = list.map((e) => VertexTask.fromJson(e as Map<String, dynamic>)).toList();
+      } catch (e) {
+        debugPrint('Failed to load local tasks: $e');
+      }
     }
-    return query.snapshots().map((snap) {
-      final tasks = snap.docs.map(VertexTask.fromDoc).toList();
-      tasks.sort((a, b) {
+    _taskController.add(tasks);
+  }
+
+  Future<void> _saveLocalTasks(List<VertexTask> tasks) async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = tasks.map((e) => e.toJson()).toList();
+    await prefs.setString(_localTasksKey, jsonEncode(list));
+    _taskController.add(tasks);
+  }
+  
+  Future<List<VertexTask>> _getTasks() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = prefs.getString(_localTasksKey);
+    if (jsonStr != null) {
+      try {
+        final List<dynamic> list = jsonDecode(jsonStr);
+        return list.map((e) => VertexTask.fromJson(e as Map<String, dynamic>)).toList();
+      } catch (_) {}
+    }
+    return [];
+  }
+
+  Stream<List<VertexTask>> watchTasks({required bool isAdmin}) {
+    _loadLocalTasks();
+    return _taskController.stream.map((tasks) {
+      var filtered = isAdmin ? tasks : tasks.where((t) => t.assigneeId == _uid).toList();
+      filtered.sort((a, b) {
         if (a.dueDate == null && b.dueDate == null) return 0;
         if (a.dueDate == null) return 1;
         if (b.dueDate == null) return -1;
         return a.dueDate!.compareTo(b.dueDate!);
       });
-      return tasks;
+      return filtered;
     });
   }
 
@@ -138,24 +206,44 @@ class TaskService {
     required DateTime dueDate,
     TaskPriority priority = TaskPriority.medium,
   }) async {
-    await _firestore.collection('tasks').add({
-      'title': title.trim(),
-      'description': description.trim(),
-      'assigneeId': assigneeId,
-      'assigneeName': assigneeName,
-      'createdBy': _uid,
-      'createdByName': createdByName,
-      'status': VertexTask.statusToString(TaskStatus.todo),
-      'priority': VertexTask.priorityToString(priority),
-      'dueDate': Timestamp.fromDate(dueDate),
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    final tasks = await _getTasks();
+    final newTask = VertexTask(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: title.trim(),
+      description: description.trim(),
+      assigneeId: assigneeId,
+      assigneeName: assigneeName,
+      createdBy: _uid,
+      createdByName: createdByName,
+      status: TaskStatus.todo,
+      priority: priority,
+      dueDate: dueDate,
+      createdAt: DateTime.now(),
+    );
+    tasks.add(newTask);
+    await _saveLocalTasks(tasks);
   }
 
   Future<void> updateStatus(String taskId, TaskStatus status) async {
-    await _firestore.collection('tasks').doc(taskId).update({
-      'status': VertexTask.statusToString(status),
-    });
+    final tasks = await _getTasks();
+    final index = tasks.indexWhere((t) => t.id == taskId);
+    if (index != -1) {
+      final old = tasks[index];
+      tasks[index] = VertexTask(
+        id: old.id,
+        title: old.title,
+        description: old.description,
+        assigneeId: old.assigneeId,
+        assigneeName: old.assigneeName,
+        createdBy: old.createdBy,
+        createdByName: old.createdByName,
+        status: status,
+        priority: old.priority,
+        dueDate: old.dueDate,
+        createdAt: old.createdAt,
+      );
+      await _saveLocalTasks(tasks);
+    }
   }
 
   List<Map<String, dynamic>>? _assigneesCache;
