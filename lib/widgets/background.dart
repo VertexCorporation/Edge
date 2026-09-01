@@ -657,14 +657,15 @@ class _NatureTreesPainter extends CustomPainter {
   final bool isDark;
   _NatureTreesPainter(this.t, {required this.accent, required this.isDark});
 
-  static final _trees = List.generate(10, (i) {
-    final r = Random(i * 43 + 7);
+  static final _fireflies = List.generate(24, (i) {
+    final r = Random(i * 123 + 45);
     return (
       x: r.nextDouble(),
-      height: 0.12 + r.nextDouble() * 0.18,
-      trunkW: 3.0 + r.nextDouble() * 2,
-      crownW: 0.04 + r.nextDouble() * 0.04,
-      sway: r.nextDouble() * pi * 2,
+      y: r.nextDouble(),
+      size: 1.0 + r.nextDouble() * 2.0,
+      speed: 0.1 + r.nextDouble() * 0.2,
+      swayOffset: r.nextDouble() * pi * 2,
+      pulseOffset: r.nextDouble() * pi * 2,
     );
   });
 
@@ -674,47 +675,38 @@ class _NatureTreesPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
 
-    final treeCount = kIsWeb ? 6 : _trees.length;
-    final crownLayers = kIsWeb ? 2 : 3;
-    for (var i = 0; i < treeCount; i++) {
-      final tr = _trees[i];
-      final baseX = tr.x * w;
-      final treeH = tr.height * h;
-      final baseY = h * 0.92;
-      final sway = sin(t * pi * 2 * 0.15 + tr.sway) * 3;
-
-      // Trunk (pixel rectangles).
-      final trunkPaint = Paint()
-        ..color = (isDark ? const Color(0xFF3D2B1A) : const Color(0xFF5D4037))
-            .withValues(alpha: 0.35);
-      canvas.drawRect(
-        Rect.fromLTWH(baseX - tr.trunkW / 2, baseY - treeH, tr.trunkW, treeH),
-        trunkPaint,
-      );
-
-      // Crown: 3 stacked triangles (pixel-ish).
-      final crownColor = accent.withValues(alpha: isDark ? 0.22 : 0.18);
-      for (var layer = 0; layer < crownLayers; layer++) {
-        final layerY = baseY - treeH + layer * treeH * 0.15;
-        final layerW = tr.crownW * w * (1.0 - layer * 0.2);
-        final layerH = treeH * 0.45;
-        final path = Path()
-          ..moveTo(baseX + sway, layerY - layerH)
-          ..lineTo(baseX - layerW / 2 + sway * 0.5, layerY)
-          ..lineTo(baseX + layerW / 2 + sway * 0.5, layerY)
-          ..close();
-        canvas.drawPath(
-          path,
-          Paint()..color = crownColor.withValues(alpha: crownColor.alpha - layer * 0.03),
-        );
-      }
+    final count = kIsWeb ? 12 : _fireflies.length;
+    for (var i = 0; i < count; i++) {
+      final f = _fireflies[i];
+      
+      // Move upwards slowly and wrap around
+      double currentY = f.y - (t * f.speed);
+      currentY = currentY - currentY.floor(); // Wrap to 0.0 - 1.0
+      
+      final y = currentY * h;
+      
+      // Gentle sine wave swaying
+      final sway = sin(t * pi * 2 * 0.3 + f.swayOffset) * 25.0;
+      final x = (f.x * w) + sway;
+      
+      // Pulsing glow effect
+      final pulse = (sin(t * pi * 2 * 0.8 + f.pulseOffset) + 1.0) / 2.0; // 0.0 to 1.0
+      final alpha = (0.2 + 0.8 * pulse) * (isDark ? 0.6 : 0.8);
+      
+      final color = accent.withValues(alpha: alpha);
+      
+      // Draw soft ambient glow
+      final glowPaint = Paint()
+        ..color = color.withValues(alpha: alpha * 0.4)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6.0);
+      canvas.drawCircle(Offset(x, y), f.size * 3.5, glowPaint);
+      
+      // Draw bright core
+      final corePaint = Paint()
+        ..color = color
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(Offset(x, y), f.size, corePaint);
     }
-
-    // Ground line.
-    canvas.drawRect(
-      Rect.fromLTWH(0, h * 0.92, w, 2),
-      Paint()..color = accent.withValues(alpha: isDark ? 0.10 : 0.08),
-    );
   }
 
   @override
