@@ -8,6 +8,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../models/role.dart';
 import '../utils/ios.dart';
 import 'cortex_profile.dart';
+import 'console_membership.dart';
 
 /// Authentication service for Vertex Edge
 class AuthService {
@@ -486,21 +487,21 @@ class AuthService {
     );
   }
 
-  /// Check if user has isVertex: true in Firestore or is an admin
+  /// Check current Core access or the existing Vertex membership profile.
   Future<bool> checkIsVertex(String uid) async {
-    // First check if user has admin claim
+    // Core membership is checked against the shared live Console resolver.
+    // Historic admin/isAdmin ID-token flags are no longer an authority source.
     try {
       final user = _auth.currentUser;
       if (user != null && user.uid == uid) {
-        final idTokenResult = await user.getIdTokenResult();
-        if (idTokenResult.claims?['admin'] == true || 
-            idTokenResult.claims?['isAdmin'] == true || 
-            idTokenResult.claims?['role'] == 'admin') {
-          return true;
-        }
+        final result = await FirebaseFunctions.instanceFor(region: 'europe-west1')
+            .httpsCallable('getMyConsoleAccess')
+            .call();
+        if (isVerifiedConsoleCore(result.data)) return true;
       }
     } catch (e) {
-      debugPrint('Error checking admin claims: $e');
+      // Regular Vertex members continue through the existing membership check.
+      debugPrint('Current Console membership unavailable');
     }
 
     // Retry logic to handle Cloud Function delay and WebChannel errors

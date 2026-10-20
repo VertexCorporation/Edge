@@ -1,0 +1,31 @@
+name: Core membership regression
+on:
+  pull_request:
+    paths:
+      - 'lib/services/auth.dart'
+      - 'lib/services/console_membership.dart'
+      - 'test/console_membership_test.dart'
+      - '.github/workflows/core-membership-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lib/services/auth.dart'
+      - 'lib/services/console_membership.dart'
+      - 'test/console_membership_test.dart'
+permissions:
+  contents: read
+jobs:
+  membership:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Analyze the canonical membership response validator
+        run: flutter analyze lib/services/console_membership.dart
+      - name: Core requires current server membership, never historic flags
+        run: flutter test test/console_membership_test.dart
